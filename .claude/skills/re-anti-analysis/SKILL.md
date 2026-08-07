@@ -20,6 +20,79 @@ description: >
 
 每步结果存档（证据路径 + sha256，见 [[re-triage]]）；壳指纹 / 脱壳产物是 [[re-ioc]] YARA 特征来源。
 
+## 反调试方法论
+
+本网关适用的反调试分析方法论（用户实战经验），各技能坑与陷阱引用此处。
+
+### 基础检测
+
+- **AD1 启动即退出先查调试检测**：EP/TLS/初始化函数
+- **AD2 IsDebuggerPresent 不代表完整反调试**：组合检测，别只 patch 一点
+- **AD3 PEB BeingDebugged 用户态快速检测**：找 PEB 访问/BeingDebugged/NtGlobalFlag
+- **AD4 NtGlobalFlag 异常→查堆调试标志**
+- **AD5 CheckRemoteDebuggerPresent 不可靠**：可能被 hook/替换/底层
+- **AD6 NtQueryInformationProcess 是重点**：ProcessDebugPort/ProcessDebugObjectHandle/ProcessDebugFlags
+
+### 异常机制
+
+- **AD7 异常没崩溃→可能反调试**：INT3/INT 2D/单步异常
+- **AD32 INT3 不止一种形式**：CC vs CD 03 长断点，异常行为不同
+- **AD33 INT 2D 是 Windows 特殊反调试点**：调试器下/正常运行行为不同
+- **AD34 ICE 指令检测单步**：F1 ICEBP
+- **AD26 异常断点行为异常→查 VEH**：AddVectoredExceptionHandler——INT3 被主动处理/单步异常被吞/异常后继续运行
+- **AD27 SEH 链异常→可能反调试控制流**：控制跳转/隐藏流程/检测 debugger
+
+### 时间检测
+
+- **AD8 断点后行为变化→查 Trap Flag**：EFLAGS/异常次数
+- **AD9 时间突然变慢→查时间反调试**：QPC/GetTickCount/timeGetTime/RDTSC
+- **AD10 RDTSC 检测不要只看一次读取**：start-end delta、比较阈值、分支位置
+- **AD11 Sleep 检测→查时间加速**：Sleep(5000)+检查实际经过时间——调试环境/沙箱加速/时间跳跃
+- **AD35 时间检测不只 RDTSC**：RDTSCP/QPC/GetTickCount64/APIC timer
+
+### 环境与工具特征
+
+- **AD12 窗口/鼠标检测→环境真实性**：自动化沙箱
+- **AD16 调试器窗口检测低级但常见**：OllyDbg/x64dbg/WinDbg/IDA 窗口类或进程名
+- **AD17 进程列表检测→查工具指纹**：debugger/monitor/sandbox，易误报
+- **AD38 窗口检测只是低级手段**：高级样本更倾向 API 行为/内存特征/异常行为
+- **AD39 父进程检测**：explorer→app vs debugger→app 启动链
+- **AD40 命令行检测**：debugger/sandbox/分析环境参数
+- **AD31 程序只在 x64dbg 崩→查调试器特征**：x64dbg 模块/窗口类/DLL 名称/内存特征
+
+### 硬件痕迹
+
+- **AD29 硬件断点也失效→可能检测 DR 寄存器**：DR0-DR3/DR7 或异常行为
+- **AD43 调试寄存器不是唯一硬件痕迹**：DR/LBR/性能计数器状态
+- **AD15 硬件断点检测→查 DR 寄存器**：DR0-DR3/DR6/DR7
+
+### 线程与调试对象
+
+- **AD25 线程突然消失→查 NtSetInformationThread**：ThreadHideFromDebugger——主线程正常/逻辑断点无效/调试器看不到异常
+- **AD30 调试器暂停后逻辑变化→查 Debug Object**：ProcessDebugObjectHandle
+- **AD37 调试器导致线程调度变化**：线程执行顺序/锁竞争/APC 调度
+
+### 自修改与断点
+
+- **AD13 断点被清除→查硬件断点/自校验**：0xCC 检测——校验代码段/比较 hash/扫描 0xCC
+- **AD14 代码执行后恢复原样→可能是自修改**：静态内容≠实际执行内容，需内存 dump/执行跟踪
+- **AD28 断点后代码改变→检查 self-modifying code**：55 8B EC→CC 8B EC——校验代码/恢复字节/主动检测断点
+
+### 深层检测
+
+- **AD41 PEB 检测不仅是 BeingDebugged**：NtGlobalFlag/ProcessHeap flags/HeapForceFlags
+- **AD42 内核调试检测**：KdDebuggerEnabled/KdDebuggerNotPresent
+- **AD44 反调试可能故意制造假逻辑**：返回错误数据/修改算法结果/延迟执行/跳过关键逻辑——比退出更常见
+- **AD21 内核级反调试→用户态 patch 无效**：驱动/内核回调/内核对象检查需分析内核路径
+- **AD22 反虚拟化≠反调试**：目标不同——观察者 vs 分析环境，不要混为一谈
+
+### 方法论
+
+- **AD18 TLS Callback 比 Entry Point 更早执行**：入口断点没触发反调试→查 TLS
+- **AD19 反调试逻辑不要急着 patch**：先确认检测结果如何影响控制流——退出/降功能/假数据/延迟
+- **AD20 多点反调试→找汇聚点**：多个检测汇聚到一个 flag/状态变量/错误处理函数
+- **AD45 Patch 反调试点可能触发完整性检测**：JNZ→JMP/CALL→NOP 触发 CRC/hash/self-check，先找检测链
+
 ## 何时用哪个原子技能（选择树）
 
 **先识别、再选脱壳路径；识别不出走手动流程。**

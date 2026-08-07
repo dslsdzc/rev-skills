@@ -81,3 +81,5 @@ description: >
 - **PPL 进程无法附加**（Protected Process Light，如部分 EDR/系统进程）——x64dbg 无驱动无法附加，换内核调试或放弃该目标
 - **位数匹配**：64 位目标必须 x64dbg（x32dbg 只支持 32 位）；混用会加载失败/崩溃
 - **attach 失败先区分权限与 PPL/保护进程**：现象——以管理员运行 x64dbg 仍 attach 失败；原因——普通权限限制管理员可解决，PPL（Protected Process Light）取决于 Signer Level 等级（EDR 常见 PPL-Windows TCB/Antimalware），非对应级别无法附加；对策——先确认目标是否 PPL（Process Explorer 的 Protection 列）及其 Signer Level，再按级别准备对应调试能力（同级别驱动/内核调试），见 [[platform-tips]] Windows 分支
+- **程序只在 x64dbg 下崩 → 查调试器特征检测**：现象——样本原生环境正常、换其他调试器也正常，唯独 x64dbg 加载/附加后崩溃或行为跳变；原因——样本检测调试器特征（x64dbg 模块/窗口类/DLL 名称/内存特征），识别到 x64dbg 后故意崩溃或切换逻辑；对策——先静态找特征字符串/窗口类名/模块名（[[re-ida]] / [[re-format-pe]]），patch 特征检测点或隐藏 x64dbg 痕迹（ScyllaHide），再重新加载（见 [[re-anti-analysis]] 反调试方法论 AD31）
+- **硬件断点被检测（DR 寄存器）**：现象——下硬件断点/内存断点后进程即退出，或断点不触发；原因——样本读取调试寄存器（DR0-DR3/DR6/DR7）检测硬件断点；对策——ScyllaHide 注入方式隐藏（HookLibrary/InjectorCLI），或改用逻辑断点避开 DR 痕迹，必要时先静态 patch DR 检测点再 attach（见 [[re-anti-analysis]] 反调试方法论 AD15）
