@@ -43,7 +43,7 @@ description: >
 ### CoAP —— coap-client / aiocoap
 
 - Debian/Ubuntu: `apt install libcoap3-bin`（提供 coap-client）
-- Fedora: `dnf install libcoap`；Arch: `pacman -S libcoap`（extra）；macOS: `brew install libcoap`
+- Fedora: `dnf install libcoap libcoap-utils`（coap-client 位于 libcoap-utils 子包）；Arch: `pacman -S libcoap`（extra）；macOS: `brew install libcoap`
 - 发行版包若不含示例程序 → `pip install aiocoap`（命令 `aiocoap-client`，Python 3）
 - 验证: `coap-client -h`（或 `aiocoap-client -h`）
 
@@ -73,7 +73,7 @@ description: >
    ```
    - 端口速查: MQTT 1883（明文）/ 8883（TLS）；CoAP 5683（UDP）/ 5684（DTLS）；BLE: 广播与 GATT（bthci_evt / bthci_acl / btatt 层，无端口）；Zigbee: 802.15.4 帧（无端口，2.4GHz 信道 11-26）
    - 非标端口 → Wireshark Decode As / `tshark -d tcp.port==9999,mqtt` 强制指定
-   - 特征确认: MQTT 首字节为控制类型（CONNECT 0x10 / PUBLISH 0x30 ...）；CoAP 头 4 位版本 01；BLE HCI 事件包 0x3e；Zigbee 帧首 2 字节 802.15.4 帧控制字段
+   - 特征确认: MQTT 首字节为控制类型（CONNECT 0x10 / PUBLISH 0x30 ...）；CoAP 头 Ver 字段 2 位（值 01）；BLE HCI 事件包 0x3e；Zigbee 帧首 2 字节 802.15.4 帧控制字段
 2. **MQTT/CoAP 解析（topic / payload）**：
    ```sh
    tshark -r cap.pcap -Y mqtt -T fields -e mqtt.topic -e mqtt.msg

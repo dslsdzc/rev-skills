@@ -52,10 +52,10 @@ description: >
 
 ### RN bundle 还原 —— hermes-dec（Hermes 字节码）
 
-- 安装: `pip3 install hermes-dec`（Python 3，纯标准库）；Ubuntu 另有 `snap install hermes-dec`；Arch AUR `yay -S hermes-dec`
+- 安装: `pip3 install hermes-dec`（Python 3，纯标准库）；Ubuntu 另有 `snap install hermes-dec`（snap 版命令带 `hermes-dec.` 前缀，如 `hermes-dec.hbc-disassembler`，pip 版无前缀）；Arch AUR `yay -S hermes-dec`
 - 命令: `hbc-file-parser`（解析 HBC 头 / 版本 / 函数表）、`hbc-disassembler`（字节码 → .hasm 汇编）、`hbc-decompiler`（→ 伪 JS）
 - 验证: `hbc-decompiler --help` 可用；对样本文件能跑通三步
-- 明文 JS bundle 美化: `pip install jsbeautifier`（`js-beautify bundle.js`）
+- 明文 JS bundle 美化: `pip install jsbeautifier`（Python 3，`js-beautify bundle.js`）
 
 ## 操作步骤
 

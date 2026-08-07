@@ -49,6 +49,7 @@ description: >
 ### adb —— 设备交互
 
 - Android SDK platform-tools 自带；验证 `adb --version`；模拟器场景 `adb shell` 即可
+- dexdump: Android SDK build-tools 自带（步骤 4 DEX 完整性检查用）；验证 `dexdump -h`
 
 ### 内存转储（[[re-memdump]] 思路）
 
