@@ -52,13 +52,13 @@ description: 压缩壳脱壳：UPX/ASPack/FSG。触发词：脱壳、unpack、UP
 
 2. **ESP 定律找 OEP**（设断在 pushad 后）：
    - 原理：压缩壳入口 `pushad` 保存寄存器 → 壳解密完毕后 `popad` → `jmp OEP`。**对 pushad 之后的 ESP 所指地址下硬件访问断点**，运行后在 `popad` 后的第一条指令附近找 OEP。
-   - x64dbg（Windows）：载入 → 停在 EP → 单步见 `pushad` → 记录当前 ESP 值 → 右键 ESP 寄存器 → Hardware Breakpoint（on access）→ 运行 → 断在 `popad` 后第一条指令 → 下面几行 `jmp` 的目标即 OEP。记下 OEP 地址。
+   - x64dbg（Windows）：载入 → 停在 EP → 单步见 `pushad` → 再单步执行 `pushad` → 记录 **pushad 执行后**的 ESP 值 → 右键 ESP 寄存器 → Hardware Breakpoint（on access）→ 运行 → 断在 `popad` 后第一条指令 → 下面几行 `jmp` 的目标即 OEP。记下 OEP 地址。
    - gdb（Linux/Wine，见 [[platform-tips]] Wine 直读）：
      ```
      (gdb) starti                    # 停在 EP
-     (gdb) x/5i $eip                 # 确认 pushad
-     (gdb) hbreak *$esp              # 对 ESP 地址下硬件断点（或 watch）
-     (gdb) continue                  # 断在 popad 后，单步找 jmp 到 OEP
+     (gdb) si                        # 单步执行 pushad（x86 pushad 压 8 个寄存器）
+     (gdb) awatch *(int*)$esp        # 对 pushad 后的 ESP 所指地址下硬件观察点（访问即断）
+     (gdb) continue                  # 运行，popad 访问该地址时触发
      ```
    - OEP 特征：一段函数序言（`push ebp; mov ebp,esp`），其后紧跟大量正常 API 引用。
 

@@ -32,7 +32,7 @@ description: 反混淆：花指令、控制流平坦化、字符串加密。触�
 
 ### D-810（IDA 插件，可选）
 
-- GitHub `secure-software-engineering/D-810` release，复制到 IDA `plugins/` 目录（要求 IDA 8.0+）
+- GitHub `secure-software-engineering/D-810` release，复制到 IDA `plugins/` 目录（要求 IDA 8.2+）
 - 功能：控制流平坦化自动还原（Deobfuscate 菜单）
 - 验证: IDA 菜单出现 D-810 项
 

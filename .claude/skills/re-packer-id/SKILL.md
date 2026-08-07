@@ -39,7 +39,7 @@ description: 壳与混淆器识别：签名/节名/EP/熵。触发词：查壳�
 ### 熵计算（python3 为主，ent/binwalk 可选）
 
 - python3: `apt install python3` / 多数系统自带；验证 `python3 --version`
-- ent（可选）: `apt install ent` / `brew install ent`；验证 `ent -h`
+- ent（可选）: `apt install ent` / `brew install ent`；验证 `ent`（无参打印 usage）
 - binwalk（可选，熵图）: `apt install binwalk` / `brew install binwalk`；验证 `binwalk -E sample.exe | head`
 
 ### pefile（可选，PE 节/EP/导入表脚本）
