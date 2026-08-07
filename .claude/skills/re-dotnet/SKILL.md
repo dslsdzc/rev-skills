@@ -41,14 +41,16 @@ description: .NET CIL 逆向：dnSpy/ILSpy 反编译、de4dot 去混淆、Confus
 ### de4dot（GitHub release，去混淆）
 
 - GitHub `de4dot/de4dot` release `de4dot.exe`；Linux/macOS 需 mono:
-  - `apt install mono-devel` / `dnf install mono-devel` / `pacman -S mono`；macOS `brew install mono`
+  - `apt install mono-devel` / `dnf install mono-devel`；Arch: `yay -S mono-git`（AUR——mono 自 2021 年起不在官方仓库，AUR 亦无稳定 `mono` 包，仅 `mono-git`）；macOS `brew install mono`
   - 运行: `mono de4dot.exe --help`；Windows 直接 `de4dot.exe --help`
 - 验证: `--help` 正常输出
 
-### dotnet-bundle-extractor（.NET 单文件解包，可选但常用）
+### 单文件 bundle 解包（sfextract / ILSpy 内置，可选但常用）
 
-- `dotnet tool install -g dotnet-bundle-extractor`
-- 验证: `dotnet-bundle-extractor --help`
+- 零额外工具: ILSpy 7.1+ GUI 直接 `File > Open` 单文件 bundle，7.2+ 右键 `Extract package entry` 导出内嵌程序集
+- CLI: `dotnet tool install -g sfextract`（Droppers/SingleFileExtractor，MIT；注意 `dotnet-bundle-extractor`/`dotnet-bundle-extract` 这两个包名在 NuGet 并不存在）
+- 用法: `sfextract sample.exe -o extracted/`（不带 `-o` 只列出 bundle 内文件）
+- 验证: `sfextract --help`
 
 ## 操作步骤
 
@@ -93,7 +95,7 @@ description: .NET CIL 逆向：dnSpy/ILSpy 反编译、de4dot 去混淆、Confus
    - 残留混淆（字符串仍密文）→ 坑 2 手动方案
 
 5. **动态侧（可选；沙箱内执行 [[re-sandbox]]）**：
-   - Frida: `pip install frida-tools`；`frida sample.exe -l hook.js`，hook 关键方法（如解密函数、`HttpClient` 调用点）在运行时 dump 明文/URL
+   - Frida（native 层）: `pip install frida-tools`；`frida sample.exe -l hook.js`，用 `Interceptor` hook 底层 native 调用（如 `HttpClient` 背后的 socket 读写/`SSL_read`、解密函数所在 native 库）在运行时 dump 明文/URL——stock frida-tools 无法按方法名直接 hook .NET 托管方法；托管层需 CLR 桥（如 MonarchSolutions/frida-clr）或改走下方 dotnet-dump / dnSpy 调试
    - dotnet-dump（进程内取运行时数据）:
      ```sh
      dotnet tool install -g dotnet-dump
@@ -114,5 +116,5 @@ description: .NET CIL 逆向：dnSpy/ILSpy 反编译、de4dot 去混淆、Confus
 - **ConfuserEx 字符串加密 + 控制流**：现象——反编译只见 `smethod_0("密文")` 调用、if/while 变 switch 分发；原因——ConfuserEx 默认同时启用字符串加密与控制流混淆；对策——`de4dot -p ce` 自动还原；残留时在解密方法返回处动态读明文（沙箱内），或还原解密循环用脚本批量解
 - **de4dot 对旧版本/新混淆器失效**：现象——日志 `Unknown obfuscator` 或产物仍混淆；原因——de4dot 维护停滞，混淆器新版特征未收录；对策——换社区 fork（de4dot-cex / de4dot-modified），或手动：定位字符串解密函数 → 分析算法 → python3 复刻 + 动态验证
 - **dnSpy 仅 Windows**：现象——Linux/WSL 双击 dnSpy.exe 报错无法运行；原因——WinForms + .NET Framework 的 GUI 工具；对策——Linux/macOS 用 ILSpy（GUI 或 `ilspycmd`），坚持 dnSpy 可 Wine 跑
-- **.NET 自包含发布（单文件）**：现象——`file` 显示普通 PE、工具打开无托管结构/反编译为空；原因——self-contained single-file 把 host + 运行库 + IL 捆成一个 native 可执行；对策——先解包：`dotnet-bundle-extractor sample.exe -o extracted/`，对解出的程序集再反编译
+- **.NET 自包含发布（单文件）**：现象——`file` 显示普通 PE、工具打开无托管结构/反编译为空；原因——self-contained single-file 把 host + 运行库 + IL 捆成一个 native 可执行；对策——先解包：`sfextract sample.exe -o extracted/`（或 ILSpy 直接打开/导出），对解出的程序集再反编译
 - **混合模式程序集**：现象——反编译只见少量托管类，主逻辑找不到；原因——C++/CLI 或 wrapper 把 native 代码与托管混合；对策——托管侧按本技能，native 侧转 [[re-binary-core]]（[[re-ghidra]] / [[re-imports]]）

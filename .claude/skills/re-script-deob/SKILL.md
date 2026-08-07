@@ -30,7 +30,7 @@ description: 脚本/宏去混淆：PowerShell、VBA、JavaScript。触发词：P
 
 ### xxd / sed（十六进制与文本处理）
 
-- Debian/Ubuntu: `apt install xxd`（新版本独立包，旧版本在 `vim-common`）；Fedora: `dnf install xxd`；Arch: `pacman -S xxd`
+- Debian/Ubuntu: `apt install xxd`（新版本独立包，旧版本在 `vim-common`）；Fedora: `dnf install vim-common`（xxd 传统由 vim-common 提供，F38+ 也有独立 `xxd` 子包）；Arch: `pacman -S xxd`
 - macOS: 自带（vim 附送）
 - Windows: 无自带 xxd——用 WSL 或 PowerShell `Format-Hex`
 - sed 全平台自带；验证: `xxd -v && sed --version`
@@ -81,7 +81,7 @@ description: 脚本/宏去混淆：PowerShell、VBA、JavaScript。触发词：P
 4. **VBA（olevba 提取宏 + 还原）**：
    ```sh
    olevba -c sample.docm > macro.txt                 # 提取宏源码
-   olevba --decode -c sample.docm > macro_decoded.txt  # 自动解常见字符串混淆
+   olevba --decode -c sample.docm > macro_decoded.txt  # 自动解常见字符串混淆（--decode 自 oletools 0.24/2015 起就有，无版本门槛）
    ```
    - 手动还原：`Chr(65)` 拼接用 python3 换算 ASCII；`StrReverse(...)` 反转；`Evaluate("...")` 里的执行串
    - 找自动执行入口：`AutoOpen` / `Document_Open` / `Workbook_Open` / `Auto_Open`

@@ -115,4 +115,4 @@ description: Java 字节码逆向：CFR/JD-GUI、jar 解包、Java 加固。触�
 - **ProGuard 改名后靠字符串交叉引用**：现象——反编译全是 `a/b/c` 类、`a(...)` 方法，无法定位目标逻辑；原因——ProGuard shrink+obfuscate 重命名抹掉语义；对策——从字符串入手：grep 明文 URL/提示语 → 在反编译产物里找引用它的类（`grep -rn "提示语" cfr_out/`）→ 沿调用链恢复语义
 - **Allatori/字符串加密需先解密**：现象——反编译只见 `StringEncryptor.decrypt("...")` 调用，看不到任何明文；原因——字符串运行时才解密；对策——静态定位解密算法与 key → python3 复刻批量还原；或动态在解密调用后取明文（JDB `eval` / Frida），沙箱内执行
 - **反编译不完全正确**：现象——CFR/JD-GUI 输出语法错误、goto/label 混乱、try-catch 结构诡异、lambda 还原失败；原因——字节码到 Java 不存在无损还原；对策——对照 `javap -c -p` 字节码手工修正，多反编译器交叉验证
-- **Java 加固（如 Virbox）类似壳需先脱**：现象——JD-GUI 打开报错/空白、`javap` 输出损坏、文件头非标准；原因——加固器加密 class 字节码、运行时才解密（本质是壳）；对策——先脱加固：运行时 dump class（`-Xbootclasspath`/attach agent 或专用脱壳工具）→ 对脱出的标准 class 再反编译；思路同 [[re-anti-analysis]] 的"先脱壳后分析"
+- **Java 加固（如 Virbox）类似壳需先脱**：现象——JD-GUI 打开报错/空白、`javap` 输出损坏、文件头非标准；原因——加固器加密 class 字节码、运行时才解密（本质是壳）；对策——先脱加固：运行时 dump class（attach agent / 专用脱壳工具为主；`-Xbootclasspath` 仅 JDK 8 可用，JDK 9+ 已移除该选项）→ 对脱出的标准 class 再反编译；思路同 [[re-anti-analysis]] 的"先脱壳后分析"
