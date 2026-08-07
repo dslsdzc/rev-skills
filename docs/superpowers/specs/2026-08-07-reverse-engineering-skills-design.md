@@ -103,6 +103,7 @@
 |---|---|---|
 | **Linux** | 分析 Windows PE 程序 | **Wine 直读进程内存**：wine 运行 PE → `gdb attach` 或读 `/proc/<pid>/mem`——**无需整机虚拟化**；脱壳/读内存直接对 Wine 进程操作。比 QEMU 全套虚拟化轻一个量级 |
 | **Linux** | 跑非本机架构程序 | QEMU 用户态仿真（`qemu-<arch>`）优先，全系统仿真仅必要时用 |
+| **Linux** | **内存转储的极端段** | `[vsyscall]`（固定地址 `0xffffffffff600000`，只执行 `--xp`）、`[vdso]`/`[vvar]`：`/proc/<pid>/mem` 读取会失败，gdb 访问报错属正常。**转储前必须按 `/proc/<pid>/maps` 过滤这些段**（只 dump `r--p`/`rw-p` 可读映射），否则 dump 含垃圾页、脱壳/分析全被污染。识别特征：`maps` 中 `[vsyscall]`/`[vdso]`/`[vvar]` 名称、地址落在 `0xffffffffff6xxxxx` 高段、无文件路径的匿名 `00:00` 映射 |
 | **Windows** | 读目标进程内存 | 需装 Sysinternals 套件（`procdump`）/ `DumpIt` 做内存转储 + Volatility 分析；attach 需要管理员权限 |
 | **macOS** | attach/调试 | SIP 与 TCC 限制：调试工具需授权（Developer Tools 权限），`lldb` attach 前检查 |
 | **WSL** | 分析 Windows 侧目标 | WSL 无法直接 attach Windows 进程——跨边界的分析走 Windows 侧工具，WSL 内只做文件/静态分析 |
