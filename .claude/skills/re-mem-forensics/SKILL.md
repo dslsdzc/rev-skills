@@ -20,7 +20,7 @@ description: >
 
 ### volatility3 —— 内存取证主力（Python 3.8-3.11）
 
-- 全平台: `pip install volatility3`（命令为 `vol`）；注意 volatility3 要求 **Python 3.8-3.11**，Python 3.12+ 安装或运行会报错——先 `python3 --version` 确认，版本过高用 pyenv/venv 建 3.8-3.11 环境再装
+- 全平台: `pip install volatility3`（命令为 `vol`）；注意 volatility3 官方支持 **Python 3.8-3.11**，更高版本视 volatility3 版本而定——先 `python3 --version` 确认，版本不匹配用 pyenv/venv 建 3.8-3.11 环境再装
 - Windows/WSL: 同上 pip 方案（WSL 内可分析 Windows dump，见 [[platform-tips]] WSL 分支）
 - 验证: `vol -h`；`vol -f dump.raw windows.info` 能输出镜像信息且不报符号错误
 - 符号文件：首次运行对应插件时从 https://downloads.volatilityfoundation.org/ 下载符号表（Linux 为 `linux/` 下对应内核版本），网络受限或下载失败时用 `--offline` + 预置符号目录，否则插件报 MissingSymbol 类错误
@@ -80,7 +80,7 @@ description: >
    vol -f dump.raw windows.lsadump           # LSA 凭据（缓存密码/域凭据，mimikatz 同源线索）
    vol -f dump.raw windows.cachedump         # 域缓存凭据
    ```
-   - hashdump/lsadump 命中即凭据泄露证据，记录来源（Lsass 内存）与时间戳；离线破解交给 [[re-keygen]] 之外的密码工具（hashcat/john），本技能不破解
+   - hashdump/lsadump 命中即凭据泄露证据，记录来源（Lsass 内存）与时间戳；离线破解交给 hashcat/john 等密码工具，本技能不破解
    - 提取可疑对象：`windows.dumpfiles`（指定文件）或 malfind/pslist `--dump`（`vol -f dump.raw windows.pslist --dump --pid <pid>` 导出进程内存）；每个对象算 sha256 存档
    - 取证时间线（如需要）：`vol -f dump.raw windows.timeliner --output=csv` 生成事件时间线，供报告与 [[re-ioc]] 引用
 

@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-46 个逆向工程技能，覆盖恶意软件分析、软件逆向、固件/嵌入式、协议逆向、移动应用、脱壳/反混淆、软件破解、CTF。**通用、可发布**：不假设用户已装任何工具，每个技能自带跨 OS 安装指引。
+58 个逆向工程技能，覆盖恶意软件分析、软件逆向、固件/嵌入式、协议逆向、移动应用、脱壳/反混淆、软件破解、托管代码、取证/情报、CTF。**通用、可发布**：不假设用户已装任何工具，每个技能自带跨 OS 安装指引。
 
 > ⚠️ **免责声明**：本技能库仅用于安全研究与授权范围内的分析。请遵守所在司法辖区的法律法规。
 
@@ -43,12 +43,12 @@ claude plugin add DslsDZC/aihk
 | GitHub Copilot | `--target copilot` → `.github/copilot-instructions.md` | 规则聚合 |
 | Windsurf | `--target windsurf` → `.windsurf/rules/*.md` | 规则聚合 |
 
-## 技能导航（46）
+## 技能导航（58）
 
-入口 → 8 大类网关 → 37 原子技能，详见 `.claude/skills/` 与 `docs/skill-template.md`。快速索引：
+入口 → 10 大类网关 → 47 原子技能，详见 `.claude/skills/` 与 `docs/skill-template.md`。快速索引：
 
 - **re-analyze**：入口（探测 → 偏好 → 识别 → 编排）
-- **re-binary-core**：re-triage、re-format-pe/elf/macho、re-imports、re-ghidra、re-ida、re-radare2、re-gdb、re-x64dbg、re-lldb、re-tracing、re-memdump
+- **re-binary-core**：re-triage、re-format-pe/elf/macho、re-imports、re-ghidra、re-ida、re-radare2、re-gdb、re-x64dbg、re-lldb、re-tracing、re-memdump、re-windbg、re-binaryninja、re-emulation、re-kernel、re-game
 - **re-malware**：re-sandbox、re-behavior、re-ioc
 - **re-firmware**：re-fw-extract、re-fw-rootfs、re-fw-emulate、re-hardware-io
 - **re-protocol**：re-netcap、re-proto-rev、re-crypto-id、re-crypto-keys、re-crypto-decrypt
@@ -56,6 +56,8 @@ claude plugin add DslsDZC/aihk
 - **re-anti-analysis**：re-packer-id、re-unpack-simple、re-unpack-advanced、re-deobfuscate
 - **re-cracking**：re-license、re-patching、re-keygen
 - **re-ctf**：re-angr、re-z3
+- **re-managed**：re-dotnet、re-java、re-script-deob
+- **re-forensics**：re-mem-forensics、re-ti
 
 ## 设计原则
 

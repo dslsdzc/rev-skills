@@ -3,7 +3,7 @@
   "owner": "DslsDZC",
   "version": "0.1.0",
   "schemaVersion": 1,
-  "description": "通用逆向工程技能库：46 个技能（恶意软件/固件/协议/移动/脱壳/破解/CTF）",
+  "description": "通用逆向工程技能库：58 个技能（恶意软件/固件/协议/移动/脱壳/破解/托管/取证/CTF）",
   "plugins": [
     {
       "name": "re-skills",

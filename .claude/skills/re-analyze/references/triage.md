@@ -14,8 +14,11 @@
 | 移动 App 分析 | re-mobile 网关 → APK(re-apk) / iOS(re-ios) → 动态(re-frida) →（若含原生库）re-binary-core |
 | 一般软件逆向 / 看逻辑 | re-binary-core 网关 → 初勘(re-triage) → 格式(re-format-*) → 反编译(re-ghidra/ida/radare2) → 按需动态 |
 | CTF 赛题 | re-ctf 网关 → 题型识别 → re-angr / re-z3 / 反混淆(re-deobfuscate) →（底座）re-binary-core |
+| .NET/Java/脚本样本 | re-managed 网关 → dotnet/java/script-deob →（恶意场景）re-malware |
+| 内存取证/威胁情报 | re-forensics 网关 → mem-forensics → ti →（衔接）re-ioc |
 
 ## 复合任务示例
 
 - "脱壳 → 静态 → 动态 → C2 协议 → 报告"：re-anti-analysis → re-binary-core → re-malware(re-sandbox) → re-protocol → re-ioc
+- ".NET 样本 → 恶意判定 → 内存取证"：re-managed(dotnet) →（恶意场景）re-malware → re-forensics(mem-forensics → ti) → re-ioc
 - 每个环节完成后检查是否有新证据改变后续路径（如动态分析发现加壳 → 回退 re-anti-analysis）。
