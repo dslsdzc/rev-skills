@@ -26,12 +26,12 @@ description: WASM 逆向：格式解析、wasm2wat、浏览器侧。触发词：
 ### wasmtime（WASI CLI 运行时，--invoke 直调导出函数）
 
 - 官方安装器（全平台，装到 `~/.wasmtime/bin`）: `curl https://wasmtime.dev/install.sh -sSf | bash`
-- Debian/Ubuntu（bookworm+）: `apt install wasmtime`；Fedora: `dnf install wasmtime`；Arch: `pacman -S wasmtime`；macOS: `brew install wasmtime`；Windows: `winget install BytecodeAlliance.Wasmtime`
+- Debian/Ubuntu: 无官方包——用官方安装脚本/二进制（install.wasmtime.dev）或源码构建；Fedora: 官方仓库无 CLI 包——用官方安装脚本或第三方仓库（GetPageSpeed/COPR）；Arch: `pacman -S wasmtime`；macOS: `brew install wasmtime`；Windows: `winget install BytecodeAlliance.Wasmtime`
 - 验证: `wasmtime --version`
 
 ### wasm3（轻量解释器，无 WASI 依赖也可跑，嵌入式/快速验证场景）
 
-- Arch: `pacman -S wasm3`；macOS: `brew install wasm3`
+- Arch: 官方仓库无 wasm3——AUR（如 wasm3 包）或源码构建；macOS: `brew install wasm3`
 - Debian/Ubuntu/Fedora 无官方包 → GitHub `wasm3/wasm3` release 下载对应平台单文件二进制，或源码构建: `git clone --depth 1 https://github.com/wasm3/wasm3 && cmake -B build -S wasm3 && cmake --build build`
 - 验证: `wasm3 --version`
 
@@ -76,7 +76,7 @@ description: WASM 逆向：格式解析、wasm2wat、浏览器侧。触发词：
    ```
    - 与 WAT 对照：wasm-decompile 可读性好但丢部分类型/边界信息；关键函数以 `wasm2wat` 产出的 WAT 为准精读
    - 入口定位：`(export "checkPassword" ...)` → JS 侧 `instance.exports.checkPassword`；import 的函数 → 到 JS 胶水找实现（坑 2）
-   - 字符串：`wasm-objdump -s sample.wasm` dump 数据段；WAT 里找 `(data (i32.const 偏移) "字符串")`，把代码里 `i32.const 偏移` 映射回字符串（坑 1）
+   - 字符串：`wasm-objdump -s sample.wasm` dump 全部 section 原始内容（hex dump，含 Data 段；Data section 亦可从 `-x` 输出读）；WAT 里找 `(data (i32.const 偏移) "字符串")`，把代码里 `i32.const 偏移` 映射回字符串（坑 1）
    - 函数多/疑似混淆时先用 wasm-decompile 粗读，挑出目标函数再精读
 
 4. **浏览器侧（DevTools Sources / JS 调用面）**：
@@ -114,7 +114,7 @@ description: WASM 逆向：格式解析、wasm2wat、浏览器侧。触发词：
 
 ## 常见坑与陷阱
 
-- **字符串在 data 段不在代码里**：现象——wasm2wat/反编译只见 `i32.const 偏移` 数字，grep 不到任何明文；原因——wasm 没有字符串类型，字符串常量存 Data 段、代码用内存地址引用；对策——`wasm-objdump -s sample.wasm` dump 数据段（WAT 里看 `(data (i32.const 偏移) "…")`），把偏移映射回引用处
+- **字符串在 data 段不在代码里**：现象——wasm2wat/反编译只见 `i32.const 偏移` 数字，grep 不到任何明文；原因——wasm 没有字符串类型，字符串常量存 Data 段、代码用内存地址引用；对策——`wasm-objdump -s sample.wasm` dump 全部 section 原始内容（hex dump，Data 段在其中；也可从 `-x` 输出读 Data section）（WAT 里看 `(data (i32.const 偏移) "…")`），把偏移映射回引用处
 - **imports 是 JS 边界不是库调用**：现象——wasm 文件里找不到关键校验/解密逻辑；原因——wasm 的 import 由宿主 JS 注入（`WebAssembly.instantiate(bytes, { env: {...} })`），敏感逻辑在 JS 侧；对策——`wasm-objdump -x` 列出 Import section → 到 JS 胶水代码找对应实现（[[re-script-deob]]）——wasm 只证明"调用了什么"，不证明"它做了什么"
 - **wasm 混淆（wasm-obfuscator 等）先反混淆再分析**：现象——wasm2wat 输出大段控制流扁平化、死代码、`select` 噪音，字符串被切碎/加密，函数名全抹；原因——混淆器做控制流平坦化 + 字符串加密 + 名称抹除；对策——binaryen 逐遍优化还原平坦化：`wasm-opt --flatten --simplify-locals --vacuum --dce -O3` 多轮迭代；字符串加密需定位解密逻辑（思路同 [[re-deobfuscate]]，注意解密函数可能是 import——回到坑 2）
 - **BigInt 调用约定**：现象——JS 调 wasm 导出函数报 `TypeError: Cannot convert a BigInt value to a number`，或 i64 参数静默截断；原因——i64 参数/返回值在 JS↔wasm 边界只能走 BigInt（Number 仅 2^53 精度）；对策——JS 侧 `instance.exports.f(1n, 2n)` 传 BigInt；wasmtime `--invoke` 参数按 JSON 解析不支持 BigInt——需要时写 node 胶水；复刻算法用 Python int / JS BigInt，别用 Number
