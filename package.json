@@ -1,0 +1,11 @@
+{
+  "name": "re-skills",
+  "version": "0.1.0",
+  "description": "通用逆向工程 AI 技能库：46 个技能 + 多工具安装器（Claude Code/Gemini/Cline/Codex/Cursor/Copilot/Windsurf）",
+  "type": "module",
+  "bin": { "re-skills": "bin/install.mjs" },
+  "scripts": { "test": "node --test tests/" },
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "keywords": ["reverse-engineering", "skills", "malware-analysis", "firmware", "claude-code"]
+}
