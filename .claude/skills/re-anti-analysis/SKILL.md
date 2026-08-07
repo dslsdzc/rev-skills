@@ -3,7 +3,7 @@ name: re-anti-analysis
 type: gateway
 description: >
   反分析对抗网关。编排：壳识别 → 简单壳脱壳 → 强壳脱壳 → 反混淆。
-  子技能：[[re-packer-id]] [[re-unpack-simple]] [[re-unpack-advanced]] [[re-deobfuscate]]。
+  子技能：[[re-packer-id]] [[re-unpack-simple]] [[re-unpack-advanced]] [[re-deobfuscate]] [[re-evasion]]。
   触发词：脱壳、查壳、加壳识别、壳、UPX、VMProtect、Themida、反调试、反混淆、花指令、unpack、anti-analysis。
 ---
 
@@ -171,6 +171,7 @@ description: >
 - **目标只是确认壳**（"这是什么壳"）→ [[re-packer-id]] 即可，不进入脱壳
 - **脱壳后仍有代码混淆**（花指令 / 平坦化 / 字符串加密）→ [[re-deobfuscate]]
 - **目标已确认无壳** → 不需要本网关，转 [[re-binary-core]]（[[re-ghidra]] / [[re-ida]] / [[re-radare2]]）直接分析
+- **检测规避/EDR 对抗（AMSI/ETW 绕过、无文件、lolbin 链，样本被检测"为什么"）** → [[re-evasion]]（动态优先，配 [[re-sandbox]] / [[re-memdump]]）
 - 脱壳全程需要读进程内存 → [[re-memdump]]（OEP 后默认转储）；Windows 调试 → [[re-x64dbg]]；Linux/Wine 调试 → [[re-gdb]]
 
 ## 跨域联合
@@ -182,6 +183,7 @@ description: >
 - 动态辅助：[[re-gdb]]（断 OEP、Wine 下脱壳）、[[re-x64dbg]]（Windows OEP + Scylla）、[[re-memdump]]（OEP 后默认转储）、[[re-tracing]]（反调试样本检测 trace 环境时配合）
 - 脱壳产物验证必须沙箱：[[re-sandbox]]（[[platform-tips]] 最高原则）
 - 壳层常量污染指纹：[[re-crypto-id]] 加壳样本先脱壳再做常量表指纹
+- 检测规避对抗：[[re-evasion]] —— 壳/混淆是"静态反分析"，AMSI/ETW/无文件/lolbin 是"检测对抗"，同属本网关（动态分析强制 [[re-sandbox]]）
 - 本网关被 [[re-analyze]] 的 triage「样本带壳 / 脱壳」路径调用（re-anti-analysis → packer-id → unpack-* → 验证）
 
 ## 常见坑与陷阱
