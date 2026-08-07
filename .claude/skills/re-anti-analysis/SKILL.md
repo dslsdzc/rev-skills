@@ -32,6 +32,7 @@ description: >
 - **AD4 NtGlobalFlag 异常→查堆调试标志**
 - **AD5 CheckRemoteDebuggerPresent 不可靠**：可能被 hook/替换/底层
 - **AD6 NtQueryInformationProcess 是重点**：ProcessDebugPort/ProcessDebugObjectHandle/ProcessDebugFlags
+- **AD24 断 WinAPI 没命中 → 可能直接走 Native API**：程序不一定调用 IsDebuggerPresent 等高层 API，可能直接调用 NtQueryInformationProcess、NtSetInformationThread、Zw 系列。分析时向下追。
 
 ### 异常机制
 
@@ -59,6 +60,7 @@ description: >
 - **AD39 父进程检测**：explorer→app vs debugger→app 启动链
 - **AD40 命令行检测**：debugger/sandbox/分析环境参数
 - **AD31 程序只在 x64dbg 崩→查调试器特征**：x64dbg 模块/窗口类/DLL 名称/内存特征
+- **AD36 CPU 特征检测可能用于反调试**：程序可能读取 CPUID、MSR、TSC 特性，用于区分真实机器、VM、调试环境。
 
 ### 硬件痕迹
 
@@ -89,6 +91,7 @@ description: >
 ### 方法论
 
 - **AD18 TLS Callback 比 Entry Point 更早执行**：入口断点没触发反调试→查 TLS
+- **AD23 入口断点没触发 → 不一定没执行，可能被 TLS callback 抢先**：Windows PE 的 TLS callback 可以在 Entry Point 前执行代码。遇到程序启动即退出、入口断点无效，优先检查 TLS Directory。典型场景：anti-debug 初始化、壳初始化、环境检测。
 - **AD19 反调试逻辑不要急着 patch**：先确认检测结果如何影响控制流——退出/降功能/假数据/延迟
 - **AD20 多点反调试→找汇聚点**：多个检测汇聚到一个 flag/状态变量/错误处理函数
 - **AD45 Patch 反调试点可能触发完整性检测**：JNZ→JMP/CALL→NOP 触发 CRC/hash/self-check，先找检测链
