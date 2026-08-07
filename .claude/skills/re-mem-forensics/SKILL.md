@@ -101,3 +101,6 @@ description: >
 - **malfind 误报 → 假阳性**：现象——`windows.malfind` 命中大量私有执行页，但 dlllist 无异常模块、提取对象跑不了；原因——加载器/垃圾回收器/JIT 的正常 RWX 页也会被判定"异常"，malfind 只看内存属性不看执行语义；对策——用 dlllist 路径、hollow 检测、提取对象实际反编译（[[re-binary-core]]）三重交叉确认后再定论
 - **只信 pslist 漏掉已终止进程**：现象——pslist 干净但网络/文件行为指向某 PID 已消失；原因——进程已被终止，常规列表不含；对策——补跑 `windows.psscan`（池扫描找残留对象），取证要求尽量全。
 - **取证报告缺时间线**：现象——报告只有结论没有事件先后（"什么时候注入、什么时候外连"）；原因——未生成时间线证据；对策——用 `windows.timeliner` 生成 CSV 时间线，进程/网络/凭据事件按时间归档，作为 [[re-ioc]] 报告证据段
+- **内存内函数补丁型绕过 → 常规插件全干净**：现象——malfind/dlllist 全部干净，但样本的 ETW/AMSI 明显被抑制（日志缺失/扫描无响应）；原因——绕过不是注入新代码，而是改写已加载模块的函数头（如 `EtwEventWrite` 前 4 字节 patch 成 `ret 14`、`AmsiScanBuffer` 前 3 字节改成 `return 0`、`send` 开头跳到匿名私有内存），不产生新执行页也不改页权限，malfind 无感；对策——用检测 in-memory 函数补丁的社区插件，或把内存中模块 dump 出来与磁盘原始 DLL 对照函数头字节
+- **睡眠混淆 → 转储里载荷"消失"**：现象——转储中找不到植入体（无注入页、无落地文件），行为分析却确认 C2 植入体在运行；原因——Ekko/Foliage 类睡眠混淆在休眠期把 VAD 权限翻转为 `PAGE_NOACCESS`/`PAGE_READWRITE` 并把内容加密，唤醒瞬间才还原执行；对策——用 vadinfo 找权限翻转/NOACCESS 的区段，按轮转密钥还原休眠中的加密页，或配合 [[re-emulation]] 在唤醒点模拟执行抓取明文
+- **BitLocker FVEK 可从 RAM 恢复（主版本无此插件）**：现象——拿到加密磁盘镜像+内存转储但没有密码，数据提取停滞；原因——系统运行时全卷加密密钥（FVEK）残留在 RAM（未被安全擦除），但主版本 Volatility 3 没有内置插件；对策——用社区 `volatility3-bitlocker` 插件跑 `windows.bitlocker.BitlockerFVEKScan`（`--tags FVEc Cngb`）提取 FVEK，再用 `dislocker -k` 挂载解密；v3 插件对旧内核结构报错时回退 Volatility 2 + breppo/Volatility-BitLocker
