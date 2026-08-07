@@ -1,0 +1,84 @@
+---
+name: re-unpack-advanced
+description: 强壳脱壳：VMProtect/Themida。触发词：VMProtect、Themida、强壳、虚拟化壳、手动脱壳
+---
+
+# 脱壳：强壳（VMProtect/Themida）
+
+## 何时使用 / 何时不用
+
+- 用：[[re-packer-id]] 识别为强壳 / 虚拟化壳（VMProtect、Themida、Enigma 等）；简单壳手动流程失败（可能套强壳）；样本存在多层反调试拦截普通调试
+- 用：需要干净样本做深度静态分析 / 破解前置（[[re-cracking]] 路径）
+- 不用：简单压缩壳（[[re-unpack-simple]] 秒解，别用重流程）
+- 不用：虚拟化代码可接受黑盒标注的目标（标记绕过比还原省 10 倍时间，见坑 2）
+- 注意：本技能高成本、易失败——先评估目标价值与"只标注不还原"是否够用
+
+## 工具准备
+
+### 调试器（按 OS）
+
+- Linux / Wine 下调试 PE: [[re-gdb]] —— `apt install gdb` / `dnf install gdb` / `pacman -S gdb`；**Wine 直读**：`wine sample.exe` 后 `gdb -p <pid>` attach（见 [[platform-tips]] Linux 分支）
+- Windows: [[re-x64dbg]] —— 官方 release zip；x64dbg 对强壳的附加/断点支持更好，强壳场景优先
+- WSL: 无法 attach Windows 进程，走 Windows 侧工具（[[platform-tips]] WSL 分支）
+- 验证: `gdb --version`；x64dbg 能载入样本并单步
+
+### Scylla（IAT 修复，含重定向处理）
+
+- x64dbg 新版内置；独立版 GitHub `NtQuery/Scylla` release
+- Wine 环境：独立版 Scylla 可 attach Wine 进程（失败则在 Windows 环境完成）
+- 验证: x64dbg 插件菜单出现 Scylla
+
+### scyllaHide（反反调试，GitHub）
+
+- GitHub `x64dbg/ScyllaHide` release zip；x64dbg 插件目录放入后启用；release 内含 Wine 加载方案
+- 作用：批量隐藏调试痕迹（NtQueryInformationProcess、ThreadHideFromDebugger、时间差、调试端口等）
+- 验证: x64dbg 插件菜单出现 ScyllaHide，勾选选项后能隐藏对应检测
+
+### 脚本工具（脱壳辅助/标注）
+
+- idapython: IDA 自带（[[re-ida]] 工作流），验证：IDA 内 `File > Script Command` 能执行 Python
+- rizin 脚本: `apt install rizin` / `dnf install rizin` / `pacman -S rizin` / `brew install rizin`，验证 `rizin -v`
+
+## 操作步骤
+
+按顺序执行，每步记录结果（证据路径 + sha256，见 [[re-triage]]）。
+
+1. **反调试对抗（scyllaHide 思路）**：
+   - 核心检测点：`NtQueryInformationProcess`（ProcessDebugPort / ProcessDebugFlags / ProcessDebugObjectHandle）、`NtSetInformationThread`（ThreadHideFromDebugger）、时间差（`RDTSC` / `GetTickCount` / `QueryPerformanceCounter`）、调试端口（`NtQuerySystemInformation`）、窗口 / 进程名枚举。
+   - x64dbg + ScyllaHide：插件菜单勾选全部选项 → 以隐藏状态启动目标。Wine 下用 release 内 wine 方案加载后再 attach。
+   - **先攻最外层**：检测通常是链式，先静态定位最外层检测点（用 [[re-ida]] / [[re-radare2]] 找 `NtQueryInformationProcess` 的 xref），scyllaHide 批量隐藏 + 剩余单点 patch（见坑 1）。
+
+2. **找 OEP（堆栈回溯 / 内存断点组合）**：
+   - 堆栈回溯：强壳 stub 尾部以 `ret` 回到 OEP——单步 / 断点停在 `ret`，看栈顶地址即 OEP 线索（stub 常多段、多线程，多断几次取规律）。
+   - 内存断点组合：`bp VirtualAlloc`（x64dbg；gdb/Wine 用 `break *VirtualAlloc`）→ 每次返回后检查分配区域是否被写入可执行内容 → 对该区域下内存访问断点（View > Memory Map > 目标节 > Set breakpoint on access）→ 在"最后一次解密写入"后断下，附近即 OEP。
+   - OEP 特征：函数序言（`push ebp; mov ebp,esp`）+ 密集正常 API 引用。记录 OEP 地址与镜像基址。
+
+3. **转储（默认转储优先）**：
+   - Linux/Wine：运行到 OEP 后 `gcore -o out <pid>`（默认转储优先，完整流程见 [[re-memdump]]；转储前按 maps 过滤 vsyscall/vdso；时机见 [[platform-tips]] 关键经验）。
+   - Windows：x64dbg 到 OEP → Scylla → Attach → 填 OEP → Dump。
+   - 转储前后各存 sha256，便于对比验证。
+
+4. **IAT 修复（Scylla，含重定向处理）**：
+   - `Plugins > Scylla > IAT Autosearch` → `Get Imports` → 逐项检查 "invalid" 导入。
+   - **重定向处理**：强壳把 API 调用劫持到壳 stub（VM 内转跳）——对指向 VM stub 的无效项：记录重定向关系（原始 API → stub 地址），用 idapython / rizin 脚本批量把 stub 标注回真实 API；无法解析的项标记并在后续分析中手工补（先 `Get Imports` 确认大部分正常 API 已解析）。
+   - `Fix Dump` 输出修复后 exe；重新反编译验证导入表（[[re-ghidra]] / [[re-ida]]）。
+
+5. **虚拟化代码区域标注（不还原则标记绕过）**：
+   - 定位 VM 入口：VMProtect 的 VM_Entry 形态 `push imm32; mov eax, imm; jmp vm_handler`（Themida 类似，节名 `.vmp0`/`.vmp1`/`.themida`）。
+   - **标注而非还原**：把虚拟化函数标为黑盒（记录入口地址、参数个数、调用点清单），后续分析用动态观察输入/输出（[[re-gdb]] / [[re-x64dbg]] 断在 VM 入口记录参数与返回值）替代静态还原。确需还原的极少数关键校验（如注册码验证）才投入逆向 VM 字节码。
+   - 产出：`vm_blackbox.txt` 标注清单（地址 → 说明），随分析报告存档。
+
+## 跨域联合
+
+- [[re-anti-analysis]]：工作流第 4 步（强壳分支）固定调用本技能；识别不出 / 简单壳流程失败的未知壳也走本流程
+- [[re-analyze]] 的 triage「样本带壳 / 脱壳」路径调用
+- [[re-malware]]：强壳恶意样本（VMProtect 加壳的常见）
+- [[re-cracking]]：破解前置——带强壳先脱壳，再定位授权逻辑
+- 配套：[[re-memdump]]（默认转储）、[[re-sandbox]]（脱壳产物复跑验证）、[[re-tracing]]（反调试检测 trace 环境时配合）、[[re-ida]] / [[re-radare2]]（静态定位检测点与 VM 入口）
+
+## 常见坑与陷阱
+
+- **反调试链多层 → 先攻最外层**：现象——scyllaHide 全开仍被踢，或过了一个检测又被下一个拦；原因——检测是链式的（外层过才触发内层）；对策——逐层攻：先静态定位最外层检测点（xref `NtQueryInformationProcess` / 时间差函数），scyllaHide 批量隐藏常规项，剩余单点 patch 后继续
+- **VM 代码还原成本高 → 标记而非还原**：现象——陷在 VMProtect 字节码逆向里数天，进度停滞；原因——虚拟机指令集私有、还原工程量巨大；对策——把虚拟化区域标为黑盒，动态观察输入输出（断 VM 入口记参数/返回值），只还原真正关键的小段（如注册码校验）
+- **多线程壳（监控线程）干扰**：现象——调试中被踢、进程自毁、断点打上就被线程改掉；原因——壳起监控线程检测调试状态；对策——入口处挂起多余线程（x64dbg `Threads` 面板 Suspend；gdb `info threads` 后单线程 continue），只在目标线程内推进
+- **壳检测调试器环境**：现象——一开调试器进程就退出 / 立即自毁；原因——检测调试端口、父进程名、窗口名（`FindWindowA`）、时间差；对策——ScyllaHide 隐藏 + 调试器进程改名 + 先静态 patch 检测点再 attach；仍在沙箱快照内操作（[[re-sandbox]]）
