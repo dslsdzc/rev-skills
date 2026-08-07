@@ -22,19 +22,26 @@
 **① 环境探测（自动，`references/probe.sh`）**：
 
 - **硬件**：CPU 架构（`uname -m`）、核心数（`nproc`）、内存总量（`free -g`）——用于评估工具可行性（Ghidra 建议 ≥4GB 可用内存；angr 符号执行吃内存；QEMU 仿真按架构选内核）
-- **已装逆向工具**：`which` 探测 ghidra / ida / radare2 / gdb / frida / binwalk / qemu / jadx / angr / z3 等清单
-- 探测失败（如 Windows 无 `uname/free`）→ 退化为向用户询问
+- **已装逆向工具**：`which` 探测 ghidra / ida / radare2 / gdb / frida / binwalk / qemu / jadx / angr / z3 等清单——**仅作可选优化**：探测到已装工具则优先使用；**默认假设空白环境（用户机器无任何已装工具）**，未探测到工具时按对应技能的「工具准备」章节引导安装，绝不因"没装"而卡住流程
+- 探测失败（如 Windows 无 `uname/free`）→ 退化为向用户询问硬件情况
 
 **② 偏好询问（用户选择，问题集在 `references/preferences.md`）**：
 
 | 问题 | 选项 | 说明 |
 |---|---|---|
-| 反编译器选择 | IDA / Ghidra / radare2 / **自动推荐** | 默认自动推荐（根据探测结果：装了哪个、内存够不够） |
+| 反编译器选择 | IDA / Ghidra / radare2 / **自动推荐** | 推荐依据：免费 vs 商业、平台支持、内存可行性——**不是已装哪个**（通用场景默认没装任何工具） |
 | 分析深度 | 快速结论 / 标准分析 / 深度报告 | 决定走哪条流程路径与产出规模 |
 | 输出报告 | 要 / 不要 | 决定是否走报告流程（IOC/YARA 等） |
 | 平台确认 | 自动识别 / 手动指定 | 文件存在时自动识别为主 |
 
-偏好询问**一次完成**，结果存入会话变量，贯穿本次分析全程——被调用的子技能读取该状态（如用户选 Ghidra → 所有反编译步骤直接走 `re-ghidra` 工作流；探测到内存 <4GB → 提示避免 angr 或先加内存）。
+**反编译器选择依据**（写入 `references/preferences.md`，不依赖已装工具）：
+
+- **Ghidra**：免费开源、跨平台（Win/Linux/macOS）、Linux 最顺——**通用场景默认推荐**
+- **IDA**：商业付费（有 7.x 免费版）、Windows 生态最强、插件丰富——用户明确选或目标为 Windows 闭源软件时推荐
+- **radare2/rizin**：命令行轻量、终端友好、脚本化强——内存紧张或 CLI 工作流时推荐
+- 内存 <4GB → 提示 Ghidra 可能吃力，建议轻量工具（radare2）或先加内存
+
+偏好询问**一次完成**，结果存入会话变量，贯穿本次分析全程——被调用的子技能读取该状态（如用户选 Ghidra → 所有反编译步骤直接走 `re-ghidra` 工作流；未装该工具 → 先执行其「工具准备」安装步骤）。
 
 **③ 任务识别与编排**：根据输入（文件路径 / 描述 / 请求）判断任务类型，查 `references/triage.md` 决策表，编排调用大类网关。复合任务（命中多个大类）按依赖顺序串联。
 
@@ -55,7 +62,7 @@
 
 每个网关 SKILL.md 必含三部分：**该大类完整工作流**、**何时用哪个原子技能（选择树）**、**跨域联合章节**。
 
-### 2.3 第 3 层 — 原子技能（31 个）
+### 2.3 第 3 层 — 原子技能（37 个）
 
 | 大类 | 原子技能 |
 |---|---|
@@ -68,7 +75,7 @@
 | `re-cracking` | `re-license`、`re-patching`、`re-keygen` |
 | `re-ctf` | `re-angr`、`re-z3` |
 
-总数：**1 入口 + 8 网关 + 31 原子 = 40 技能**。
+总数：**1 入口 + 8 网关 + 37 原子 = 46 技能**。
 
 ### 2.4 跨大类引用机制
 
@@ -126,7 +133,7 @@ aihk/
 ├── bin/install.mjs                  # 安装器（--target 多工具）
 ├── bin/convert.mjs                  # 转换器：SKILL.md → Cursor/Copilot/Windsurf 规则格式
 ├── .claude-plugin/marketplace.json  # claude plugin add 支持
-├── .claude/skills/                  # 40 个技能（标准结构）
+├── .claude/skills/                  # 46 个技能（标准结构）
 │   └── re-analyze/
 │       ├── SKILL.md                 # 入口：环境探测 → 偏好询问 → 任务识别 → 编排
 │       ├── references/probe.sh      # 硬件与工具自动探测脚本
@@ -177,8 +184,8 @@ aihk/
 
 ## 6. 成功标准
 
-- 40 个技能全部通过 validate（合法 frontmatter、无死链、含工具准备）
-- `probe.sh` 能输出 CPU/内存/已装工具清单（Linux/macOS），Windows 下降级为询问
+- 46 个技能全部通过 validate（合法 frontmatter、无死链、含工具准备）
+- `probe.sh` 能输出 CPU/内存/已装工具清单（Linux/macOS），Windows 下降级为询问；空白环境（无任何工具）时输出安装引导而非中断
 - `re-analyze` 完整走通"探测 → 偏好 → 识别 → 分派"，偏好状态能被子技能读取
 - `npx re-skills install --target all --dry-run` 输出全部安装计划
 - 转换器对每种规则类 target 生成产物成功
