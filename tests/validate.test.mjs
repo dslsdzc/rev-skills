@@ -32,12 +32,21 @@ test('no-tools 叶子技能报缺工具准备', () => {
   assert.ok(errors.some(e => e.includes('工具准备')));
 });
 
-test('broken-link 报死链接', () => {
-  const { errors } = checkSkillDir(FIX + 'broken-link', { knownSkills: ['re-abc'] });
+test('broken-link 报死链接但放行 references 链接', () => {
+  const { errors } = checkSkillDir(FIX + 'broken-link', {
+    knownSkills: ['re-abc'],
+    knownRefs: new Set(['platform-tips']),
+  });
   assert.ok(errors.some(e => e.includes('re-does-not-exist')));
+  assert.ok(!errors.some(e => e.includes('platform-tips')));
+});
+
+test('gateway-skill 豁免工具准备检查', () => {
+  const { errors } = checkSkillDir(FIX + 'gateway-skill');
+  assert.ok(!errors.some(e => e.includes('工具准备')));
 });
 
 test('collectSkills 收集全部技能目录名', () => {
   const names = collectSkills(FIX);
-  assert.deepEqual([...names].sort(), ['bad-name', 'broken-link', 'good-skill', 'no-tools']);
+  assert.deepEqual([...names].sort(), ['bad-name', 'broken-link', 'gateway-skill', 'good-skill', 'no-tools']);
 });

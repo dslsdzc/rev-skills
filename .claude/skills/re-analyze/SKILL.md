@@ -1,5 +1,6 @@
 ---
 name: re-analyze
+type: entry
 description: >
   逆向分析唯一入口。流程：环境探测(probe.sh) → 偏好询问(分析目标/反编译器/深度/报告/平台) →
   任务识别(triage.md) → 编排调用大类网关。
