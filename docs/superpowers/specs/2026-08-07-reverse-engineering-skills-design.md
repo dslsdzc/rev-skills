@@ -21,6 +21,7 @@
 
 **① 环境探测（自动，`references/probe.sh`）**：
 
+- **OS 平台**：Linux / macOS / Windows / WSL（`uname -s` + WSL 检测）——决定后续一切工具选择与平台经验分支
 - **硬件**：CPU 架构（`uname -m`）、核心数（`nproc`）、内存总量（`free -g`）——用于评估工具可行性（Ghidra 建议 ≥4GB 可用内存；angr 符号执行吃内存；QEMU 仿真按架构选内核）
 - **已装逆向工具**：`which` 探测 ghidra / ida / radare2 / gdb / frida / binwalk / qemu / jadx / angr / z3 等清单——**仅作可选优化**：探测到已装工具则优先使用；**默认假设空白环境（用户机器无任何已装工具）**，未探测到工具时按对应技能的「工具准备」章节引导安装，绝不因"没装"而卡住流程
 - 探测失败（如 Windows 无 `uname/free`）→ 退化为向用户询问硬件情况
@@ -94,6 +95,20 @@
 1. 每个网关 SKILL.md 含「跨域联合」章节，声明引用场景与顺序（引用即 `[[链接]]`，被引用技能按需加载）
 2. `re-analyze/references/triage.md` 决策表处理复合任务编排（如"脱壳 → 静态 → 动态 → C2 协议 → 报告"）
 
+## 2.5 平台经验知识库（`re-analyze/references/platform-tips.md`）
+
+每个技能的工具准备与操作步骤按 **OS 分支**给出方案；跨大类共享的平台经验沉淀在入口的 `platform-tips.md`，被所有技能引用。初始内容（实战经验，后续扩充）：
+
+| 平台 | 场景 | 经验方案 |
+|---|---|---|
+| **Linux** | 分析 Windows PE 程序 | **Wine 直读进程内存**：wine 运行 PE → `gdb attach` 或读 `/proc/<pid>/mem`——**无需整机虚拟化**；脱壳/读内存直接对 Wine 进程操作。比 QEMU 全套虚拟化轻一个量级 |
+| **Linux** | 跑非本机架构程序 | QEMU 用户态仿真（`qemu-<arch>`）优先，全系统仿真仅必要时用 |
+| **Windows** | 读目标进程内存 | 需装 Sysinternals 套件（`procdump`）/ `DumpIt` 做内存转储 + Volatility 分析；attach 需要管理员权限 |
+| **macOS** | attach/调试 | SIP 与 TCC 限制：调试工具需授权（Developer Tools 权限），`lldb` attach 前检查 |
+| **WSL** | 分析 Windows 侧目标 | WSL 无法直接 attach Windows 进程——跨边界的分析走 Windows 侧工具，WSL 内只做文件/静态分析 |
+
+原则：**先给最轻的可行方案**（Wine 直读 > 用户态仿真 > 全系统虚拟化 > 物理机），按平台经验分支执行。
+
 ## 3. 技能统一模板
 
 ### 3.1 原子技能模板
@@ -108,7 +123,9 @@ description: > 中英双语触发词 + 何时使用
 
 ## 何时使用 / 何时不用      ← 明确边界，避免误触发
 ## 工具准备                  ← 必含：每工具 apt/dnf/pacman/brew/pip/cargo/choco
-                             ← 安装命令 + 验证命令 + 平台备注（Windows 替代方案）
+                             ← 安装命令 + 验证命令
+                             ← 按 OS 分支：Linux/macOS/Windows/WSL 各自的方案与替代工具
+                             ← 优先引用 platform-tips.md 的平台经验
 ## 操作步骤                  ← 可执行、具体（沿用 porting-minecraft-mod 的硬性执行风格）
 ## 跨域联合                  ← 本技能在哪些复合任务中被其他大类引用
 ## 常见坑与陷阱
@@ -136,8 +153,9 @@ aihk/
 ├── .claude/skills/                  # 46 个技能（标准结构）
 │   └── re-analyze/
 │       ├── SKILL.md                 # 入口：环境探测 → 偏好询问 → 任务识别 → 编排
-│       ├── references/probe.sh      # 硬件与工具自动探测脚本
+│       ├── references/probe.sh      # OS/硬件与工具自动探测脚本
 │       ├── references/preferences.md# 偏好问题集与默认值
+│       ├── references/platform-tips.md # 平台经验知识库（Wine 直读/内存转储等）
 │       └── references/triage.md     # 任务类型判定决策表
 └── tests/validate.mjs               # 结构冒烟测试
 ```
@@ -185,7 +203,8 @@ aihk/
 ## 6. 成功标准
 
 - 46 个技能全部通过 validate（合法 frontmatter、无死链、含工具准备）
-- `probe.sh` 能输出 CPU/内存/已装工具清单（Linux/macOS），Windows 下降级为询问；空白环境（无任何工具）时输出安装引导而非中断
+- `probe.sh` 能输出 OS 平台 + CPU/内存/已装工具清单（Linux/macOS），Windows 下降级为询问；空白环境（无任何工具）时输出安装引导而非中断
+- `platform-tips.md` 覆盖 5 个平台分支（Linux/macOS/Windows/WSL/跨平台），被至少 10 个技能引用
 - `re-analyze` 完整走通"探测 → 偏好 → 识别 → 分派"，偏好状态能被子技能读取
 - `npx re-skills install --target all --dry-run` 输出全部安装计划
 - 转换器对每种规则类 target 生成产物成功
