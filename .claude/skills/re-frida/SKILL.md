@@ -11,7 +11,7 @@ description: >
 
 - 用：需要 hook 函数（拦截 / 改参 / 改返回值）、枚举模块与类、绕过证书校验 / root 检测、观察运行时调用链
 - 用：移动端（Android / iOS）与桌面端（Linux / macOS / Windows）统一的插桩需求
-- 不用：只需静态分析（Android 走 [[re-apk]]，格式走 [[re-format-*]] 系列）
+- 不用：只需静态分析（Android 走 [[re-apk]]，格式走 [[re-format-elf]] / [[re-format-macho]] 系列）
 - 不用：需要系统调用级跟踪（走 [[re-tracing]]）
 - 不用：需要完整调试器体验（断点 / 单步 / 内存，走 [[re-gdb]] / [[re-lldb]] / [[re-x64dbg]]）
 
@@ -127,7 +127,7 @@ description: >
      frida -H 127.0.0.1:27142 -f com.target.app
      ```
    - root 检测对抗：先 hook 检测函数改返回值再插桩目标：`Java.use("com.target.rootcheck").isRooted.implementation = function () { return false; };`
-   - 仍被检测 → frida-gadget 注入 App 进程（`-D` interactive 模式），配合 [[re-apk]] 的 smali 补丁加载 libgadget.so
+   - 仍被检测 → frida-gadget 注入 App 进程（gadget listen（interactive）模式），配合 [[re-apk]] 的 smali 补丁加载 libgadget.so
 
 ## 跨域联合
 

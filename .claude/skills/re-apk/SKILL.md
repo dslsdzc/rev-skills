@@ -61,7 +61,7 @@ description: >
    ```sh
    apktool d app.apk -o out/
    ```
-   解出 `AndroidManifest.xml`、`smali/`（可回编译的字节码）、`res/`、`assets/`、`lib/`。`-s` 不解码资源（只出 smali）、`-r` 不反编译资源，补丁时按需组合。产物比 jadx 更适合改后回编译。
+   解出 `AndroidManifest.xml`、`smali/`（可回编译的字节码）、`res/`、`assets/`、`lib/`。`-s`（`--no-src`）不解码源码（只出资源）、`-r`（`--no-res`）不解码资源（只出 smali），补丁时按需组合。产物比 jadx 更适合改后回编译。
 
 2. **AndroidManifest 入口/权限/组件**：
    ```sh
@@ -87,7 +87,7 @@ description: >
    常用改法：条件跳转取反（`if-eqz` ↔ `if-nez`）、把 `const/4 v0, 0x0` 改成返回常量、把校验方法直接 `return-void`。先 `jadx` 定位逻辑再在对应 smali 里改。目标含签名自校验时补丁可能被拦（见坑 2）。
 
 5. **加固/混淆识别**：
-   - 壳特征：jadx 只见 `com.stub.StubApp` / `com.secneo.apkwrapper` / `com.bangcle.*`（爱加密 / 梆梆 / 乐固等）；`lib/` 多一个壳 so（`libjiagu.so`、`libDexHelper.so`…）；`classes.dex` 体积异常小（真 dex 运行时解密）
+   - 壳特征：jadx 只见壳类（`com.stub.StubApp`＝爱加密、`com.secneo.apkwrapper` / `com.bangcle.*`＝梆梆，乐固等）；`lib/` 多一个壳 so（`libjiagu.so`＝360 加固、`libDexHelper.so`＝爱加密…）；`classes.dex` 体积异常小（真 dex 运行时解密）
    - 资源混淆特征：`res/` 资源路径被随机改名、`resources.arsc` 结构异常
    - 识别为加固 → 转脱壳域（[[re-anti-analysis]]）或动态取内存 DEX（[[re-frida]] / [[re-memdump]]）；资源混淆用 aapt2 还原：
      ```sh

@@ -35,7 +35,7 @@ description: >
 
 - macOS: `xcode-select --install`（Xcode Command Line Tools）
 - Linux 替代: `llvm-otool`（`apt install llvm` / `brew install llvm`）
-- 验证: `otool --version`
+- 验证: `otool -h /bin/ls`
 
 ### 越狱环境（可选）
 
