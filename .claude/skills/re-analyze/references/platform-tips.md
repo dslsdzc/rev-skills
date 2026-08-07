@@ -11,6 +11,9 @@
 
 ### 所有平台
 - 动态分析默认沙箱（见上）。
+- **入口之前执行点**：PE 的 TLS 回调与 ELF 的 `.preinit_array`/`.init_array`/`__libc_start_main` 的 init 参数都在入口点/main 之前执行——只断入口会漏掉入口前逻辑；动态断点设在 `ntdll!LdrpCallInitRoutine`（Windows）与 `__libc_start_main`（Linux）。
+- **工具解析 ≠ 加载器视图**：损坏/歧义的头字段没有唯一正确解析，恶意样本利用解析器差异规避工具——工具报错 ≠ 文件损坏，先手工核对关键头字段，结论对照真实加载器语义复核。
+- **反汇编函数边界有误差**：线性反汇编对 PE（代码节内联跳转表等数据）准确率约 99%，函数边界识别在主流工具中也有 20%+ 误判（尾调用/非标准序言/内联导致）——反编译结论需交叉验证，别全信工具的函数列表。
 
 ### Linux
 - 分析 Windows PE 程序：**Wine 直读进程内存**——wine 运行 PE → `gdb attach` 或读 `/proc/<pid>/mem`，无需整机虚拟化；脱壳/读内存直接对 Wine 进程操作。
@@ -45,3 +48,35 @@
 | 特例②：只需极小特定区段且性能敏感 | **直读** 单区段，同上流程 |
 
 **关键经验**：转储时机——脱壳须等进程运行到 OEP 完全解密后再 dump；直读前必须先查 maps；dump 前过滤 `[vsyscall]`/`[vdso]`。
+
+## 来源（Task 15 调研，2026-08）
+
+按查询分组的检索链接（WebSearch 实测结果）：
+
+- TLS 回调 / init_array / 入口之前执行点：
+  - DShield: How Malware Defends Itself Using TLS Callback Functions — https://secure.dshield.org/diary/How+Malware+Defends+Itself+Using+TLS+Callback+Functions/6655
+  - Mandiant: Newly Observed Ursnif Variant Employs Malicious TLS Callback Technique — https://cloud.google.com/blog/topics/threat-intelligence/newly-observed-ursnif-variant-employs-malicious-tls-callback-technique-achieve-process-injection/
+- ELF vs PE 分析误区：
+  - USENIX Security 2016 (Andriesse): 函数边界/线性反汇编误差 — https://www.usenix.net/sites/default/files/conference/protected-files/security16_slides_andriesse.pdf
+  - HAL 论文: PE 解析无唯一正确解（解析器差异规避） — https://hal.science/hal-04611598v1/file/publi-6603.pdf
+  - CSDN 文库: Linux ELF 思维在 PE 上的 19 个符号假设性错误（__libc_start_main 幻觉/.interp 缺失误判） — https://wenku.csdn.net/column/38b5um95xq
+  - inventivehq: Understanding PE, ELF, and Mach-O — https://inventivehq.com/blog/executable-file-formats-guide
+  - binutils 邮件列表: COFF vs ELF 未定义符号处理差异 — https://www.sourceware.org/pipermail/binutils/2025-June/142006.html
+  - CyberChallenge 2024 课件: 伪造 ELF 头字段使 readelf 报错 — https://cyberchallenge.it/assets/data/workshop/2024/files/CCIT2024%20-%20Workshop%20-%20Keynote%20-%20Van%20Eeden.pdf
+- 进程内存取证 vsyscall/vdso：
+  - StackOverflow: What are vdso and vsyscall（固定地址/ASLR/auxv） — https://stackoverflow.com/questions/19938324/what-are-vdso-and-vsyscall/19942352#19942352
+  - DEF CON 23 (O'Neil): Advances in Linux Forensics (ECFS，core 低分辨率与重建) — https://infocon.org/cons/DEF%20CON/DEF%20CON%2023/DEF%20CON%2023%20presentations/DEF%20CON%2023%20-%20Ryan-O%27Neil-Advances-in-Linux-Forensics-ECFS.pdf
+- 恶意持久化（注册表/WMI/计划任务）：
+  - win-persistence-checker（注册表 ASEP 检测工具） — https://github.com/cwsecur1ty/win-persistence-checker
+  - analyzing-malware-persistence-with-autoruns — https://github.com/mukul975/anthropic-cybersecurity-skills/blob/main/skills/analyzing-malware-persistence-with-autoruns/SKILL.md
+  - RootGuard knowledge-base: persistence TA0003 技术库（隐藏计划任务 SD 删除） — https://github.com/andranglin/RootGuard/blob/master/knowledge-base/mitre-aligned-threat-dectection/persistence-ta0003-techniques.md
+  - Blue-Team-Scripts: Malware Persistence Mechanisms — https://deepwiki.com/jwardsmith/Blue-Team-Scripts/6.2-malware-persistence-mechanisms
+- 进程注入检测：
+  - detecting-t1055-process-injection-with-sysmon（Sysmon 事件 8/10/7/25） — https://github.com/seikaikyo/dash-skills/blob/main/external/anthropic-cybersecurity-skills/skills/detecting-t1055-process-injection-with-sysmon/SKILL.md
+  - detecting-process-injection-techniques — https://github.com/mukul975/Anthropic-Cybersecurity-Skills/blob/main/skills/detecting-process-injection-techniques/SKILL.md
+  - Hexnode: What is Process Injection（mavinject 等 LOLBin 滥用） — https://www.hexnode.com/blogs/explained/what-is-process-injection/
+- YARA 规则最佳实践：
+  - Trail of Bits: yara-rule-authoring（atom 质量/条件顺序/模块取舍） — https://github.com/trailofbits/skills/blob/e8cc5baf9329ccb491bfa200e82eacbac83b1ead/plugins/yara-authoring/skills/yara-rule-authoring/SKILL.md
+  - performing-threat-hunting-with-yara-rules — https://github.com/seikaikyo/dash-skills/blob/main/external/anthropic-cybersecurity-skills/skills/performing-threat-hunting-with-yara-rules/SKILL.md
+  - VMware Security Blog: Hunting IcedID and unpacking automation（针对壳结构写规则） — https://blogs.vmware.com/security/2021/07/hunting-icedid-and-unpacking-automation-with-qiling.html
+  - Google GTI: YARA-X Livehunt 规则编写 — https://security.googlecloudcommunity.com/google-threat-intelligence-3/agentic-google-threat-intelligence-query-to-help-write-yara-x-rules-for-livehunts-7242

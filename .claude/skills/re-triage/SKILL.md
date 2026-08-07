@@ -123,3 +123,4 @@ description: >
 - **strings 中文环境编码**：中文串常为 GBK 或 UTF-16LE，默认 `strings` 输出乱码/丢失——按 `-e` 参数指定编码，必要时 `xxd` 目测
 - **hash 先做再动文件**：任何分析前先 sha256 存证；动态执行会污染样本文件，没有原始哈希就无法对照
 - 大文件 strings 全量输出可达数百 MB → 先 `-n` 设最小长度并 `head` 截断
+- **工具报错 ≠ 文件损坏**：现象——`file`/`readelf`/`objdump` 对样本报错或输出中断；原因——对抗样本伪造头字段（节头大小异常、程序头计数离谱、缺失 dynamic section）使解析器失败，并非文件真的损坏；对策——先用 `xxd` 手工核对关键头字段（e_lfanew / e_shoff / e_shnum / e_shentsize），按真实值手工修复后再解析，别把样本当垃圾丢弃

@@ -111,3 +111,6 @@ description: >
 - **行为被沙箱检测绕过**：现象——样本在沙箱里只做无害行为或什么都不做，换真实机才发作；原因——沙箱检测（VM 特征、交互检查、延迟触发，见 [[re-sandbox]] 坑 4 与 [[re-anti-analysis]] 域）；对策——延长观察窗口（数小时~数天）、伪造交互（输入/鼠标事件）、配合 [[re-sandbox]] 的 INetSim 完整网络、必要时用 [[re-anti-analysis]] 静态还原触发条件
 - **只看进程树漏注入**：现象——进程树里只有样本自身，但恶意行为发生在别的进程里；原因——注入型样本自进程表现无害，恶意逻辑在宿主进程执行；对策——必须查注入特征序列（步骤 1 的 API 序列），行为证据以被注入目标进程的内存与模块为准
 - **持久化藏于计划任务/WMI 常被忽略**：现象——重启后样本复活，Run 键/服务里查不到；原因——攻击者优先用计划任务（schtasks）与 WMI 事件订阅做持久化，常规检查覆盖不到；对策——持久化清单必须包含 `schtasks /query` 与 WMI __EventConsumer 查询（步骤 2），逐项核对创建时间与命令内容
+- **隐藏的计划任务常规查询查不到**：现象——`schtasks /query` 与任务计划 GUI 都看不到任务，重启后样本仍复活；原因——攻击者删除任务的安全描述符（SD）注册表值或篡改 Index 元数据，任务从常规查询中隐藏；对策——直接检查 `C:\Windows\System32\Tasks\*.xml` 与注册表 `HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Schedule\TaskCache`，SD 缺失即告警
+- **注入检测看系统侧信号，不只盯 API 序列**：现象——进程树无异常、API 序列未捕获，注入却已发生；原因——注入目标多为受信任系统进程，API 监控被绕过或覆盖不到；对策——配合 Sysmon 事件：8（CreateRemoteThread）、10（ProcessAccess 带 PROCESS_VM_WRITE/PROCESS_VM_OPERATION/PROCESS_CREATE_THREAD）、7（异常路径 ImageLoaded）、25（ProcessTampering，内存镜像与磁盘不一致=空洞化）；空洞化样本用 PE-sieve/Hollows Hunter 扫描（内存 PE 头与磁盘不匹配）
+- **持久化位置超出 Run 键/服务**：现象——Run 键与服务清单干净，登录/启动后样本仍执行；原因——攻击者用 Winlogon Userinit、AppInit_DLLs、IFEO、COM 劫持、服务失败恢复"Run a Program"等位置（Autoruns 扫描 18+ 类 ASEP）；对策——持久化清单补全上述位置（步骤 2），逐项核对路径、签名与创建时间

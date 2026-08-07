@@ -98,3 +98,6 @@ description: >
 - **stripped 后符号只剩 dynsym**：`readelf -s` 列表骤减，恢复靠字符串交叉引用 + 签名匹配，别期待完整符号
 - **GOT 覆盖是常见攻击点**：非全 RELRO 时 GOT 可写——逆向/利用分析都要确认 `GNU_RELRO` 与 `BIND_NOW`
 - 检查跨架构 ELF（ARM/MIPS）时本机 objdump 报 "unknown format" → 用对应交叉工具或 QEMU 仿真（见 [[platform-tips]] Linux 分支）
+- **早期初始化链不止 init_array**：现象——查过 `.init_array` 却仍漏掉更早执行的逻辑（如 `strcmp@GOT` 被 hook 但 main 断点处未复现）；原因——动态链接器初始化早期会先跑 `.preinit_array`（比 .init_array 更早），恶意构造器可在 main 之前覆写 GOT/装钩子；对策——`.preinit_array` 与 `.init_array` 都反汇编，在 `__libc_start_main` 调用 init 处断点，核对 GOT 条目在 main 前是否已被改写
+- **伪造节头使 readelf 报错**：现象——`readelf -S`/`-l` 报错或输出中断（e_shentsize 异常、程序头计数离谱、dynamic section 缺失）；原因——混淆/对抗样本伪造头字段使工具解析失败；对策——`xxd` 手工核对 ehdr 关键字段（e_shoff/e_shnum/e_shentsize/e_phnum），按真实值修正后重解析，别当"损坏文件"丢弃
+- **fini 不在 main 后立即执行**：现象——在 main 返回处断点找不到"收尾"逻辑；原因——`fini`/`.fini_array` 在退出清理阶段执行（与 rtld_fini、atexit、析构函数一起），不紧跟 main；对策——收尾逻辑在 exit 路径（exit_group / rtld_fini）上断点，别在 main 尾部找

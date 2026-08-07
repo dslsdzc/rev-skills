@@ -116,3 +116,5 @@ description: >
 - **转储时机过早 = 壳的初始状态**：在壳解密前 dump 拿到的是压缩/加密数据——脱壳样本必须等到 OEP 后（见 [[platform-tips]] 关键经验）
 - **/proc/pid/mem 无脑 open 必报错**：直接 `open('/proc/pid/mem').read()` 会失败（偏移非法/权限）——必须 maps 定址 + SIGSTOP + chunked pread
 - core 文件可达数 GB——先 `file out` 确认是 ELF core，再按需定向提取，别整文件导入工具
+- **从转储重建进程时 vDSO 不可移植**：现象——重建/复现进程镜像后程序仍跳回原 vDSO 地址，或 `call *%gs:0x10` 间接调用断掉；原因——vDSO 地址记录在进程栈 auxv 的 `AT_SYSINFO`/`AT_SYSINFO_EHDR`，且 glibc 有缓存，修补 auxv 也不一定能重定位；对策——重建镜像时把 vDSO 相关调用视为必然失效（该页直接跳过），分析以其余映射为准
+- **gcore 取证分辨率有限**：现象——core 里查共享库注入/函数指针重定向困难，堆栈信息残缺；原因——传统 core 是内核按段快照，无每进程 profile 与符号重建；对策——普通逆向 gcore 够用；深度取证（定位注入点/hook）改用 ECFS 类内核级转储（core_pattern 挂钩重建 `.symtab`/`.dynsym`）或配合 `/proc/<pid>/maps` 手工重建
