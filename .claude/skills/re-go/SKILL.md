@@ -34,8 +34,8 @@ description: Go 二进制逆向：符号保留、字符串表、goroutine。触�
 
 - 无发行版官方包 → 官方安装（需 Go 工具链）: `go install github.com/mandiant/GoReSym@latest`
 - 用法: `GoReSym -t -d -p sample > gosyms.json`（-t 类型、-d 标准库包、-p 文件路径）
-- 导入反编译器: `goresym_rename.py`（GoReSym 仓库脚本，社区版含 Ghidra 导入支持，见仓库 PR #11）
-- 验证: `GoReSym -about` 输出版本；输出 JSON 含函数名/地址
+- 导入反编译器: `goresym_rename.py`（GoReSym 官方仓库脚本，Ghidra/IDA 导入，PR #11 已合入）
+- 验证: `GoReSym -about` 输出 about 与 license 信息；输出 JSON 含函数名/地址
 
 ### redress（Go 二进制元数据，可选）
 

@@ -48,6 +48,17 @@ description: Rust 二进制逆向：符号、monomorphization、所有权模式�
 - 装法同 c++filt（binutils 自带）
 - 验证: `nm --version`
 
+### rustc --emit（编译产物理解，可选）
+
+- `cargo rustc -- --emit=asm` / `--emit=llvm-ir` / `--emit=mir`：用匹配版本对样本重编译，得到带符号的汇编/IR/MIR，对照理解编译器展开（monomorphization 泛型实例、async 状态机、drop glue 插入点）
+- `--emit=link` 为默认产物；`--emit=metadata` 不含代码但含类型/依赖信息
+- 验证: `rustc --emit=asm hello.rs` 产出 `.s` 文件
+
+### bloaty（体积分析，坑 2 用；安装见 [[re-go]] 工具准备）
+
+- 用途: `bloaty -d symbols sample` 按符号统计体积占比（monomorphization 展开体量可观）
+- 验证: `bloaty --version`
+
 ## 操作步骤
 
 按顺序执行，每步记录证据（路径 + sha256，见 [[re-triage]]）。
@@ -99,8 +110,8 @@ description: Rust 二进制逆向：符号、monomorphization、所有权模式�
 
 ## 常见坑与陷阱
 
-- **符号被 strip，恢复极难**：现象——`nm` 无输出、函数全 `sub_*`；原因——release profile 设 `strip = true` 或发布流程 strip（Rust 没有类似 Go pclntab 的恢复结构）；对策——先确认 `nm` 是否真的空（多数发布版默认保留符号，坑 3 步骤 2 排查）；strip 后用 strings 找 panic 文案/错误信息（含文件路径与类型线索），`.eh_frame`/`.gcc_except_table` 的 FDE 可还原函数边界（Ghidra 分析选项开启 unwind 解析）
+- **符号被 strip，恢复极难**：现象——`nm` 无输出、函数全 `sub_*`；原因——release profile 设 `strip = true` 或发布流程 strip（Rust 没有类似 Go pclntab 的恢复结构）；对策——先确认 `nm` 是否真的空（多数发布版默认保留符号，操作步骤 2 排查）；strip 后用 strings 找 panic 文案/错误信息（含文件路径与类型线索），`.eh_frame`/`.gcc_except_table` 的 FDE 可还原函数边界（Ghidra 分析选项开启 unwind 解析）
 - **monomorphization 大量重复代码**：现象——同一逻辑函数出现几十上百份，仅类型不同，函数列表爆炸；原因——泛型按每个类型参数实例化，每实例一份完整代码（体积也暴涨）；对策——demangle 后按泛型名分组统计，选一个代表性实例分析，同组之间 diff 只比对类型相关分支；体积/重复问题用 bloaty（`bloaty -d symbols`）确认；分析时忽略其余实例
 - **panic 路径与正常路径交织**：现象——反编译里每个下标/`unwrap`/断言都带分支与 panic 调用，可读性被淹没；原因——Rust 在越界索引、`unwrap()`、`assert!` 处插入 `panic_bounds_check`/`core::panicking::panic` 检查（release 也保留索引检查），加上 `unreachable!` 死路径；对策——识别并跳过 `core::panicking::`/`std::panicking::`/`panic_impl` 相关调用与异常分支；panic 文案在 strings 里可见，可反向辅助定位调用点
 - **async/await 状态机展开**：现象——一个 async fn 变成结构体 + 巨大 `match` 状态循环，函数名带 `{{closure}}`/`{{opaque}}`，找不到线性流程；原因——async fn 编译为 Future 状态机，每个 await 点是一个状态与保存点，poll 内按状态转移；对策——按状态号（0..N）追踪转移逻辑，重点读 poll 方法；识别 `core::future`/`std::future::poll_with_tls_context` 调用；tokio 程序找 `tokio::runtime` 符号与 `block_on` 定位入口
-- **v0 新式命名 c++filt 解不了**：现象——`c++filt`/`nm -C` 对 `_RNv...` 原样输出，符号仍是乱码；原因——Rust 1.37+ 默认 v0 mangling（非 Itanium ABI）；对策——统一用 rustfilt（Debian/Ubuntu 官方包 `apt install rustfilt`，其余 `cargo install rustfilt`）批处理 `nm sample | rustfilt`；Ghidra 11+ 内置 demangler 直接自动解
+- **v0 新式命名 c++filt 解不了**：现象——`c++filt`/`nm -C` 对 `_RNv...` 原样输出，符号仍是乱码；原因——v0 mangling 自 1.37 起可选（`-C symbol-mangling-version=v0`），2025 年底起成为默认（此前 2019-2025 年间绝大多数二进制仍是 legacy `_ZN`，`nm -C` 可解）；对策——统一用 rustfilt（Debian/Ubuntu 官方包 `apt install rustfilt`，其余 `cargo install rustfilt`）批处理 `nm sample | rustfilt`；Ghidra 11+ 内置 demangler 直接自动解
