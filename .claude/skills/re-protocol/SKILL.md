@@ -3,7 +3,7 @@ name: re-protocol
 type: gateway
 description: >
   协议逆向网关。编排：捕获 → 加密识别 → 密钥 → 解密 → 状态机重建。
-  子技能：[[re-netcap]] [[re-crypto-id]] [[re-crypto-keys]] [[re-crypto-decrypt]] [[re-proto-rev]]。
+  子技能：[[re-netcap]] [[re-crypto-id]] [[re-crypto-keys]] [[re-crypto-decrypt]] [[re-proto-rev]] [[re-ics]]。
   触发词：协议逆向、抓包、流量分析、解密流量、C2协议、自定义协议、protocol analysis。
 ---
 
@@ -28,6 +28,7 @@ description: >
 - **有流量（pcap / 实时抓包）** → [[re-netcap]]（捕获）→ 看是否密文：
   - 密文（熵高/无结构）→ [[re-crypto-id]] → [[re-crypto-keys]] → [[re-crypto-decrypt]] → 明文后再 [[re-proto-rev]]
   - 明文 → [[re-proto-rev]] 直接重建状态机
+- **工控/SCADA 协议（Modbus/DNP3/OPC UA，端口 502/20000/4840）** → [[re-ics]]（工控流量解析与点表；安全测试边界见 [[re-sandbox]]）
 - **只有二进制样本没有流量**（"协议实现逻辑是什么"）→ 从静态找加密实现 [[re-crypto-id]] → [[re-crypto-keys]] → [[re-crypto-decrypt]]；逻辑深挖转 [[re-binary-core]]（[[re-ghidra]] / [[re-ida]] / [[re-radare2]]）
 - **要理解交互语义**（"客户端和服务端怎么对话""握手过程"）→ [[re-proto-rev]]
 - **只要解密一个已知算法的 blob**（算法/密钥已知）→ 直接 [[re-crypto-decrypt]]

@@ -3,7 +3,7 @@ name: re-firmware
 type: gateway
 description: >
   固件/嵌入式/硬件分析网关。编排：提取 → rootfs → 仿真 → 硬件接口。
-  子技能：[[re-fw-extract]] [[re-fw-rootfs]] [[re-fw-emulate]] [[re-hardware-io]]。
+  子技能：[[re-fw-extract]] [[re-fw-rootfs]] [[re-fw-emulate]] [[re-hardware-io]] [[re-automotive]]。
   触发词：固件分析、固件、IoT、解包固件、rootfs、仿真固件、firmware analysis。
 ---
 
@@ -27,6 +27,7 @@ description: >
 - 已有 rootfs / 解包产物 → [[re-fw-rootfs]] 分析文件系统
 - 需要运行固件观察行为 → [[re-fw-emulate]]（先确认架构，见 [[re-triage]]）
 - 有实物板子 / 需要硬件提取 → [[re-hardware-io]]
+- 汽车 ECU / CAN 总线 / OBD-UDS 诊断 → [[re-automotive]]
 - 见通信（固件回连 / 自定义协议 / 加密通信）→ [[re-protocol]]
 
 ## 跨域联合
