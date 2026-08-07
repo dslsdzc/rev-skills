@@ -70,7 +70,7 @@ description: >
 5. **免费版限制处理**：
    - 免费版无 Hex-Rays: 用反汇编 + idapython（按步骤 4 方式人工还原循环/算法），或直接导出给 Ghidra:
      菜单 `File > Produce file > Dump typeinfo` / 用 idb2pat 生成库签名；或换 [[re-ghidra]] 做反编译
-   - 免费版限制 1MB?（IDA Free 无大小限制但功能裁剪：无 Hex-Rays、无调试器、单处理器）——按裁剪范围调整流程
+   - 免费版功能裁剪：无 Hex-Rays、无调试器、单处理器——按裁剪范围调整流程
 
 ## 跨域联合
 

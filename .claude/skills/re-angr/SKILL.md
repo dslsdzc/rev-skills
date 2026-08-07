@@ -49,7 +49,7 @@ description: angr 符号执行：符号化输入、求解。触发词：angr、�
    - 决定符号化通道——
      - 标准输入：`project.factory.full_init_state(stdin=claripy.BVS('in', 32*8))`（N 字节长度定多少？对照读取点逻辑确认长度，见坑 3）
      - argv：`project.factory.full_init_state(args=["./target", claripy.BVS("arg1", 64*8)])`
-     - 文件：先 `state.posix.get_file(2)` 或 `SimFileStream` 按 fd 符号化；简单场景直接把整个输入区符号化再约束
+     - 文件：`state.fs.insert('/tmp/in', angr.SimFile('in', content=claripy.BVS('in', 32*8)))` 把符号文件插进模拟文件系统，程序 fopen 后即符号化；按 fd 操作用 `state.posix.fd[0]`（fd 0=stdin；fd 1/2 是 stdout/stderr，勿混），或 `os.open()` 所得 fd——简单场景直接把整个输入区符号化再约束
    - 记下：符号化的通道 + 字节数 + 读取点的地址（后续 find / hook 用）
 
 2. **到达目标地址 / 避开地址建模（find / avoid）**：
@@ -60,7 +60,7 @@ description: angr 符号执行：符号化输入、求解。触发词：angr、�
 
 3. **路径约束与求解（solver）**：
    - 找到状态后，约束即该状态路径上累积的条件：`found = simgr.found[0]`
-   - 求解：`flag = found.solver.eval(found.posix.stdin, cast_to=bytes)`（stdin 场景）或按符号变量名求：`found.solver.eval(flag_sym, cast_to=bytes)`
+   - 求解：直接对符号变量求值（不依赖 posix 插件）：`flag = found.solver.eval(inp, cast_to=bytes)`（inp 即步骤 1 创建的 stdin/argv 符号）或按符号变量名求：`found.solver.eval(flag_sym, cast_to=bytes)`
    - 多解时按需加约束（长度 / 可打印字符，见坑 4）：
      ```python
      for c in flag_sym.chop(8): found.solver.add(0x20 <= c, c <= 0x7e)
@@ -72,7 +72,7 @@ description: angr 符号执行：符号化输入、求解。触发词：angr、�
      ```python
      project.hook(addr_of_sleep_or_memset_impl, angr.SIM_PROCEDURES["stubs"]["ReturnUnconstrained"]())
      ```
-     `angr.SIM_PROCEDURES` 自带库（`libc.sleep`、`linux_kernel` 等）优先：`project.hook_symbol("sleep", angr.SIM_PROCEDURES["posix"]["sleep"])`
+     `angr.SIM_PROCEDURES` 自带库（`libc.sleep`、`linux_kernel` 等）优先：`project.hook_symbol("sleep", angr.SIM_PROCEDURES["libc"]["sleep"])`（sleep 属 libc 类目，不是 posix）
    - **限制探索规模**：`simgr = proj.factory.simgr(state, veritesting=True)`（veritesting 合并路径，长循环题常用，见坑 2）；`simgr.explore(find=..., avoid=..., num_find=1)` 找到即停；`stash` 上限 / `lazy_solves` 选项控制
    - **分段探索**：长循环把入口地址 hook 住，先探索到循环边界，再对循环体单独符号化展开（人工定位循环不变量后缩小范围）
    - 仍爆炸 → 回到步骤 1 缩小符号化范围 / 结合人工分析（见坑 2），或换 [[re-z3]] 对已展开的循环体建模

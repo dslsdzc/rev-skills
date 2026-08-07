@@ -68,7 +68,7 @@ description: 授权验证逻辑分析：注册校验定位。触发词：注册�
 
 4. **在线激活 vs 离线校验区分**：
    - 特征：导入表含网络 API（WinINet `InternetOpen*` / `WinHttp*` / `socket`）、激活流程有"输入序列号 → 联网 → 返回激活码"、字符串含服务器 URL / "activation failed"
-   - 在线激活：本地只校验响应格式（伪校验），真实验证在服务器 → 转 [[re-protocol]]（[[re-netcap]] 沙箱抓包 + [[re-crypto-*]] 处理加密）；本地侧只处理响应校验与离线回退逻辑
+   - 在线激活：本地只校验响应格式（伪校验），真实验证在服务器 → 转 [[re-protocol]]（[[re-netcap]] 沙箱抓包 + [[re-crypto-id]] [[re-crypto-keys]] [[re-crypto-decrypt]] 处理加密）；本地侧只处理响应校验与离线回退逻辑
    - 离线校验：算法完全在本地，正常走步骤 3 还原
    - 区分方法：断网运行（沙箱断网）看激活是否失败/超时（[[re-sandbox]] 网络隔离）
 

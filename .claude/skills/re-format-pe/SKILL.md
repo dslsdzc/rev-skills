@@ -81,13 +81,15 @@ description: >
    import pefile
    pe = pefile.PE('sample.exe')
    if hasattr(pe, 'DIRECTORY_ENTRY_TLS') and pe.DIRECTORY_ENTRY_TLS:
-       tlscb = pe.DIRECTORY_ENTRY_TLS.struct.AddressOfCallBacks - pe.OPTIONAL_HEADER.ImageBase
-       rva = tlscb - pe.OPTIONAL_HEADER.ImageBase
-       off = pe.get_offset_from_rva(rva)
-       # 读出回调地址数组直到 0
-       pe.parse_data_directories()
-       for cb in pe.DIRECTORY_ENTRY_TLS.struct.AddressOfCallBacks or []:
-           pass
+       # AddressOfCallBacks 按 VA 存放：VA - ImageBase = RVA（只减一次）
+       cb_rva = pe.DIRECTORY_ENTRY_TLS.struct.AddressOfCallBacks - pe.OPTIONAL_HEADER.ImageBase
+       ptr_size = 8 if pe.FILE_HEADER.Machine == 0x8664 else 4   # 64 位回调指针 8 字节
+       while True:                                                # 回调数组以 0 结尾
+           ptr = int.from_bytes(pe.get_data(cb_rva, ptr_size), 'little')
+           if ptr == 0:
+               break
+           print('TLS callback VA:', hex(ptr))
+           cb_rva += ptr_size
    ```
    简单方法: `objdump -p sample.exe` 输出中查看 TLS 目录表存在与否；存在则用 pefile 打印回调地址列表，逐条看反汇编。回调在入口点（AddressOfEntryPoint）之前执行——恶意样本常在此放解密/反调试代码。
 

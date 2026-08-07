@@ -39,7 +39,7 @@ description: 补丁制作：字节级 patch、指令重写。触发词：打补�
 
 ### 补丁文件工具（导出 diff / patch）
 
-- `radiff2`（rizin 自带，二进制 diff 对比）
+- `rz-diff`（rizin 自带，二进制 diff 对比）/ `radiff2`（radare2 自带，命令兼容）
 - `bsdiff` / `bspatch`：Linux `apt install bsdiff` / macOS `brew install bsdiff`，验证 `bsdiff -h`
 - `xdelta3`：Linux `apt install xdelta3`，验证 `xdelta3 -V`
 - Windows 侧：`llvm-objdump`（LLVM 套件）对比原始字节段
@@ -75,7 +75,7 @@ description: 补丁制作：字节级 patch、指令重写。触发词：打补�
 
 4. **补丁导出（二进制 diff / patch 文件）**：
    - 生成 patch：`bsdiff sample.bak sample.exe sample.patch`（分发时 `bspatch sample.exe sample_patched.exe sample.patch`）；或 `xdelta3 -e -s sample.bak sample.exe sample.patch`
-   - 记录补丁内容清单（地址 → 原始字节 → 新字节），`radiff2 -D sample.bak sample.exe` 输出逐字节差异供报告引用
+   - 记录补丁内容清单（地址 → 原始字节 → 新字节），`rz-diff -D sample.bak sample.exe` 输出逐字节差异供报告引用（radare2 用等价的 `radiff2 -D`）
    - 跨版本适配：不同版本分别生成 patch，清单标注版本号（见坑 4）
 
 5. **多架构（ARM 改 B 指令等）**：
@@ -103,5 +103,5 @@ description: 补丁制作：字节级 patch、指令重写。触发词：打补�
 - **改错分支 → 功能异常**：现象——patch 后启动校验过了，但程序崩溃 / 无限弹窗 / 功能错乱；原因——改的不是授权判定（改到业务分支），或条件方向改反（该 nop 的改成跳转）；对策——步骤 1 先动态确认分支真实走向（错误序列号跑一次看跳转），只做最小改动（1-2 字节），改一处验证一处
 - **自校验检测修改**：现象——补丁版沙箱运行即退出 / 弹"文件已损坏" / 无限重启；原因——程序比对自身字节（CRC / 文件大小 / 节校验），补丁后对不上；对策——步骤 3 定位自校验函数（xref 镜像基址 / 搜 CRC 调用）patch 跳过或重算校验值；先备份原始字节便于回溯
 - **补丁跨版本失效**：现象——同一个补丁在另一版本上无效或破坏程序；原因——版本间偏移变化 / 版本号检测；对策——步骤 4 按版本分别导出 patch 并标注版本；patch 前先确认目标地址字节与预期一致（`xxd` / hexedit 抽查），不一致说明版本不对，不要硬写
-- **签名（Authenticode）失效提示**：现象——Windows 运行补丁版弹"无法验证发布者 / 文件已损坏"；原因——补丁破坏代码签名目录；对策——属预期现象：提示可忽略，或删除签名证书表（`llvm-objcopy --remove-section=.rsrc` 处理证书目录，`pesign -d` 删除签名）；签名不可恢复，勿伪造
+- **签名（Authenticode）失效提示**：现象——Windows 运行补丁版弹"无法验证发布者 / 文件已损坏"；原因——补丁破坏代码签名目录；对策——属预期现象：提示可忽略，或删除签名（`pesign -d` 删除签名；或清空 PE Security 目录项的 offset+size 两项）；签名不可恢复，勿伪造
 - **跳转偏移算错 → 跳飞**：现象——patch 后运行即崩 / 反汇编出现 undefined 指令；原因——改写条件跳转（rel8 ↔ rel32）或 `jmp` 时目标偏移没重算（相对偏移 = 目标 − 下一条指令地址）；对策——用 rizin / Ghidra 反汇编验证 patch 点指令解析与跳转目标正确，短距离优先保留 rel8 形态，超范围才用 rel32
