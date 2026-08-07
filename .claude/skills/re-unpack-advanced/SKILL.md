@@ -82,3 +82,6 @@ description: 强壳脱壳：VMProtect/Themida。触发词：VMProtect、Themida�
 - **VM 代码还原成本高 → 标记而非还原**：现象——陷在 VMProtect 字节码逆向里数天，进度停滞；原因——虚拟机指令集私有、还原工程量巨大；对策——把虚拟化区域标为黑盒，动态观察输入输出（断 VM 入口记参数/返回值），只还原真正关键的小段（如注册码校验）
 - **多线程壳（监控线程）干扰**：现象——调试中被踢、进程自毁、断点打上就被线程改掉；原因——壳起监控线程检测调试状态；对策——入口处挂起多余线程（x64dbg `Threads` 面板 Suspend；gdb `info threads` 后单线程 continue），只在目标线程内推进
 - **壳检测调试器环境**：现象——一开调试器进程就退出 / 立即自毁；原因——检测调试端口、父进程名、窗口名（`FindWindowA`）、时间差；对策——ScyllaHide 隐藏 + 调试器进程改名 + 先静态 patch 检测点再 attach；仍在沙箱快照内操作（[[re-sandbox]]）
+- **硬件断点被壳检测**：现象——ESP 定律的硬件访问断点不触发 / 一下断进程即退出；原因——新版 Themida 等检测硬件调试寄存器（DR0-3）；对策——ScyllaHide 用注入方式隐藏（配套 `HookLibraryx86.dll` + `InjectorCLIx86.exe` 配置），或改用内存断点 / TitanHide，再不行先静态 patch 检测点再 attach
+- **VM 入口特征随构建变异 → 别只靠签名**：现象——按教程特征找 VM 入口 / dispatcher 定位失败，或还原产物错乱；原因——VMProtect 的 handler 每次构建都会变异（同 opcode 不同代码）、dispatcher 含 opaque predicate、多层 VM（VM 套 VM）叠加（见 [[re-deobfuscate]] 的 opaque predicate 处理）；对策——先试自动化框架（x64Unpack 混合仿真 / DragonSlayer 符号执行+污点跟踪），手动时用动态 trace 记录 handler 执行序列，以"字节码指针寄存器 + 循环分发"定位而非固定签名
+- **带强壳名的样本未必启用虚拟化**：现象——DIE 报 VMProtect/Themida 就上全套强壳流程，标准断点技巧其实就能脱出；原因——虚拟化/反调试是壳的配置选项，大量真实样本（RisePro/Amadey/PrivateLoader 等）未启用、无反调试；对策——先试常规流程（VirtualAlloc 断点 + 内存断点 + 单步），确认 VM 分发型入口确实存在再投入高成本还原

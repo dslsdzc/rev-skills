@@ -121,3 +121,5 @@ description: >
 - **网络未隔离样本外联**：现象——样本真实访问了外网 C2 或继续扩散；原因——跳过网络隔离直接联网跑；对策——任何运行前先按步骤 2 三档之一隔离，并验证 ping/curl 的落点
 - **容器共享内核 ≠ 完全隔离**：现象——样本利用内核漏洞或修改 sysctl 等全局配置影响宿主机；原因——Docker 与宿主机共享内核，仅 namespace/cgroup 隔离；对策——高威胁样本用 VM 快照而非容器，容器只用于低风险快速测试
 - **样本逃逸检测 VM 环境**：现象——样本检测到 VM 特征（Guest Additions、vmware 进程、虚拟网卡名）后休眠/退出，行为分析拿不到结果；原因——反分析技术（见 [[re-anti-analysis]] 域）；对策——禁用 Guest Additions、改虚拟硬件指纹、与 [[re-behavior]] 的延迟/交互检查对策配合延长观察
+- **时间检测（RDTSC / Sleep 加速）**：现象——样本睡 30 秒后直接退出或行为异常，或 RDTSC 计时发现"时间不对"；原因——沙箱常 hook/加速计时 API（Sleep/GetTickCount），样本用 RDTSC（配 CPUID 强制 VM exit）、`Sleep`+`GetTickCount` 对比、`GetSystemTimeAdjustment` 等发现异常；对策——识别时间检测点（xref RDTSC/GetTickCount/NtDelayExecution），沙箱保持真实时钟或 patch 检测点后继续（[[re-anti-analysis]] 域），需要长等待时用真实等待而非加速时钟
+- **环境命名与资源阈值检测**：现象——样本在 `sample.exe`/`malware` 目录下不触发恶意行为，改名或调资源后行为差异巨大；原因——检测分析文件名/路径、CPU 核数/内存/磁盘容量阈值、鼠标键盘交互缺失（ATT&CK T1497.001）；对策——样本命名规范化（避免 sample/sandbox/恶意 字样）、沙箱资源充足（≥2 核、≥2GB 内存、正常磁盘容量），配合交互模拟（鼠标移动）与 [[re-behavior]] 的延迟观察

@@ -143,3 +143,4 @@ description: >
 - **目标检测 frida（端口 / 特征）**：现象——spawn 后应用闪退 / 卡死 / 行为异常；原因——应用扫描 27042 端口、frida-server 路径、`frida` 线程名或 maps 特征；对策——步骤 5 改名 + 换端口；仍检测用 frida-gadget 注入（隐藏于进程内）
 - **root 检测拦插桩**：现象——frida 可连接但 hook 不生效或直接退出；原因——应用先做 root / 越狱检测，检测到环境直接退出；对策——先 hook 检测函数返回值（步骤 5 模板），过了检测再 hook 目标函数
 - **JS 脚本静默失败**：现象——脚本加载无报错但 hook 无输出；原因——类名写错、`Java.perform` 外调用 Java API、模块名大小写不符；对策——用步骤 3 的枚举先核对名称，脚本内 `console.log` 打桩定位
+- **hook 导出 API 被壳绕过（直 syscall / API 名哈希）**：现象——成功 hook 了 `IsDebuggerPresent`/`NtQueryInformationProcess` 等导出，反调试照样触发、进程退出；原因——加壳/加固目标不走导入表：自实现 `GetProcAddress`、API 名存哈希，或直接 syscall（内联 `Nt*` 直调），hook 点根本没经过；对策——hook 更深一层（ntdll 的 syscall 包装点）、跟踪 `GetProcAddress`/哈希解析处反推真实调用点，反调试与反 VM（`RegOpenKeyExA`/`GetSystemFirmwareTable`）API 一并 hook（Arkana 项目实战模板），先用 `Process.enumerateModules()`/`enumerateExports` 确认实际调用目标再插桩

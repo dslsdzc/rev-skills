@@ -92,3 +92,6 @@ description: 压缩壳脱壳：UPX/ASPack/FSG。触发词：脱壳、unpack、UP
 - **IAT 不修 → 导入表乱**：现象——脱壳样本反编译里全是 `GetProcAddress` 动态调用、导入表解析失败；原因——导入表由壳在运行时重建，转储未修复；对策——步骤 5 Scylla/ImpREC 修复，修复后重新反编译验证
 - **自校验（CRC）→ 脱壳后需补丁**：现象——脱壳样本沙箱运行即退出 / 弹校验失败；原因——程序比对自身字节（原壳时是压缩数据，脱壳后对不上）；对策——定位校验代码（xref 自身映像基址 / CRC 计算函数）patch 跳过或 hook，验证在沙箱内做
 - **Wine 环境用错调试器**：现象——Windows 调试器在 Wine 下 attach 失败 / 断点不生效；原因——Wine 是 Linux 进程，需 Linux 调试路径；对策——按 [[platform-tips]] Wine 直读：`gdb -p` attach Wine 进程读内存、下断点、`gcore` 转储
+- **双层压缩壳 → ESP 定律要用两次**：现象——ESP 定律断下后进入的仍是解包层，dump 出来还是壳代码，`upx -d` 解一层后 `file` 仍报壳特征；原因——壳套壳（如 ASPack v2.12 第一层解完还有一层在解密 IAT）；对策——第一层落地后继续观察：出现又一次 pushad/popad 周期、或 `VirtualFree` 释放 IAT 解密堆时才是最后一步，跟到最终 `jmp` 并验证目标是真实代码序言（`push ebp; mov ebp,esp` + 密集正常 API 引用）再 dump，别在过渡 jmp 前早一跳
+- **按 FF 25 搜 IAT 不可靠**：现象——按教程二进制搜索 `FF 25`（间接 jmp）找 IAT 起址，找不到或找到错位置；原因——不是所有程序都经间接跳转调 API（直接 `CALL [addr]` 很常见）；对策——用调试器 `Find > All intermodular calls` 定位一个真实程序调用点，顺 `CALL/JMP [addr]` 跟到跳转表顶端计算 IAT 起址与块大小，再填 ImportREC/Scylla
+- **dump 后 PE 头字段未修 → 加载失败**：现象——IAT 修复完样本仍打不开 / "invalid Win32 application" / 加载即崩；原因——转储工具没修 `SizeOfImage`/`NumberOfSections`/`CheckSum`，或 Win7+ 上 LordPE/ImportREC 因 ASLR 失败；对策——Fix Dump 后仍异常就用 pefile 手工核对修正头三字段，必要时关闭随机基址后重新转储
