@@ -3,7 +3,7 @@ name: re-managed
 type: gateway
 description: >
   托管代码逆向网关。编排：识别运行时 → 反编译 → 去混淆 → 恶意场景转 [[re-malware]]。
-  子技能：[[re-dotnet]] [[re-java]] [[re-script-deob]]。
+  子技能：[[re-dotnet]] [[re-java]] [[re-script-deob]] [[re-wasm]]。
   触发词：.NET、dnSpy、ILSpy、Java、jar、字节码、PowerShell混淆、VBA宏、JS去混淆、托管代码、managed code。
 ---
 
@@ -27,6 +27,7 @@ description: >
 - **PE 且确认 .NET 元数据（CLI header / mscoree）** → [[re-dotnet]]（dnSpy/ILSpy 反编译、de4dot 去混淆）
 - **jar / war / class（Java 字节码）** → [[re-java]]（CFR/JD-GUI、javap、加固脱壳）
 - **.ps1 / .docm / .xlsm / .js / .jse / .hta（脚本或宏）** → [[re-script-deob]]（逐层解码，动态执行默认沙箱）
+- **.wasm / WebAssembly 模块（网页/Node 侧载荷）** → [[re-wasm]]（WABT 解析 section、wasm-decompile 反编译、DevTools/wasmtime 动态）
 - **Android DEX** → 不是本网关——转 [[re-mobile]]（[[re-apk]]），其中含 Java 原生逻辑再回 [[re-java]]
 - **仅脚本调用 native 下载的 PE** → 动态侧跟 [[re-malware]]，静态侧回 [[re-binary-core]]
 
