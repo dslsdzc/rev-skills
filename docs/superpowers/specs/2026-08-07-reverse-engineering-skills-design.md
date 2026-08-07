@@ -56,7 +56,7 @@
 | 网关 | 学科 | 核心职责 |
 |---|---|---|
 | `re-binary-core` | 软件逆向核心 | 公共底座：格式、反编译、调试器、静态/动态通用技术 |
-| `re-malware` | 恶意软件分析 | 沙箱、行为分析、IOC/YARA、报告 |
+| `re-malware` | 恶意软件分析 | 沙箱、行为分析、IOC/YARA、报告（`re-sandbox` 为动态分析强制前置） |
 | `re-firmware` | 固件/嵌入式/硬件 | 固件提取、rootfs、QEMU 仿真、JTAG/UART |
 | `re-protocol` | 协议逆向 | 流量捕获、状态机重建、加密识别/密钥/解密 |
 | `re-mobile` | 移动应用 | APK、iOS、Frida |
@@ -104,6 +104,7 @@
 
 | 平台 | 场景 | 经验方案 |
 |---|---|---|
+| **所有平台** | **运行任何样本/动态分析** | **默认沙箱，强制前置**：虚拟机快照 / 容器（Docker、firejail）/ 专用沙箱（Cuckoo/CAPE）；网络隔离（INetSim、fake DNS、断网）。样本可能已被污染或含攻击行为——**静态分析可免沙箱，一切动态执行默认在沙箱内**，分析结束后恢复快照。此原则优先于本表所有其他条目 |
 | **Linux** | 分析 Windows PE 程序 | **Wine 直读进程内存**：wine 运行 PE → `gdb attach` 或读 `/proc/<pid>/mem`——**无需整机虚拟化**；脱壳/读内存直接对 Wine 进程操作。比 QEMU 全套虚拟化轻一个量级 |
 | **Linux** | 跑非本机架构程序 | QEMU 用户态仿真（`qemu-<arch>`）优先，全系统仿真仅必要时用 |
 | **Linux** | **内存转储的极端段** | `[vsyscall]`（固定地址 `0xffffffffff600000`，只执行 `--xp`）、`[vdso]`/`[vvar]`：`/proc/<pid>/mem` 读取会失败，gdb 访问报错属正常。**转储前必须按 `/proc/<pid>/maps` 过滤这些段**（只 dump `r--p`/`rw-p` 可读映射），否则 dump 含垃圾页、脱壳/分析全被污染。识别特征：`maps` 中 `[vsyscall]`/`[vdso]`/`[vvar]` 名称、地址落在 `0xffffffffff6xxxxx` 高段、无文件路径的匿名 `00:00` 映射 |
