@@ -86,7 +86,7 @@ description: >
    candump -t a can0                     # 实时查看（绝对时间戳）
    candump -l can0                       # 落盘日志（自动轮转，Wireshark 可直接打开）
    candump can0 -n 100                   # 只抓 100 帧
-   candump can0 -f 0x7E0:0x7FF           # ID 过滤（CAN 无地址，用 ID 过滤，见坑 1）
+   candump can0 -f 0x7E0:0x7FF           # ID 过滤：掩码 0x7FF = 精确匹配 0x7E0；区间过滤用 0x7F8（匹配 0x7E0~0x7E7）；CAN 无地址（见坑 1）
    ```
 
 3. **报文 ID / 周期 / 信号解析**：

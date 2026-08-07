@@ -29,7 +29,7 @@ description: >
 
 ### wireshark / tshark —— GUI + CLI 分析（tshark 用于导出与统计）
 
-- Linux: `apt install wireshark tshark` / `dnf install wireshark-cli wireshark` / `pacman -S wireshark-cli wireshark`（Debian 安装时选"允许非 root 抓包"，或 `sudo dpkg-reconfigure wireshark-common` 后把用户加入 wireshark 组）
+- Linux: `apt install wireshark tshark` / `dnf install wireshark-cli wireshark` / `pacman -S wireshark-cli wireshark-qt`（Arch 已拆分为 wireshark-cli + wireshark-qt；Debian 安装时选"允许非 root 抓包"，或 `sudo dpkg-reconfigure wireshark-common` 后把用户加入 wireshark 组）
 - macOS: `brew install --cask wireshark`（含 tshark CLI；或 `brew install wireshark` 仅 CLI）
 - Windows: `choco install wireshark`（或官方安装包）；WSL 内用 Linux 版
 - 验证: `tshark --version`；`tshark -D` 列出接口；`dumpcap -D`

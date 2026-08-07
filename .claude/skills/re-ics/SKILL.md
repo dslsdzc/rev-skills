@@ -23,7 +23,7 @@ description: >
 
 ### wireshark / tshark —— ICS 解析器主力（modbus/dnp3/opcua dissector 内置）
 
-- Linux: `apt install wireshark tshark` / `dnf install wireshark-cli wireshark` / `pacman -S wireshark-cli wireshark`（Debian 安装时选"允许非 root 抓包"，或 `sudo dpkg-reconfigure wireshark-common` 后把用户加入 wireshark 组）
+- Linux: `apt install wireshark tshark` / `dnf install wireshark-cli wireshark` / `pacman -S wireshark-cli wireshark-qt`（Arch 已拆分为 wireshark-cli + wireshark-qt；Debian 安装时选"允许非 root 抓包"，或 `sudo dpkg-reconfigure wireshark-common` 后把用户加入 wireshark 组）
 - macOS: `brew install --cask wireshark`（含 tshark CLI；或 `brew install wireshark` 仅 CLI）
 - Windows: `choco install wireshark`（或官方安装包）；WSL 内用 Linux 版
 - 验证: `tshark --version`；`tshark -G fields | grep -iE 'modbus|dnp3|opcua'` 列出 ICS 字段名（各版本字段名可能有微调，以该输出为准）
@@ -56,9 +56,9 @@ description: >
    - GUI：打开 pcap，标准端口自动命中 modbus/dnp3/opcua dissector；非标端口 → 右键 Decode As 指定协议（或命令行 `tshark -d tcp.port==5020,modbus`）
    - 过滤与导出：
      ```sh
-     tshark -r cap.pcap -Y 'modbus' -T fields -e modbus.func_code -e modbus.unit_id
-     tshark -r cap.pcap -Y 'dnp3' -T fields -e dnp3.ctrl.dst -e dnp3.ctrl.src
-     tshark -r cap.pcap -Y 'opcua' -T fields -e opcua.nodeid
+     tshark -r cap.pcap -Y 'modbus' -T fields -e modbus.func_code -e mbtcp.unit_id   # unit id 官方字段在 mbtcp 层（modbus.unit_id 非官方）
+     tshark -r cap.pcap -Y 'dnp3' -T fields -e dnp3.ctl -e dnp3.dst -e dnp3.src       # 控制字 dnp3.ctl（子字段 dnp3.ctl.dir/prm/fcb/fcv/prifunc/secfunc）；站地址在顶层 dnp3.dst/dnp3.src
+     tshark -r cap.pcap -Y 'opcua' -T fields -e opcua.nodeid.numeric -e opcua.nodeid.string -e opcua.nodeid.guid   # nodeid 无顶层字段，按类型用子字段
      ```
    - 字段名不确定时以 `tshark -G fields | grep -iE 'modbus|dnp3|opcua'` 输出为准
 
