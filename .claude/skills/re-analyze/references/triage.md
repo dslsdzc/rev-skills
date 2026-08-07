@@ -9,6 +9,7 @@
 | 判定恶意行为 / 会不会回连 | re-malware 网关 → 默认沙箱(re-sandbox) → 行为(re-behavior) → C2(re-protocol: netcap/proto-rev/crypto-*) → IOC/报告(re-ioc) |
 | 样本带壳 / 脱壳 | re-anti-analysis 网关 → 壳识别(re-packer-id) → 脱壳(re-unpack-simple/advanced) → 验证 |
 | 破解 / 授权绕过 / 注册码 | re-cracking 网关 → （若带壳）re-anti-analysis → 授权定位(re-license) → 补丁/注册机(re-patching/re-keygen) |
+| 漏洞挖掘 / 崩溃分析 | re-vuln 网关 → fuzzing → crash-triage →（定位）re-binary-core |
 | 分析固件 / IoT 设备 | re-firmware 网关 → 提取(re-fw-extract) → rootfs(re-fw-rootfs) → 仿真(re-fw-emulate) →（若见通信）re-protocol |
 | 分析网络流量 / 未知协议 | re-protocol 网关 → 捕获(re-netcap) → 解析(re-proto-rev) → 加密(re-crypto-id/keys/decrypt) |
 | 移动 App 分析 | re-mobile 网关 → APK(re-apk) / iOS(re-ios) → 动态(re-frida) →（若含原生库）re-binary-core |
@@ -21,4 +22,5 @@
 
 - "脱壳 → 静态 → 动态 → C2 协议 → 报告"：re-anti-analysis → re-binary-core → re-malware(re-sandbox) → re-protocol → re-ioc
 - ".NET 样本 → 恶意判定 → 内存取证"：re-managed(dotnet) →（恶意场景）re-malware → re-forensics(mem-forensics → ti) → re-ioc
+- "崩溃样本 → 漏洞根因"：re-vuln（fuzzing 复现 → crash-triage 定位）→（定位）re-binary-core
 - 每个环节完成后检查是否有新证据改变后续路径（如动态分析发现加壳 → 回退 re-anti-analysis）。

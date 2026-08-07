@@ -1,7 +1,7 @@
 {
   "name": "re-skills",
   "version": "0.1.0",
-  "description": "通用逆向工程 AI 技能库：58 个技能 + 多工具安装器（Claude Code/Gemini/Cline/Codex/Cursor/Copilot/Windsurf）",
+  "description": "通用逆向工程 AI 技能库：64 个技能 + 多工具安装器（Claude Code/Gemini/Cline/Codex/Cursor/Copilot/Windsurf）",
   "type": "module",
   "bin": { "re-skills": "bin/install.mjs" },
   "scripts": { "test": "node validate.mjs && node --test tests/*.test.mjs" },

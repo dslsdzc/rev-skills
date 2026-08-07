@@ -40,7 +40,7 @@ description: >
 
 ## 第三步：编排分派
 
-调用对应大类网关技能（`[[re-binary-core]]` `[[re-malware]]` `[[re-firmware]]` `[[re-protocol]]` `[[re-mobile]]` `[[re-anti-analysis]]` `[[re-cracking]]` `[[re-ctf]]` `[[re-managed]]` `[[re-forensics]]`），网关内部自行选择原子技能。每个环节完成后检查新证据，必要时回退调整路径（见 triage.md 复合任务示例）。
+调用对应大类网关技能（`[[re-binary-core]]` `[[re-malware]]` `[[re-firmware]]` `[[re-protocol]]` `[[re-mobile]]` `[[re-anti-analysis]]` `[[re-cracking]]` `[[re-vuln]]` `[[re-ctf]]` `[[re-managed]]` `[[re-forensics]]`），网关内部自行选择原子技能。每个环节完成后检查新证据，必要时回退调整路径（见 triage.md 复合任务示例）。
 
 ## 何时使用 / 何时不用
 
