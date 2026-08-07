@@ -55,14 +55,16 @@ description: >
    python3 - <<'EOF'
    data = open('sample.bin','rb').read()
    aes_sbox = bytes.fromhex('637c777bf26b6fc53001672bfed7ab76')
-   crc32_tab = bytes.fromhex('0000000077096090ee0e612c9509547f')   # 常见 CRC32 表前 16 字节
-   for name, sig in [('AES_SBOX', aes_sbox), ('CRC32_TAB', crc32_tab)]:
+   crc32_tab_be = bytes.fromhex('0000000077073096ee0e612c990951ba')   # 标准 CRC32 表前 16 字节（poly 0xEDB88320，显示序/BE）
+   crc32_tab_le = bytes.fromhex('00000000963007772c610eeeba510999')   # 同一表在 x86/ARM 小端二进制内存中的字节序
+   for name, sig in [('AES_SBOX', aes_sbox), ('CRC32_TAB(BE)', crc32_tab_be), ('CRC32_TAB(LE)', crc32_tab_le)]:
        i = data.find(sig)
        while i != -1:
            print(f"{name} @ 0x{i:x}"); i = data.find(sig, i+1)
    EOF
    ```
-   - 命中 AES S-box（256 字节表）→ AES 候选；命中 CRC 表 → 有 CRC/校验（可能配合 [[re-proto-rev]] 步骤 3）；MD5 IV（`67452301efcdab89...` 小端）→ MD5 候选
+   - 命中 AES S-box（256 字节表）→ AES 候选；命中 CRC 表 → 有 CRC/校验（可能配合 [[re-proto-rev]] 步骤 3）；命中 MD5 IV → MD5 候选
+   - 字节序：上面列出的 hex 均为显示序（BE 阅读序）。小端二进制（x86/ARM）里常量表在内存中的实际字节为 LE 序——CRC 表同时搜 `00000000963007772c610eeeba510999`（脚本已含），MD5 IV 显示序为 `67452301efcdab89...`，LE 序列化为 `0123456789abcdeffedcba9876543210`（两种模式都搜）
    - 没命中 → 不排除动态生成表（见坑 2），继续下一步
 
 2. **熵分析定位密文（区分密文与明文区域）**：

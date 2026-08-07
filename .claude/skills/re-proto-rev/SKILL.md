@@ -32,7 +32,8 @@ description: >
 - 全平台: `pip install scapy`（Python 3，推荐）
 - Linux: 部分发行版有包（`apt install python3-scapy`）
 - 验证: `python3 -c "import scapy; print(scapy.__version__)"`
-- 用 scapy 读 pcap 的前提是装了对齐库: `pip install scapy` 后 `python3 -c "from scapy.all import rdpcap; print(len(rdpcap('/dev/null')))"`（libpcap 读不了会报错，Linux 需 `apt install libpcap-dev` 或让 scapy 用纯 python 读 `open_pcap()`）
+- 读 pcap 文件: `rdpcap` 即可，纯 Python 解析（无需 libpcap；libpcap 仅实时抓包 `sniff()` 时需要，强制纯 Python 解析用 `conf.use_pcap = False`）
+- 验证（跨平台，写临时 pcap 再读回，不依赖 /dev/null）: `python3 -c "import tempfile,os; from scapy.all import rdpcap, wrpcap, IP, TCP, Raw; f=os.path.join(tempfile.gettempdir(),'t.pcap'); wrpcap(f,[IP()/TCP()/Raw(b'test')]); print(len(rdpcap(f)))"` —— 输出 `1` 即正常
 
 ### tshark —— 分组统计与字段初探（安装见 [[re-netcap]]）
 
@@ -92,8 +93,8 @@ description: >
            ShortField("len", 0),
            StrFixedLenField("payload", b"", 64),
        ]
-   # 测试解析
-   pkt = C2(bytes.fromhex("aa550103000854657374696e672e2e2e0000000000..."))
+   # 测试解析（hex 与 fields_desc 对齐：aa55 | 01 | 000a | 54657374696e672e2e2e，len=0x000a=10 = "Testing..." 的 10 字节）
+   pkt = C2(bytes.fromhex("aa5501000a54657374696e672e2e2e0000000000..."))
    pkt.show()
    ```
    - 字段顺序/宽度按步骤 2、3 的推断来；解析器能逐个字段展示（`show()`）即验证字段布局正确
