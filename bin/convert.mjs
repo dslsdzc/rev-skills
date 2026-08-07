@@ -13,12 +13,26 @@ export function readSkill(dir) {
   const md = readFileSync(join(dir, 'SKILL.md'), 'utf8');
   const m = md.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
   const fm = {};
-  for (const line of (m?.[1] ?? '').split('\n')) {
-    const kv = line.match(/^(\w+):\s*(.*)$/);
-    if (kv) fm[kv[1]] = kv[2];
+  const lines = (m?.[1] ?? '').split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const kv = lines[i].match(/^(\w+):\s*(.*)$/);
+    if (!kv) continue;
+    if (/^[>|]/.test(kv[2])) {
+      // YAML 块标量（折叠 > / 字面 |）：吸收后续缩进行为实际值
+      const folded = [];
+      while (lines[i + 1] !== undefined && /^\s+/.test(lines[i + 1])) {
+        folded.push(lines[++i].replace(/^\s+/, ''));
+      }
+      fm[kv[1]] = folded.join(kv[2][0] === '>' ? ' ' : '\n').trim();
+    } else {
+      fm[kv[1]] = kv[2];
+    }
   }
   return { name: fm.name, description: fm.description, body: m?.[2] ?? md };
 }
+
+// parseSkill：readSkill 的别名，保持调用方兼容
+export function parseSkill(dir) { return readSkill(dir); }
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -31,7 +45,7 @@ export function convertAll(type, destDir) {
   if (type === 'cursor') {
     for (const s of skills) {
       const p = join(destDir, `${s.name}.mdc`);
-      writeFileSync(p, `---\ndescription: ${s.description}\nglobs: **/*\n---\n\n${s.body}`);
+      writeFileSync(p, `---\ndescription: ${JSON.stringify(s.description)}\nglobs: **/*\n---\n\n${s.body}`);
       files.push(p);
     }
   } else if (type === 'windsurf') {
@@ -51,3 +65,14 @@ export function convertAll(type, destDir) {
   }
   return files;
 }
+
+// —— 追加到 convert.mjs 末尾 ——
+function cli() {
+  const args = process.argv.slice(2);
+  const type = args[args.indexOf('--target') + 1];
+  const out = args[args.indexOf('--out') + 1];
+  if (!type || !out) { console.error('usage: node bin/convert.mjs --target cursor|copilot|windsurf --out <dir>'); process.exit(1); }
+  const files = convertAll(type, out);
+  console.log(`generated ${files.length} file(s) in ${out}`);
+}
+if (process.argv[1] && process.argv[1].endsWith('convert.mjs')) cli();

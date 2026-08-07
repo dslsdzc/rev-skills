@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // bin/install.mjs — re-skills 多工具安装器
 import { cpSync, rmSync, symlinkSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline';
 import { convertAll } from './convert.mjs';
@@ -34,18 +34,26 @@ export function planFor(target, scope, opts) {
     const names = readdirSync(SKILLS_SRC);
     return { mode: 'native', dest, names, link: opts.link };
   }
-  return { mode: 'rule', dest: expandHome(t.places.project), ruleType: t.ruleType };
+  if (t.mode === 'rule') {
+    if (scope !== 'project') throw new Error(`target ${target} only supports --project`);
+    return { mode: 'rule', dest: expandHome(t.places.project), ruleType: t.ruleType };
+  }
 }
 
 async function installTarget(target, scope, opts) {
   const plan = planFor(target, scope, opts);
   if (plan.mode === 'native') {
     const conflicts = plan.names.filter(n => existsSync(join(plan.dest, n)));
+    const selfDestructive = resolve(plan.dest) === resolve(SKILLS_SRC);
     if (!opts.dryRun) {
       mkdirSync(plan.dest, { recursive: true });
       for (const n of plan.names) {
         const src = join(SKILLS_SRC, n), dst = join(plan.dest, n);
         if (existsSync(dst)) {
+          if (opts.force && selfDestructive) {
+            console.log(`WARN: dest == source, skipping destructive overwrite for ${n}`);
+            continue;
+          }
           if (opts.force) rmSync(dst, { recursive: true, force: true });
           else { console.log(`SKIP ${n}: exists at ${dst} (use --force to overwrite)`); continue; }
         }
@@ -92,6 +100,7 @@ async function main() {
     return;
   }
   for (const t of targets) {
+    if (!TARGETS[t]) throw new Error(`unknown target: ${t} (valid: ${Object.keys(TARGETS).join(', ')}, all)`);
     let scope = opts.scope;
     if (!scope) {
       const tDef = TARGETS[t];
