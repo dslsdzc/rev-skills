@@ -3,7 +3,7 @@ name: re-mobile
 type: gateway
 description: >
   移动应用分析网关。编排：APK 静态 → iOS → 动态 Frida → 原生库。
-  子技能：[[re-apk]] [[re-ios]] [[re-frida]]。
+  子技能：[[re-apk]] [[re-ios]] [[re-frida]] [[re-mobile-pack]] [[re-hybrid-app]]。
   触发词：移动App、APK、ipa、Android逆向、iOS逆向、frida、mobile app analysis。
 ---
 
@@ -29,6 +29,8 @@ description: >
 - 目标含原生库（.so / dylib）→ [[re-binary-core]]（[[re-format-elf]] / [[re-format-macho]] / [[re-ghidra]]）
 - 需要解密 / 绕过证书 / hook 函数 / 观察调用链 → [[re-frida]]
 - 加固/带壳：Android → [[re-anti-analysis]]（先经 [[re-apk]] 识别）；iOS 加密 → [[re-ios]] 脱壳
+- Android 加固脱壳专项（乐固/360/梆梆/爱加密）→ [[re-mobile-pack]]（识别后运行/静态脱壳 + DEX 修复）
+- Flutter / React Native 混合应用 → [[re-hybrid-app]]（引擎识别 → blutter / hermes-dec）
 - 提取运行时内存中的 DEX/密钥 → [[re-memdump]]（DEX 提取见该技能）
 
 ## 跨域联合
