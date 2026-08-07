@@ -80,3 +80,4 @@ description: >
 - **反调试/反 attach**：`ThreadHideFromDebugger`/`NtSetInformationThread` 或断网检测——用 ScyllaHide 插件隐藏调试痕迹，或先静态 patch 自检点
 - **PPL 进程无法附加**（Protected Process Light，如部分 EDR/系统进程）——x64dbg 无驱动无法附加，换内核调试或放弃该目标
 - **位数匹配**：64 位目标必须 x64dbg（x32dbg 只支持 32 位）；混用会加载失败/崩溃
+- **attach 失败先区分权限与 PPL/保护进程**：现象——以管理员运行 x64dbg 仍 attach 失败；原因——普通权限限制管理员可解决，PPL（Protected Process Light）取决于 Signer Level 等级（EDR 常见 PPL-Windows TCB/Antimalware），非对应级别无法附加；对策——先确认目标是否 PPL（Process Explorer 的 Protection 列）及其 Signer Level，再按级别准备对应调试能力（同级别驱动/内核调试），见 [[platform-tips]] Windows 分支

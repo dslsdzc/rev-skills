@@ -93,3 +93,4 @@ description: >
 - **权限弹窗需手动确认**：TCC 每次对新的调试目标弹窗，脚本化 attach 会被卡住——预先授权目标程序
 - **内核调试需额外配置**：macOS 内核调试要 KDK 匹配版本 + 开发内核启动，普通逆向用不上，别在用户态调试上浪费时间
 - **签名状态**: 修改过的 Mach-O 未重签无法运行（见 [[re-format-macho]]）——先 `codesign -f -s -` 重签再调试
+- **task_for_pid entitlement/SIP/Hardened Runtime 三层限制**：现象——Developer Tools 已授权仍 attach 失败或目标启动即崩溃；原因——除 TCC 外还有三层：调试器需 task_for_pid entitlement，目标启用 Hardened Runtime 时调试 API 受限，SIP 限制系统进程 attach；对策——逐层排查（`csrutil status`、检查目标签名与 entitlement），测试目标可先去签名/重签（[[re-format-macho]]）再调试，参考 [[platform-tips]] macOS 分支

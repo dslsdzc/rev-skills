@@ -14,10 +14,13 @@
 - **入口之前执行点**：PE 的 TLS 回调与 ELF 的 `.preinit_array`/`.init_array`/`__libc_start_main` 的 init 参数都在入口点/main 之前执行——只断入口会漏掉入口前逻辑；动态断点设在 `ntdll!LdrpCallInitRoutine`（Windows）与 `__libc_start_main`（Linux）。
 - **工具解析 ≠ 加载器视图**：损坏/歧义的头字段没有唯一正确解析，恶意样本利用解析器差异规避工具——工具报错 ≠ 文件损坏，先手工核对关键头字段，结论对照真实加载器语义复核。
 - **反汇编函数边界有误差**：线性反汇编对 PE（代码节内联跳转表等数据）准确率约 99%，函数边界识别在主流工具中也有 20%+ 误判（尾调用/非标准序言/内联导致）——反编译结论需交叉验证，别全信工具的函数列表。
+- **32 位程序**：gdb 架构切换影响 ABI/寄存器集/调用约定——调 32 位目标先确认调试器架构模式与目标一致；Windows 侧 32 位目标对应 x32dbg；Wine 跑 32 位 PE 用 wine32 前缀（WINEARCH=win32）。
 
 ### Linux
 - 分析 Windows PE 程序：**Wine 直读进程内存**——wine 运行 PE → `gdb attach` 或读 `/proc/<pid>/mem`，无需整机虚拟化；脱壳/读内存直接对 Wine 进程操作。
 - 跑非本机架构程序：QEMU 用户态仿真（`qemu-<arch>`）优先，全系统仿真仅必要时用。
+- **attach 权限不是非黑即白**：ptrace_scope=1 限制子进程/父子关系/PR_SET_PTRACER——同属主不一定能 attach，还需父子关系或目标声明 PR_SET_PTRACER；root 也可能受限；容器内 CAP_SYS_PTRACE 影响 attach 能力。
+- **QEMU 用户态仿真的主要差异**：QEMU 用户态最大问题=syscall ABI/kernel feature/指令扩展（非 libc）——程序跑不起来先按这三点排查，别只补库。
 
 ### Linux 内存转储极端段
 - `[vsyscall]`（固定地址 `0xffffffffff600000`，只执行 `--xp`）、`[vdso]`/`[vvar]`：`/proc/<pid>/mem` 读取失败、gdb 访问报错均属正常。
@@ -27,12 +30,27 @@
 ### Windows
 - 读目标进程内存：需装 Sysinternals 套件（`procdump`）/ `DumpIt` 做内存转储 + Volatility 分析；attach 需要管理员权限。
 - 常用工具链：x64dbg、Process Explorer（替代 System Informer）、APIMonitor。
+- **attach 失败先区分权限与 PPL/保护进程**：管理员解决普通限制，PPL 取决于 Signer Level 等级（EDR 常见 PPL-Windows TCB/Antimalware），需对应级别调试能力。
+- **Windows 读 Linux 样本**：静态无平台限制，动态需匹配运行环境——静态分析可在 Windows 侧直接进行，要运行样本则准备匹配的 Linux 环境（VM/容器）。
 
 ### macOS
 - attach/调试：SIP 与 TCC 限制，调试工具需授权（Developer Tools 权限），`lldb` attach 前检查。
+- **attach 失败层次**：task_for_pid entitlement/SIP/Hardened Runtime——Developer Tools 授权之外，调试器自身需 task_for_pid entitlement，目标启用 Hardened Runtime 时调试 API 受限。
+
+### 沙箱
+- **容器调试缺 SYS_PTRACE**：容器内 attach 受限来源=SYS_PTRACE 能力、/proc 挂载、seccomp、Yama 限制——先确认容器配置（如 `--cap-add=SYS_PTRACE`）再判断"环境限制"还是"程序不可分析"。
+- **沙箱隔离≠分析环境伪装**：时间/硬件/输入检测是环境指纹，完整 VM 也会被检测——隔离保证安全，不保证"像真实环境"；环境指纹对抗单独处理。
 
 ### WSL
 - WSL 无法直接 attach Windows 进程——跨边界分析走 Windows 侧工具，WSL 内只做文件/静态分析。
+
+## 原则：分析前确认（动态分析前置）
+
+动态分析前先确认目标 ABI、执行环境、权限模型，否则调试失败不代表程序不可分析——失败先归因（架构/环境/权限），再决定换方案还是下结论。
+
+## 原则：静态优先（大型样本）
+
+静态与动态不是替代关系，大型样本静态定位先行、动态验证在后——先静态缩小范围，动态按需补充。
 
 ## 「直读 vs 转储」决策（默认转储优先）
 

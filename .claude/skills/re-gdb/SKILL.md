@@ -109,3 +109,4 @@ description: >
 - **反调试（ptrace 自检、时间差）**：样本用 `ptrace(PTRACE_TRACEME)` 自检或 rdtsc 时间差检测调试器——先静态定位检查点再断点 patch
 - **Wine 进程 attach**：Wine 下 PE 进程是 Linux 进程，gdb 可 attach，但地址空间混 PE 映射与 Wine 结构——按 [[platform-tips]] Linux 分支经验处理（查 `/proc/<pid>/maps` 定位 PE 镜像段）
 - 调试器注入痕迹（LD_PRELOAD/环境变量）会被检测——用 `unset env LD_PRELOAD` 类方式清理后 attach
+- **时钟对抗分三类**：现象——样本检测到时间异常（计时倍率不对、单步耗时异常、时钟源非预期）后退出或改变行为；原因——时钟对抗分三类：时间倍率检测/单步延迟检测/VM 时间源检测；对策——先判定类别再分别应对：时间倍率类恢复真实时钟或 patch 比较点，单步延迟类用硬件断点减少被测量步数，VM 时间源类按 [[platform-tips]] 沙箱分支的环境指纹思路处理

@@ -98,3 +98,4 @@ description: >
 - **Java 版本不匹配启动失败**：报 `UnsupportedClassVersionError` → 确认 `java -version` 为 21+，`JAVA_HOME` 指向正确 JDK
 - **内存 <4GB 卡顿**：分析大二进制内存耗尽 → 换 [[re-radare2]] 或减小分析范围（`-analysisTimeoutPerFile`）
 - headless 默认分析选项与 GUI 有差异（缺少部分可选项）→ 用 `-postScript` 显式执行分析脚本保证一致
+- **大文件自动分析卡死**：现象——导入大二进制后自动分析长时间不结束/界面卡死；原因——大文件卡死诱因=间接调用爆炸/大型 C++ RTTI/混淆控制流/大量数据段；对策——先降低自动分析范围（限制/关闭间接调用与 RTTI 分析选项），优先定位入口/字符串/交叉引用再逐步展开，见 [[platform-tips]] 静态优先原则
