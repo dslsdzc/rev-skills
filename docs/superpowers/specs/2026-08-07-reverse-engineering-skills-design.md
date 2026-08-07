@@ -110,6 +110,18 @@
 
 原则：**先给最轻的可行方案**（Wine 直读 > 用户态仿真 > 全系统虚拟化 > 物理机），按平台经验分支执行。
 
+**「直读 vs 转储」决策**（`re-memdump` 等技能引用，依据实战与社区共识）：
+
+| 场景 | 方案 |
+|---|---|
+| 进程活着，只要特定区段（脱壳解密段、密钥搜索、Android DEX 挖掘） | **直读** `/proc/<pid>/mem`：先读 `/proc/<pid>/maps` 确定有效地址范围 → SIGSTOP 暂停进程防竞态 → chunked `pread` 只取目标区段 |
+| 需要完整内存布局 + 寄存器/线程状态（导入 Ghidra/IDA、事后复现分析） | **转储** `gcore` → ELF core 文件（含 ELF notes） |
+| 进程已死 | 直接分析已有 core 文件（`kernel.core_pattern` / systemd-coredump / 容器 runtime dump） |
+| ptrace 被禁 / 沙箱容器 / attach 失败 | **转储兜底**：core 文件不需要 `/proc/<pid>/mem` 权限路径 |
+| 取证 / 存档 | 全量转储 + 映射清单（manifest） |
+
+关键经验：**转储时机**——脱壳须等进程运行到 OEP 完全解密后再 dump，否则转的是壳的初始状态；直读前必须先查 maps（无脑 open `/proc/<pid>/mem` 必然报错）；dump 前过滤 `[vsyscall]`/`[vdso]` 等特殊段（见上表）。
+
 ## 3. 技能统一模板
 
 ### 3.1 原子技能模板
