@@ -75,7 +75,7 @@ description: >
    - 决策记录：写下所选级别与理由，并把"分析完恢复快照"命令（步骤 5）提前写好
 
 2. **网络隔离**（三档，从强到弱）：
-   - 断网: VM 网络模式设 Host-only / NAT 且不启用端口转发；firejail 用 `--net=none`
+   - 断网: VM 网络模式设 Host-only / Internal（NAT 默认允许出站外联，不可用作断网）；firejail 用 `--net=none`
    - fake DNS: /etc/hosts 或 dnsmasq 把可疑域名指向本机；或 `firejail --dns=127.0.0.1`
    - INetSim: 把沙箱 DNS 指向 INetSim 主机，模拟 HTTP/SMTP/FTP/DNS 服务并记录样本的全部请求——C2 分析的标准做法（配合 [[re-protocol]] 的 [[re-netcap]]）
    - 验证: 沙箱内 `ping 8.8.8.8` 不通；`curl http://example.com` 命中 INetSim 模拟响应
