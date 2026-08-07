@@ -96,6 +96,70 @@ description: >
 - **AD20 多点反调试→找汇聚点**：多个检测汇聚到一个 flag/状态变量/错误处理函数
 - **AD45 Patch 反调试点可能触发完整性检测**：JNZ→JMP/CALL→NOP 触发 CRC/hash/self-check，先找检测链
 
+## 反虚拟化方法论
+
+本网关适用的反虚拟化分析方法论（用户实战经验），各技能坑与陷阱引用此处。
+
+### 指令级与固件信息检测
+
+- **AV-001 CPUID hypervisor 位检测**
+  - **Trigger**：程序执行 CPUID leaf 1，检查 ECX bit 31（hypervisor present bit）
+  - **Observation**：ECX bit 31 置位，表明当前运行在 hypervisor 之下
+  - **Inference**：样本在探测虚拟化环境——反虚拟化检测最常见的起点
+  - **Action**：继续 CPUID vendor leaf（0x40000000）确认 hypervisor 类型（Microsoft Hv / VMwareVMware / KVMKVMKVM 等）
+  - **Constraint**：hypervisor_present ≠ 一定是恶意分析环境——云主机与正常用户系统同样有 hypervisor，仅凭该位不能断定是分析环境
+- **AV-002 注册表 BIOS/System 信息**
+  - **Trigger**：程序读取注册表 BIOS/System 信息（Manufacturer / ProductName / BIOS Version）
+  - **Observation**：读取值被用于关联 VMware / VirtualBox / Hyper-V 特征字符串
+  - **Inference**：注册表固件信息是 VM fingerprinting 的常见来源
+  - **Action**：定位读取点与特征字符串匹配逻辑，收集全部命中的 VM 特征项
+  - **Constraint**：单个字符串命中不能作为 VM 判断依据——需多特征联合判定
+
+### 时间与硬件特征
+
+- **AV-003 Sleep 前后时间差**
+  - **Trigger**：Sleep 前后实测时间差明显短于预期
+  - **Observation**：样本 Sleep(N) 后检查实际经过时间，明显小于 N——时间被加速/压缩
+  - **Inference**：样本可能检测沙箱时间加速/虚拟化时间（计时 API 被 hook 或时钟被加速）
+  - **Action**：跟踪 RDTSC / QPC / GetTickCount 来源——定位时间读数点与差值计算逻辑，确认样本所用时钟源
+  - **Constraint**：时间检测常多点组合（RDTSC 配 CPUID 强制 VM exit、GetTickCount / QPC 交叉验证），别只处理一处
+- **AV-004 硬件设备枚举**
+  - **Trigger**：程序枚举硬件设备（PCI / Disk model / GPU name）
+  - **Observation**：枚举结果与虚拟机硬件型号特征比对
+  - **Inference**：VM fingerprinting——硬件设备型号是常见 VM 指纹来源
+  - **Action**：建立硬件特征集合而非单点判断——列出全部被检查的硬件项，按集合整体评估
+  - **Constraint**：单一硬件特征（如某块 disk model）不足以判定 VM，需特征集合联合评估
+
+### 环境评分与交互检测
+
+- **AV-005 检测结果汇聚统一变量**
+  - **Trigger**：多个 VM 检测函数的检测结果写入统一变量（is_vm / sandbox_score / env_flag）
+  - **Observation**：多处检测代码汇聚到同一变量/状态
+  - **Inference**：样本采用环境评分机制——多检测项计数/加权汇成环境评分
+  - **Action**：追踪汇聚变量——在变量读写处下断或静态追 xref，避免逐检测点分析
+  - **Constraint**：只看单个检测点会漏掉整体评分逻辑——评分阈值与组合方式是关键
+- **AV-006 用户交互检测**
+  - **Trigger**：程序检测用户交互（鼠标 / 键盘 / uptime / 窗口活动）
+  - **Observation**：样本检查鼠标移动、键盘输入、系统 uptime、窗口活动等交互痕迹
+  - **Inference**：样本试图区分真实用户与自动沙箱——交互痕迹属于行为级环境指纹
+  - **Action**：转向行为级分析而非硬件指纹——交互相关分支需动态配合（模拟交互或真实环境观察）
+  - **Constraint**：交互检测多为行为级，纯静态难以完整还原——需与动态观察结合
+
+### 虚拟化通道与执行路径
+
+- **AV-007 VMware 专有通道调用**
+  - **Trigger**：程序调用 VMware backdoor / Guest Additions / vmtools
+  - **Observation**：样本访问 VM 专有通道（VMware I/O port backdoor、vmtools 服务/进程、Guest Additions 模块）
+  - **Inference**：高概率虚拟化检测——这些通道只在虚拟机环境中真实存在
+  - **Action**：确认调用结果如何影响控制流——定位 backdoor 调用点与返回值使用位置，再决定 patch 策略
+  - **Constraint**：检测到 VM 通道不一定会退出——先看检测结果流向再动手
+- **AV-008 检测结果影响执行路径**
+  - **Trigger**：检测结果影响执行路径——VM 环境进入不同分支
+  - **Observation**：检测为"是 VM"与"非 VM"走向不同代码分支
+  - **Inference**：反虚拟化不仅用于退出——可能改变样本行为（假逻辑 / 降功能 / 不同载荷）
+  - **Action**：分析两个分支差异——对比 VM / 非 VM 两条路径的代码与数据，别只 patch 检测点
+  - **Constraint**：与反调试假逻辑同理（见反调试方法论 AD44）——patch 后别直接信任输出
+
 ## 何时用哪个原子技能（选择树）
 
 **先识别、再选脱壳路径；识别不出走手动流程。**
