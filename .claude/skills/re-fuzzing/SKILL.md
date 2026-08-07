@@ -22,7 +22,7 @@ description: >
 ### AFL++ —— 覆盖率引导 fuzz 主力
 
 - Debian/Ubuntu: `sudo apt install afl++`
-- Fedora/RHEL: 无官方包 → 源码编译（见下；先装 `sudo dnf install gcc gcc-c++ clang make git`）
+- Fedora: `sudo dnf install american-fuzzy-lop american-fuzzy-lop-clang`（包即 AFL++ fork）；或源码编译拿最新版（见下）
 - Arch: `sudo pacman -S afl++`
 - macOS: `brew install afl++`
 - Windows: WSL2 内 `sudo apt install afl++`（AFL++ 官方支持 WSL；Windows 本机不可直接跑）
@@ -98,7 +98,7 @@ description: >
      }
      ```
      libFuzzer 编译：`clang -fsanitize=fuzzer,address -g -O1 -o fuzz_target fuzz_target.c target_lib.c`
-     AFL++ 编译同一 harness：`afl-clang-fast -fsanitize=address -o fuzz_target_afl fuzz_target.c`，运行 `afl-fuzz -i in -o out -- ./fuzz_target_afl @@`
+     AFL++ 编译同一 harness：`afl-clang-fast -fsanitize=fuzzer,address -o fuzz_target_afl fuzz_target.c`（afl-clang-fast 拦截 `-fsanitize=fuzzer` 并链接自带 driver），运行 `afl-fuzz -i in -o out -- ./fuzz_target_afl @@`
    - 网络目标 → 见坑 5：harness 直调解析函数（数据来自文件），不要 fuzz 整个服务进程
 2. **语料初始化**：
    ```sh

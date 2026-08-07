@@ -39,8 +39,8 @@ description: >
 
 - Debian/Ubuntu: `sudo apt install rr`（universe 仓库）
 - Fedora/RHEL: `sudo dnf install rr`
-- Arch: `sudo pacman -S rr`
-- macOS: 无 brew 公式 → 源码编译（仅 Apple Silicon 原生支持，虚拟机内不可用）
+- Arch: `paru -S rr`（AUR 包；官方仓库无 rr）
+- macOS: 无支持（rr 仅支持 Linux，官方原话 "Apple hardware is fine, Apple software is not"）；Apple Silicon 用户用 Asahi Linux 或 Linux 虚拟机（需 PMU 透传）
 - Windows: WSL2 内 Linux 版
 - 源码编译:
   ```sh
