@@ -63,8 +63,9 @@
 | `re-anti-analysis` | 反分析对抗 | 壳识别、脱壳（简单/高级）、反混淆 |
 | `re-cracking` | 软件破解 | 授权逻辑、补丁、注册机 |
 | `re-ctf` | CTF 实践 | angr、Z3 |
-| `re-managed` | 托管代码/字节码 | .NET CIL、Java 字节码、脚本/宏去混淆 |
+| `re-managed` | 托管代码/字节码 | .NET CIL、Java 字节码、脚本/宏去混淆、WASM |
 | `re-forensics` | 取证/威胁情报 | 内存取证（Volatility 3）、威胁情报查询（VT/沙箱/MISP） |
+| `re-vuln` | 漏洞挖掘 | 覆盖率引导 fuzzing、崩溃分析/漏洞定位 |
 
 每个网关 SKILL.md 必含三部分：**该大类完整工作流**、**何时用哪个原子技能（选择树）**、**跨域联合章节**。
 
@@ -80,10 +81,11 @@
 | `re-anti-analysis` | `re-packer-id`、`re-unpack-simple`、`re-unpack-advanced`、`re-deobfuscate` |
 | `re-cracking` | `re-license`、`re-patching`、`re-keygen` |
 | `re-ctf` | `re-angr`、`re-z3` |
-| `re-managed` | `re-dotnet`、`re-java`、`re-script-deob` |
+| `re-managed` | `re-dotnet`、`re-java`、`re-script-deob`、`re-wasm` |
 | `re-forensics` | `re-mem-forensics`、`re-ti` |
+| `re-vuln` | `re-fuzzing`、`re-crash-triage` |
 
-总数：**1 入口 + 10 网关 + 47 原子 = 58 技能**。
+总数：**1 入口 + 11 网关 + 52 原子 = 64 技能**。
 
 ### 2.4 跨大类引用机制
 
@@ -102,6 +104,10 @@
 | 内核驱动/rootkit 样本 | `re-malware` → `re-kernel` |
 | 威胁情报关联 | `re-malware` → `re-forensics`（ti） |
 | 游戏破解 | `re-cracking` → `re-game` |
+| 崩溃样本定位 | `re-vuln` → `re-binary-core`（triage/ghidra 定位）+ `re-memdump`（core 分析） |
+| CTF pwn 题 | `re-ctf` → `re-vuln`（fuzzing/crash-triage） |
+| 工控协议分析 | `re-protocol` → `re-ics` |
+| 车载/ECU 固件 | `re-firmware` → `re-automotive` |
 
 落地方式：
 1. 每个网关 SKILL.md 含「跨域联合」章节，声明引用场景与顺序（引用即 `[[链接]]`，被引用技能按需加载）
@@ -231,7 +237,7 @@ aihk/
 
 ## 6. 成功标准
 
-- 58 个技能全部通过 validate（合法 frontmatter、无死链、含工具准备）
+- 64 个技能全部通过 validate（合法 frontmatter、无死链、含工具准备）
 - `probe.sh` 能输出 OS 平台 + CPU/内存/已装工具清单（Linux/macOS），Windows 下降级为询问；空白环境（无任何工具）时输出安装引导而非中断
 - `platform-tips.md` 覆盖 5 个平台分支（Linux/macOS/Windows/WSL/跨平台），被至少 10 个技能引用
 - `re-analyze` 完整走通"探测 → 偏好 → 识别 → 分派"，偏好状态能被子技能读取
