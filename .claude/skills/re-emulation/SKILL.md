@@ -26,7 +26,7 @@ description: >
 ### qiling（依赖 unicorn / capstone / pefile，自动装）
 
 - 安装: `pip install qiling`
-- 验证: `python3 -c "import qiling; print(qiling.__version__)"`；跑自带示例: `python3 examples/hello_arm32_linux.py`（pip 包内 examples/）
+- 验证: `python3 -c "import qiling; print(qiling.__version__)"`（纯 import 验证，零依赖；pip wheel 不含 examples/ 与 rootfs，跑示例需 git clone 官方仓库获取）
 
 ### capstone（反汇编/解码输出用）
 
@@ -58,10 +58,10 @@ description: >
 3. **Qiling 全系统模拟**：
    ```python
    from qiling import Qiling
-   ql = Qiling(["rootfs/x8664_linux/bin/x86_64-hello"], "rootfs/x8664_linux")
+   ql = Qiling(["rootfs/x8664_linux/bin/x8664_hello"], "rootfs/x8664_linux")   # 文件名以实际 rootfs 为准；examples/ 与 rootfs 需 git clone 官方仓库获取（pip 不含）
    ql.run()
    ```
-   - rootfs: pip 自带 `qiling/examples/rootfs/`（x8664_linux、arm_linux、x86_windows 等）；自制 rootfs 时拷贝目标程序的 libc/ld-linux 与运行期文件进去
+   - rootfs: pip 不含 examples/ 与 rootfs，需 git clone qiling 官方仓库后取 `qiling/examples/rootfs/`（x8664_linux、arm_linux、x86_windows 等）；自制 rootfs 时拷贝目标程序的 libc/ld-linux 与运行期文件进去
    - 文件/系统调用由 Qiling 接管（open/read/write 映射到 rootfs），比 Unicorn 省心（坑 1 的对策）
    - Windows 程序: `Qiling(["sample.exe"], "rootfs/x86_windows")`（该 rootfs 含 wine 基础环境，较重但可用）
 
@@ -78,7 +78,7 @@ description: >
    - 脱壳常用: hook_mem_write 在目标区段命中时暂停/计数——拿到解密循环的写时机与明文
 
 5. **结合 [[re-anti-analysis]] 的脱壳场景**：
-   - 从壳内摘出解密例程（[[re-unpack-*]] 定位）→ Unicorn 加载该例程代码段 + 输入快照 → 执行 → 读输出区域 = 明文数据（字符串/关键段）
+   - 从壳内摘出解密例程（[[re-unpack-simple]] / [[re-unpack-advanced]] 定位）→ Unicorn 加载该例程代码段 + 输入快照 → 执行 → 读输出区域 = 明文数据（字符串/关键段）
    - 或 Qiling 模拟壳程序全流程，hook 到 OEP 处 dump 内存（模拟器内存即快照，转 [[re-memdump]] 思路存档）
    - 反调试绕过: 模拟器无调试器标记，但样本可能有环境检测（坑 2）——先静态确认检测点再决定 hook 哪条路径
    - 验证: 模拟产物 sha256 + 沙箱内复跑核对（[[re-sandbox]]），再回 [[re-anti-analysis]] 流程继续
@@ -98,4 +98,4 @@ description: >
 - **系统调用未处理 → 崩溃**：现象——Unicorn 跑真实程序在 `syscall`/`int 2e` 处停住或报错；原因——Unicorn 不模拟内核，裸执行遇到系统调用即失败；对策——换 Qiling（自动转发系统调用，更省心）；非 Qiling 场景 hook 掉目标 syscall 返回假值（hook_code 判 syscall 指令后改寄存器+跳过）
 - **自校验/环境检测样本察觉模拟**：现象——模拟结果与真实运行不符（分支走错、自毁）；原因——样本用 CPUID/rdtsc 时序、API 探测（如 `GetModuleHandleA` 特殊返回）检测非真实环境；对策——先静态定位检测点（[[re-triage]] / [[re-deobfuscate]]），hook 该路径返回真实环境值，或直接 patch 跳过硬校验；结论务必与真实沙箱执行交叉验证
 - **内存权限错误**：现象——执行时报 `Invalid memory read/write/fetch`；原因——访问了未映射页或只读页写；对策——按报错地址检查 `mu.mem_map` 覆盖范围与 `mu.mem_protect(addr, size, UC_PROT_ALL)`，栈页补映射并设 `UC_PROT_READ|UC_PROT_WRITE`
-- **模拟 ≠ 真实执行**：现象——依赖时间/线程的程序行为异常；原因——Unicorn 单线程、`rdtsc` 立即返回 0、部分 API 语义不完整；对策——模拟只用于确定性任务（解算法、解密、脱壳摘函数），时序/多线程/网络类任务转 QEMU 或真实沙箱；模拟结论用 [[re-tracing]] 对比真实轨迹
+- **模拟 ≠ 真实执行**：现象——依赖时间/线程的程序行为异常；原因——Unicorn 单线程、`rdtsc` 时序不可靠需 hook 处理、部分 API 语义不完整；对策——模拟只用于确定性任务（解算法、解密、脱壳摘函数），时序/多线程/网络类任务转 QEMU 或真实沙箱；模拟结论用 [[re-tracing]] 对比真实轨迹

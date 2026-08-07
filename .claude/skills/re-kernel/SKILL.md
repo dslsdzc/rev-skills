@@ -40,7 +40,7 @@ description: >
 
 1. **驱动入口 DriverEntry 定位**：
    - PE 入口（AddressOfEntryPoint）= 链接器入口，.sys 通常即 DriverEntry（或 EP 处 stub 一跳进入，见坑 4）
-   - 签名特征: `DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)`（x64 参数 rcx/rxd）
+   - 签名特征: `DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)`（x64 参数 rcx/rdx）
    - 从 DriverEntry 追踪: `IoCreateDevice` 调用、注册 MajorFunction 的数组赋值循环——这就是分发表的来源
 
 2. **IRP 分发表（MajorFunction）**：
@@ -62,7 +62,7 @@ description: >
 5. **与用户态交互（DeviceIoControl）**：
    - 用户态: `CreateFile("\\.\MyDriver")` → `DeviceIoControl(h, IOCTL_CODE, inbuf, insize, outbuf, outsize, ...)`
    - 驱动侧 handler: `IoGetCurrentIrpStackLocation(irp)->Parameters.DeviceIoControl` 取 `IoControlCode`/`InputBufferLength`/`OutputBufferLength`；`METHOD_BUFFERED` 用 `irp->AssociatedIrp.SystemBuffer`，`METHOD_NEITHER` 用 `Type3InputBuffer`
-   - IOCTL 码解码: 高 16 位设备类型（`FILE_DEVICE_*`）、bit2 位方法（0=BUFFERED）、bit14 访问权限——由用户态样本（[[re-binary-core]] 分析）的 DeviceIoControl 参数反推驱动期望的输入结构布局
+   - IOCTL 码解码: 高 16 位设备类型（`FILE_DEVICE_*`）、bit0-1 方法（0=BUFFERED）、bit14-15 访问权限——由用户态样本（[[re-binary-core]] 分析）的 DeviceIoControl 参数反推驱动期望的输入结构布局
    - 闭环: 用户态样本拿 IOCTL + 输入结构 → 驱动对应 handler 分析处理逻辑 → 数据结构逐字段对齐（结构体在 Ghidra/IDA 中定义后类型传播复核）
 
 ## 跨域联合
