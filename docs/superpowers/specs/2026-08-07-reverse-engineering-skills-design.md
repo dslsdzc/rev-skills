@@ -17,7 +17,26 @@
 
 ### 2.1 第 1 层 — 入口（1 个）
 
-`re-analyze`：唯一分析入口。根据输入（文件路径 / 描述 / 请求）判断任务类型，查 `references/triage.md` 决策表，编排调用大类网关。复合任务（命中多个大类）按依赖顺序串联。
+`re-analyze`：唯一分析入口。流程：**环境探测 → 偏好询问 → 任务识别 → 编排分派**。
+
+**① 环境探测（自动，`references/probe.sh`）**：
+
+- **硬件**：CPU 架构（`uname -m`）、核心数（`nproc`）、内存总量（`free -g`）——用于评估工具可行性（Ghidra 建议 ≥4GB 可用内存；angr 符号执行吃内存；QEMU 仿真按架构选内核）
+- **已装逆向工具**：`which` 探测 ghidra / ida / radare2 / gdb / frida / binwalk / qemu / jadx / angr / z3 等清单
+- 探测失败（如 Windows 无 `uname/free`）→ 退化为向用户询问
+
+**② 偏好询问（用户选择，问题集在 `references/preferences.md`）**：
+
+| 问题 | 选项 | 说明 |
+|---|---|---|
+| 反编译器选择 | IDA / Ghidra / radare2 / **自动推荐** | 默认自动推荐（根据探测结果：装了哪个、内存够不够） |
+| 分析深度 | 快速结论 / 标准分析 / 深度报告 | 决定走哪条流程路径与产出规模 |
+| 输出报告 | 要 / 不要 | 决定是否走报告流程（IOC/YARA 等） |
+| 平台确认 | 自动识别 / 手动指定 | 文件存在时自动识别为主 |
+
+偏好询问**一次完成**，结果存入会话变量，贯穿本次分析全程——被调用的子技能读取该状态（如用户选 Ghidra → 所有反编译步骤直接走 `re-ghidra` 工作流；探测到内存 <4GB → 提示避免 angr 或先加内存）。
+
+**③ 任务识别与编排**：根据输入（文件路径 / 描述 / 请求）判断任务类型，查 `references/triage.md` 决策表，编排调用大类网关。复合任务（命中多个大类）按依赖顺序串联。
 
 ### 2.2 第 2 层 — 大类网关（8 个，独立）
 
@@ -108,6 +127,11 @@ aihk/
 ├── bin/convert.mjs                  # 转换器：SKILL.md → Cursor/Copilot/Windsurf 规则格式
 ├── .claude-plugin/marketplace.json  # claude plugin add 支持
 ├── .claude/skills/                  # 40 个技能（标准结构）
+│   └── re-analyze/
+│       ├── SKILL.md                 # 入口：环境探测 → 偏好询问 → 任务识别 → 编排
+│       ├── references/probe.sh      # 硬件与工具自动探测脚本
+│       ├── references/preferences.md# 偏好问题集与默认值
+│       └── references/triage.md     # 任务类型判定决策表
 └── tests/validate.mjs               # 结构冒烟测试
 ```
 
@@ -154,6 +178,8 @@ aihk/
 ## 6. 成功标准
 
 - 40 个技能全部通过 validate（合法 frontmatter、无死链、含工具准备）
+- `probe.sh` 能输出 CPU/内存/已装工具清单（Linux/macOS），Windows 下降级为询问
+- `re-analyze` 完整走通"探测 → 偏好 → 识别 → 分派"，偏好状态能被子技能读取
 - `npx re-skills install --target all --dry-run` 输出全部安装计划
 - 转换器对每种规则类 target 生成产物成功
 - README 完整覆盖三种安装方式与七种工具适配说明
