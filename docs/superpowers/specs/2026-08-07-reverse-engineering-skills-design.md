@@ -73,19 +73,19 @@
 
 | 大类 | 原子技能 |
 |---|---|
-| `re-binary-core` | `re-triage`、`re-format-pe`、`re-format-elf`、`re-format-macho`、`re-imports`、`re-ghidra`、`re-ida`、`re-radare2`、`re-gdb`、`re-x64dbg`、`re-lldb`、`re-tracing`、`re-memdump`、`re-windbg`、`re-binaryninja`、`re-emulation`、`re-kernel`、`re-game` |
-| `re-malware` | `re-sandbox`、`re-behavior`、`re-ioc` |
-| `re-firmware` | `re-fw-extract`、`re-fw-rootfs`、`re-fw-emulate`、`re-hardware-io` |
-| `re-protocol` | `re-netcap`、`re-proto-rev`、`re-crypto-id`、`re-crypto-keys`、`re-crypto-decrypt` |
-| `re-mobile` | `re-apk`、`re-ios`、`re-frida` |
-| `re-anti-analysis` | `re-packer-id`、`re-unpack-simple`、`re-unpack-advanced`、`re-deobfuscate` |
+| `re-binary-core` | `re-triage`、`re-format-pe`、`re-format-elf`、`re-format-macho`、`re-imports`、`re-ghidra`、`re-ida`、`re-radare2`、`re-gdb`、`re-x64dbg`、`re-lldb`、`re-tracing`、`re-memdump`、`re-windbg`、`re-binaryninja`、`re-emulation`、`re-kernel`、`re-game`、`re-go`、`re-rust`、`re-plugin-dev` |
+| `re-malware` | `re-sandbox`、`re-behavior`、`re-ioc`、`re-ransomware`、`re-loader` |
+| `re-firmware` | `re-fw-extract`、`re-fw-rootfs`、`re-fw-emulate`、`re-hardware-io`、`re-uefi` |
+| `re-protocol` | `re-netcap`、`re-proto-rev`、`re-crypto-id`、`re-crypto-keys`、`re-crypto-decrypt`、`re-iot-proto`、`re-whitebox` |
+| `re-mobile` | `re-apk`、`re-ios`、`re-frida`、`re-mobile-pack`、`re-hybrid-app` |
+| `re-anti-analysis` | `re-packer-id`、`re-unpack-simple`、`re-unpack-advanced`、`re-deobfuscate`、`re-evasion` |
 | `re-cracking` | `re-license`、`re-patching`、`re-keygen` |
 | `re-ctf` | `re-angr`、`re-z3` |
 | `re-managed` | `re-dotnet`、`re-java`、`re-script-deob`、`re-wasm` |
-| `re-forensics` | `re-mem-forensics`、`re-ti` |
+| `re-forensics` | `re-mem-forensics`、`re-ti`、`re-disk-forensics` |
 | `re-vuln` | `re-fuzzing`、`re-crash-triage` |
 
-总数：**1 入口 + 11 网关 + 52 原子 = 64 技能**。
+总数：**1 入口 + 11 网关 + 64 原子 = 76 技能**。
 
 ### 2.4 跨大类引用机制
 
@@ -237,7 +237,7 @@ aihk/
 
 ## 6. 成功标准
 
-- 64 个技能全部通过 validate（合法 frontmatter、无死链、含工具准备）
+- 76 个技能全部通过 validate（合法 frontmatter、无死链、含工具准备）
 - `probe.sh` 能输出 OS 平台 + CPU/内存/已装工具清单（Linux/macOS），Windows 下降级为询问；空白环境（无任何工具）时输出安装引导而非中断
 - `platform-tips.md` 覆盖 5 个平台分支（Linux/macOS/Windows/WSL/跨平台），被至少 10 个技能引用
 - `re-analyze` 完整走通"探测 → 偏好 → 识别 → 分派"，偏好状态能被子技能读取
