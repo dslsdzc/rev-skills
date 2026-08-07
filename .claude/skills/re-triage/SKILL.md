@@ -87,6 +87,7 @@ description: >
    md5sum sample.bin
    ```
    输出保存为 `sample.sha256`，写入分析笔记。之后对文件的任何修改（patch/脱壳产物）都要能与原始哈希对照。
+   - **带壳样本：脱壳前记五件套基线**——确认带壳（转 [[re-anti-analysis]]）后、动手脱壳前，除 SHA256 外记录：**PE timestamp**（TimeDateStamp）、**EP RVA**（AddressOfEntryPoint）、**section hash**（各节 VirtualSize 与数据 hash）、**import table**（DLL 名 + 导入 API 清单，`objdump -p` / pefile 导出）。脱壳前后对照这份基线，是判断"是否达到可分析状态"的依据（[[re-unpack-simple]] / [[re-unpack-advanced]]）。
 
 3. **strings 提取关键串**：
    ```sh
@@ -124,3 +125,4 @@ description: >
 - **hash 先做再动文件**：任何分析前先 sha256 存证；动态执行会污染样本文件，没有原始哈希就无法对照
 - 大文件 strings 全量输出可达数百 MB → 先 `-n` 设最小长度并 `head` 截断
 - **工具报错 ≠ 文件损坏**：现象——`file`/`readelf`/`objdump` 对样本报错或输出中断；原因——对抗样本伪造头字段（节头大小异常、程序头计数离谱、缺失 dynamic section）使解析器失败，并非文件真的损坏；对策——先用 `xxd` 手工核对关键头字段（e_lfanew / e_shoff / e_shnum / e_shentsize），按真实值手工修复后再解析，别把样本当垃圾丢弃
+- **脱壳前不记基线 → 无法对照**：现象——脱壳后发现 EP 变了、节表增删、导入表变成动态调用，无法判断是壳的正常行为还是脱壳出错；原因——没在脱壳前记录 PE 头 / 节 / 导入表基线；对策——动手前按步骤 2 记录五件套（SHA256 / PE timestamp / EP RVA / section hash / import table），脱壳后逐项对照再判定成败

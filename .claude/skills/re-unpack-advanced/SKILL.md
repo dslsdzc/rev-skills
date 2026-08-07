@@ -49,6 +49,7 @@ description: 强壳脱壳：VMProtect/Themida。触发词：VMProtect、Themida�
    - **先攻最外层**：检测通常是链式，先静态定位最外层检测点（用 [[re-ida]] / [[re-radare2]] 找 `NtQueryInformationProcess` 的 xref），scyllaHide 批量隐藏 + 剩余单点 patch（见坑 1）。
 
 2. **找 OEP（堆栈回溯 / 内存断点组合）**：
+   - **入口 ≠ 原始程序逻辑入口**：虚拟化壳仍有"入口"——EP 加载后控制流进入壳代码（Themida 等是进 VM dispatcher），这个入口只是壳的加载/分发点，不是原始程序的逻辑入口。"虚拟化壳无 OEP 概念"的说法不准确——原始入口仍存在，只是被壳藏进 / 绕经 VM 解释层（见坑与陷阱"VM 入口特征随构建变异"），定位它才是本步目标。
    - 堆栈回溯：强壳 stub 尾部以 `ret` 回到 OEP——单步 / 断点停在 `ret`，看栈顶地址即 OEP 线索（stub 常多段、多线程，多断几次取规律）。
    - 内存断点组合：`bp VirtualAlloc`（x64dbg；gdb/Wine 用 `break *VirtualAlloc`）→ 每次返回后检查分配区域是否被写入可执行内容 → 对该区域下内存访问断点（View > Memory Map > 目标节 > Set breakpoint on access）→ 在"最后一次解密写入"后断下，附近即 OEP。
    - OEP 特征：函数序言（`push ebp; mov ebp,esp`）+ 密集正常 API 引用。记录 OEP 地址与镜像基址。
@@ -61,9 +62,12 @@ description: 强壳脱壳：VMProtect/Themida。触发词：VMProtect、Themida�
 4. **IAT 修复（Scylla，含重定向处理）**：
    - `Plugins > Scylla > IAT Autosearch` → `Get Imports` → 逐项检查 "invalid" 导入。
    - **重定向处理**：强壳把 API 调用劫持到壳 stub（VM 内转跳）——对指向 VM stub 的无效项：记录重定向关系（原始 API → stub 地址），用 idapython / rizin 脚本批量把 stub 标注回真实 API；无法解析的项标记并在后续分析中手工补（先 `Get Imports` 确认大部分正常 API 已解析）。
+   - **IAT Autosearch 异常时的导入关系恢复（三线索）**：Autosearch 找不到 / 大量 invalid，别只重跑 Autosearch——① **API 调用链**：定位实际 `CALL [addr]` 调用点，逆推地址表；② **解析函数**：找壳的 API 解析循环（GetProcAddress 调用点或其 API hash 解析实现），在**内存写入点**下断，记录它往 IAT 区写入的地址；③ 强壳可能 **API hash / 动态解析 / syscall 直通**（无 IAT 可修）——转入"标注"路径（记录调用点语义，思路见步骤 5）。**跟踪"第一个 API 调用"不是通用法**：强壳的解析可能发生在多线程 / 延迟阶段，或直接 syscall 直通（无 API 调用可跟）。
+   - **延迟导入 / bound import / API resolver**：Scylla 对延迟导入勾选 `Delayed` 选项（处理延迟导入表）；bound import 按绑定时间戳判断并替换为真实导入；API resolver 类壳（运行时才解析）运行到 API 实际使用点后再 `Get Imports`，别在早期阶段 Fix Dump。
    - `Fix Dump` 输出修复后 exe；重新反编译验证导入表（[[re-ghidra]] / [[re-ida]]）。
 
 5. **虚拟化代码区域标注（不还原则标记绕过）**：
+   - **目标=降低 VM 解释层复杂度**：虚拟化保护的对抗目标是降低虚拟机解释层的分析复杂度，不是"把虚拟化函数还原成原始代码"——后者对 VMProtect/Themida 不存在可行路径。可达成目标二选一：**VM 还原**（极少数关键校验，还原 handler 语义重写逻辑）或**标注绕过**（黑盒观察输入输出）。投入按"可分析性"验收，不按"还原度"验收。
    - 定位 VM 入口：VMProtect 的 VM_Entry 形态 `push imm32; mov eax, imm; jmp vm_handler`（Themida 类似，节名 `.vmp0`/`.vmp1`/`.themida`）。
    - **标注而非还原**：把虚拟化函数标为黑盒（记录入口地址、参数个数、调用点清单），后续分析用动态观察输入/输出（[[re-gdb]] / [[re-x64dbg]] 断在 VM 入口记录参数与返回值）替代静态还原。确需还原的极少数关键校验（如注册码验证）才投入逆向 VM 字节码。
    - 产出：`vm_blackbox.txt` 标注清单（地址 → 说明），随分析报告存档。
@@ -85,3 +89,7 @@ description: 强壳脱壳：VMProtect/Themida。触发词：VMProtect、Themida�
 - **硬件断点被壳检测**：现象——ESP 定律的硬件访问断点不触发 / 一下断进程即退出；原因——新版 Themida 等检测硬件调试寄存器（DR0-3）；对策——ScyllaHide 用注入方式隐藏（配套 `HookLibraryx86.dll` + `InjectorCLIx86.exe` 配置），或改用内存断点 / TitanHide，再不行先静态 patch 检测点再 attach
 - **VM 入口特征随构建变异 → 别只靠签名**：现象——按教程特征找 VM 入口 / dispatcher 定位失败，或还原产物错乱；原因——VMProtect 的 handler 每次构建都会变异（同 opcode 不同代码）、dispatcher 含 opaque predicate、多层 VM（VM 套 VM）叠加（见 [[re-deobfuscate]] 的 opaque predicate 处理）；对策——先试自动化框架（x64Unpack 混合仿真 / DragonSlayer 符号执行+污点跟踪），手动时用动态 trace 记录 handler 执行序列，以"字节码指针寄存器 + 循环分发"定位而非固定签名
 - **带强壳名的样本未必启用虚拟化**：现象——DIE 报 VMProtect/Themida 就上全套强壳流程，标准断点技巧其实就能脱出；原因——虚拟化/反调试是壳的配置选项，大量真实样本（RisePro/Amadey/PrivateLoader 等）未启用、无反调试；对策——先试常规流程（VirtualAlloc 断点 + 内存断点 + 单步），确认 VM 分发型入口确实存在再投入高成本还原
+- **把壳入口当原始入口 / 以为虚拟化壳"无入口"**：现象——在壳入口（VM dispatcher 分发点）找不到原始逻辑就判定"强壳无 OEP 概念"放弃，或在 dispatcher 里死挖原始代码；原因——混淆"壳入口"（EP 后进入的加载/分发点）与"原始程序逻辑入口"（被虚拟化藏起的原始 OEP）；对策——壳入口是客观存在的（Themida 加载即进 dispatcher），用它下断/设日志观察初始化行为；原始逻辑入口按步骤 2 定位，虚拟化部分按步骤 5 处理
+- **IAT 修复死磕 Autosearch**：现象——IAT Autosearch 找不到 / 导入全 invalid，反复重跑仍无果；原因——强壳运行时重建导入表（API hash / 动态解析 / syscall 直通），静态无表可搜；对策——改用步骤 4 三线索（调用链 / 解析函数 / 内存写入点）恢复导入关系，无法恢复的项转标注；"跟踪第一个 API 调用"在强壳不是通用法（多线程 / 延迟解析 / syscall 直通时没有可跟的调用），别在首调上耗时间
+- **把"找到 OEP"当脱壳成功**：现象——停在 OEP、转储、IAT 修复都做了，反编译结果仍不可用（代码段还是壳数据 / 重定位全乱 / 异常表指向壳代码 / 运行即崩），反复重脱无果；原因——把脱壳定义窄化为"找到 OEP"；对策——**脱壳=恢复可分析状态**：代码段为真实指令、导入表可解析、重定位 / 异常表 / 加载配置与真实映像一致（逐项核对见 [[re-format-pe]]），验证通过才算完成，缺哪项修哪项
+- **把"还原原始代码"当虚拟化脱壳目标**：现象——投入数周试图把虚拟化函数完整还原成原始代码，进度停滞；原因——目标设错：虚拟化保护下"原始代码"不是可达产物，**可达成目标是降低 VM 解释层复杂度**（VM 还原 / 标注绕过两条路，见步骤 5）；对策——先判关键度：关键校验（注册码验证等）走 VM 还原（还原 handler 语义重写逻辑），其余走标注绕过（黑盒观察输入输出），以"可分析性"而非"还原度"验收

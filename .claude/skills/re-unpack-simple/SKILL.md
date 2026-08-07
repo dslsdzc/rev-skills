@@ -40,7 +40,7 @@ description: 压缩壳脱壳：UPX/ASPack/FSG。触发词：脱壳、unpack、UP
 
 ## 操作步骤
 
-按顺序执行，每步记录结果（证据路径 + sha256，见 [[re-triage]]）。
+按顺序执行，每步记录结果（证据路径 + sha256，见 [[re-triage]]）；**动手前先按 [[re-triage]] 记录脱壳基线五件套**（SHA256 / PE timestamp / EP RVA / section hash / import table），脱壳后逐项对照再判定成败。
 
 1. **优先官方 / 自动解包（`upx -d`）**：
    ```sh
@@ -52,6 +52,7 @@ description: 压缩壳脱壳：UPX/ASPack/FSG。触发词：脱壳、unpack、UP
 
 2. **ESP 定律找 OEP**（设断在 pushad 后）：
    - 原理：压缩壳入口 `pushad` 保存寄存器 → 壳解密完毕后 `popad` → `jmp OEP`。**对 pushad 之后的 ESP 所指地址下硬件访问断点**，运行后在 `popad` 后的第一条指令附近找 OEP。
+   - **本质（技巧，不是脱壳公式）**：入口 `pushad` 压栈是壳"保存现场"的必然行为，ESP 定律利用它定位"恢复现场"点——`popad` 恢复后即解密完成、控制流将跳真实代码。它只在"入口压栈保护现场、尾部恢复后跳转"这一实现下成立，并非对一切壳都有效：TLS 回调壳（回调先于 EP 执行，EP 处无压栈现场）、多线程壳（多线程各自压栈、断点命中的栈地址错位）、VMProtect/Themida 等虚拟化壳（入口直接进 VM dispatcher，无 pushad/popad 周期）都不适用。**先确认 EP 入口确实是 pushad/popad 周期再用**，否则直接走步骤 3 或转 [[re-unpack-advanced]]。
    - x64dbg（Windows）：载入 → 停在 EP → 单步见 `pushad` → 再单步执行 `pushad` → 记录 **pushad 执行后**的 ESP 值 → 右键 ESP 寄存器 → Hardware Breakpoint（on access）→ 运行 → 断在 `popad` 后第一条指令 → 下面几行 `jmp` 的目标即 OEP。记下 OEP 地址。
    - gdb（Linux/Wine，见 [[platform-tips]] Wine 直读）：
      ```
@@ -63,7 +64,9 @@ description: 压缩壳脱壳：UPX/ASPack/FSG。触发词：脱壳、unpack、UP
    - OEP 特征：一段函数序言（`push ebp; mov ebp,esp`），其后紧跟大量正常 API 引用。
 
 3. **内存断点法（VirtualAlloc 断点）**：
-   - 适用：ESP 定律失效（无 pushad、多 stub）。
+   - 适用：ESP 定律失效（无 pushad、多 stub、多阶段解密）。
+   - **思路（对解密区域设执行监控）**：壳把解密完成的真实代码写入某区域（解压目标节 / VirtualAlloc 分配区），对该区域设执行/访问监控，壳控制流第一次落到解密代码时断下——即**解密完成后的真实代码入口**，不需要猜"OEP 在哪个地址"。
+   - **"第一次执行即 OEP"不成立**：部分壳先跳 loader（壳自身运行库）、多阶段解密（第一次执行到的仍是中间层，后面还有解密循环）、或布置 fake OEP（伪装函数序言引诱过早转储）——断下后必须验证目标具备真实代码特征（函数序言 `push ebp; mov ebp,esp` + 后续密集正常 API 引用），多阶段壳重复下断直到控制流稳定离开壳代码，再进入步骤 4。
    - x64dbg：`bp VirtualAlloc` → 每次返回后看分配区域是否被写入可执行内容（壳的解压目标节）→ 对该区域下内存访问断点（View > Memory Map > 目标节 > Set breakpoint on access）→ 运行到壳完成解密处。也可直接对壳第二节（UPX1/.aspack）下内存断点。
    - gdb（Wine）：`break *VirtualAlloc`，返回后查看分配区，再对分配地址下 watch。
 
@@ -95,3 +98,7 @@ description: 压缩壳脱壳：UPX/ASPack/FSG。触发词：脱壳、unpack、UP
 - **双层压缩壳 → ESP 定律要用两次**：现象——ESP 定律断下后进入的仍是解包层，dump 出来还是壳代码，`upx -d` 解一层后 `file` 仍报壳特征；原因——壳套壳（如 ASPack v2.12 第一层解完还有一层在解密 IAT）；对策——第一层落地后继续观察：出现又一次 pushad/popad 周期、或 `VirtualFree` 释放 IAT 解密堆时才是最后一步，跟到最终 `jmp` 并验证目标是真实代码序言（`push ebp; mov ebp,esp` + 密集正常 API 引用）再 dump，别在过渡 jmp 前早一跳
 - **按 FF 25 搜 IAT 不可靠**：现象——按教程二进制搜索 `FF 25`（间接 jmp）找 IAT 起址，找不到或找到错位置；原因——不是所有程序都经间接跳转调 API（直接 `CALL [addr]` 很常见）；对策——用调试器 `Find > All intermodular calls` 定位一个真实程序调用点，顺 `CALL/JMP [addr]` 跟到跳转表顶端计算 IAT 起址与块大小，再填 ImportREC/Scylla
 - **dump 后 PE 头字段未修 → 加载失败**：现象——IAT 修复完样本仍打不开 / "invalid Win32 application" / 加载即崩；原因——转储工具没修 `SizeOfImage`/`NumberOfSections`/`CheckSum`，或 Win7+ 上 LordPE/ImportREC 因 ASLR 失败；对策——Fix Dump 后仍异常就用 pefile 手工核对修正头三字段，必要时关闭随机基址后重新转储
+- **转储后崩溃 ≠ 脱壳失败**：现象——IAT 修复完成、反编译也正常，运行仍崩溃/闪退，误判脱壳失败而放弃；原因——除 IAT 外还依赖其他机制：TLS callback（壳在回调里重设参数/解密数据）、重定位表（ASLR 下基址重定位未处理）、异常表（SEH 链被壳重排）、Load Config（安全 cookie / GS 检查指向壳数据）；对策——按 [[re-format-pe]] 逐项核对 TLS 回调表、重定位目录、异常目录、Load Config 目录，缺哪项修哪项；脱壳成功判据=代码/导入/重定位/异常机制完整（见 [[re-unpack-advanced]]），不是"不崩溃"或"修完 IAT"
+- **ESP 定律当公式硬套**：现象——对 TLS 回调壳 / 多线程壳 / VMProtect 套 ESP 定律，硬件断点不触发或停在错位栈地址，反复试数小时无果；原因——把"入口压栈找恢复点"当通用公式，实际只适用于入口 pushad 的单线程压缩壳；对策——动手前确认适用前提（EP 入口确为 pushad/popad 周期），否则直接走步骤 3 内存断点法 / 转 [[re-unpack-advanced]]，别在公式上耗时间
+- **把"第一次执行解密区域"当 OEP 直接转储**：现象——内存断点第一次触发就 dump，拿到的是壳 loader / fake OEP，反编译仍是壳代码；原因——壳先跳 loader、多阶段解密或布置 fake OEP，第一次执行≠解密完成；对策——断下后先验证真实代码特征（函数序言 + 密集 API 引用），多阶段壳重复下断直到控制流稳定；转储时机按 [[platform-tips]] 关键经验（解密完成后 dump），默认转储优先
+- **Wine 脱壳失败未必是流程错**：现象——Wine 下按完整流程操作，断点不触发 / 壳运行异常 / 解密结果错乱；原因——Wine 环境问题而非流程问题：缺失壳依赖的 API、壳驱动组件无法加载、反虚拟化检测（Wine 特征 API/注册表/进程名）或环境检测（系统版本/硬件特征）使壳拒绝正常解密；对策——先定位失败点：`WINEDEBUG=+loaddll` 看加载失败日志、断 `GetVersionEx`/注册表读取看是否命中环境检测；确认是 Wine 环境限制后**果断转 Windows VM**（[[re-sandbox]]）完成脱壳，不在 Wine 里反复折腾
