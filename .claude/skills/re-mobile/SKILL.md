@@ -3,7 +3,8 @@ name: re-mobile
 type: gateway
 description: >
   移动应用分析网关。编排：APK 静态 → iOS → 动态 Frida → 原生库。
-  子技能：[[re-apk]] [[re-ios]] [[re-frida]] [[re-mobile-pack]] [[re-hybrid-app]]。
+  子技能：[[re-apk]] [[re-ios]] [[re-frida]] [[re-mobile-pack]] [[re-hybrid-app]]
+  [[re-android-native]] [[re-ios-jb]]。
   触发词：移动App、APK、ipa、Android逆向、iOS逆向、frida、mobile app analysis。
 ---
 
@@ -16,7 +17,7 @@ description: >
    - Android：[[re-apk]] —— apktool 解包、AndroidManifest 入口/权限/组件、jadx 反编译 Java、smali 补丁思路、加固识别
    - iOS：[[re-ios]] —— ipa 解包与签名检查、class-dump 头文件、加密二进制脱壳
 3. 动态：[[re-frida]] —— 需要运行时行为（解密、hook、绕过证书/检测、观察调用链）时 spawn/attach 插桩；iOS 断点调试走 [[re-lldb]]
-4. 原生库：移动 App 含原生代码（Android `lib/*.so`、iOS Framework 内 dylib）→ [[re-binary-core]]：[[re-format-elf]]（Android）/ [[re-format-macho]]（iOS）解析格式，[[re-ghidra]] 反编译 JNI/OC 底层逻辑
+4. 原生库：移动 App 含原生代码（Android `lib/*.so`、iOS Framework 内 dylib）→ [[re-binary-core]]：[[re-format-elf]]（Android）/ [[re-format-macho]]（iOS）解析格式，[[re-ghidra]] 反编译 JNI/OC 底层逻辑；Android native 深挖（JNI 注册还原、so 逻辑）走 [[re-android-native]]；iOS 越狱环境（越狱检测 / tweak / 动态调试）走 [[re-ios-jb]]
 5. 加固/带壳：[[re-apk]] 识别加固后转脱壳域（[[re-anti-analysis]]，Android）；iOS App Store 加密二进制按 [[re-ios]] 脱壳（frida-ios-dump 思路）。脱壳产物回到步骤 2 复跑
 6. 产出：结论/报告（按 `RE_REPORT`），哈希与证据存档（见 [[re-triage]]）
 
@@ -26,7 +27,8 @@ description: >
 
 - 输入是 APK / 目标为 Android → [[re-apk]] 静态 → 需要运行时 → [[re-frida]]
 - 输入是 IPA / 目标为 iOS → [[re-ios]] 静态 + 脱壳 → 断点调试 [[re-lldb]] / 插桩 [[re-frida]]
-- 目标含原生库（.so / dylib）→ [[re-binary-core]]（[[re-format-elf]] / [[re-format-macho]] / [[re-ghidra]]）
+- 目标含原生库（.so / dylib）→ [[re-binary-core]]（[[re-format-elf]] / [[re-format-macho]] / [[re-ghidra]]）；Android native 专项（JNI/so）→ [[re-android-native]]
+- 目标有越狱检测 / 要 tweak 分析 / 越狱设备动态调试 → [[re-ios-jb]]
 - 需要解密 / 绕过证书 / hook 函数 / 观察调用链 → [[re-frida]]
 - 加固/带壳：Android → [[re-anti-analysis]]（先经 [[re-apk]] 识别）；iOS 加密 → [[re-ios]] 脱壳
 - Android 加固脱壳专项（乐固/360/梆梆/爱加密）→ [[re-mobile-pack]]（识别后运行/静态脱壳 + DEX 修复）
@@ -35,7 +37,7 @@ description: >
 
 ## 跨域联合
 
-- 移动 App 含原生库：[[re-mobile]] → [[re-binary-core]]（[[re-format-elf]] / [[re-ghidra]] 反编译 JNI/OC 底层逻辑）
+- 移动 App 含原生库：[[re-mobile]] → [[re-binary-core]]（[[re-format-elf]] / [[re-ghidra]] 反编译 JNI/OC 底层逻辑）；Android native 专项 [[re-android-native]]；iOS 越狱环境 [[re-ios-jb]]（越狱检测 / tweak / lldb 远程）
 - 移动 App 加固/带壳：[[re-mobile]] → [[re-anti-analysis]]（Android 脱壳）；iOS 加密二进制 [[re-ios]] 脱壳
 - 动态分析默认沙箱：模拟器快照 / 受控越狱设备 + 网络隔离（[[platform-tips]] 最高原则）
 - 移动恶意样本/回连：[[re-mobile]] → [[re-malware]]（行为分析见 [[re-sandbox]]）

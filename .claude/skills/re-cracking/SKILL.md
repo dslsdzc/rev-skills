@@ -3,7 +3,7 @@ name: re-cracking
 type: gateway
 description: >
   软件破解网关。编排：带壳先脱壳 → 授权定位 → 补丁/注册机。
-  子技能：[[re-license]] [[re-patching]] [[re-keygen]]。
+  子技能：[[re-license]] [[re-patching]] [[re-keygen]] [[re-drm]]。
   触发词：破解、crack、注册码、序列号、授权验证、绕过验证、打补丁、patch、keygen、注册机、授权绕过。
 ---
 
@@ -37,6 +37,7 @@ description: >
 - **在线激活**（校验含网络请求）→ [[re-license]] 区分在线 / 离线后转 [[re-protocol]] 抓包分析激活流程，本地侧按离线流程处理（见坑 3）
 - **只要确认注册机制是否存在**（"这程序有授权吗"）→ [[re-license]] 第 1 步即可，不进入后续
 - **确认无授权机制** → 不需要本网关，转 [[re-binary-core]] 正常分析
+- **目标是 DRM 内容保护**（PlayReady / Widevine 许可证、内容解密）→ 非传统授权校验，转 [[re-drm]]（仅授权研究，合规边界见该技能）
 
 ## 跨域联合
 
@@ -45,6 +46,7 @@ description: >
 - **反编译工作台**：授权函数反编译走 [[re-binary-core]]（[[re-ghidra]] / [[re-ida]] / [[re-radare2]]）
 - **动态定位**：[[re-gdb]] / [[re-x64dbg]]（断点看校验分支与返回值）、[[re-lldb]]（macOS）、[[re-tracing]]（strace / ltrace 观察注册表 / 文件 / API 调用）、[[re-memdump]]（内存中的注册标志 / 校验结果）
 - **在线激活**：校验含网络交互 → [[re-protocol]]（[[re-netcap]] 抓包 + [[re-crypto-id]] / [[re-crypto-keys]] / [[re-crypto-decrypt]] 处理激活协议加密）
+- **DRM 内容保护**：PlayReady / Widevine 许可证与内容解密属 DRM 域 → [[re-drm]]（区别于授权校验破解；仅授权研究）
 - **混淆对抗**：校验函数被花指令 / 平坦化 / 字符串加密保护 → [[re-deobfuscate]] 还原后再定位
 - **验证沙箱**：补丁版 / keygen 序列号复跑验证必须 [[re-sandbox]]（[[platform-tips]] 最高原则）
 - **IOC 产出**：注册算法指纹、补丁字节、keygen 典型特征进 [[re-ioc]] 列表

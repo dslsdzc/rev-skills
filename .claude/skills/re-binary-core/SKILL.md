@@ -7,7 +7,7 @@ description: >
   [[re-imports]] [[re-ghidra]] [[re-ida]] [[re-radare2]] [[re-gdb]] [[re-x64dbg]]
   [[re-lldb]] [[re-tracing]] [[re-memdump]] [[re-windbg]] [[re-binaryninja]]
   [[re-emulation]] [[re-shellcode]] [[re-kernel]] [[re-game]] [[re-go]] [[re-rust]]
-  [[re-plugin-dev]]。
+  [[re-plugin-dev]] [[re-hypervisor]] [[re-anti-cheat]]。
   触发词：静态分析、看这个程序的逻辑、反编译、逆向这个二进制、binary analysis。
 ---
 
@@ -80,6 +80,8 @@ description: >
 - 要跟踪系统调用/函数调用 → [[re-tracing]]
 - 要读/转储进程内存 → [[re-memdump]]（默认转储优先，见 [[platform-tips]]）
 - 目标是驱动/内核模块/rootkit → [[re-kernel]]（配 [[re-windbg]] 内核调试）
+- 目标是 hypervisor/VMM/虚拟化检测相关 → [[re-hypervisor]]（VT-x/SVM、VMCS/EPT）
+- 目标是反作弊组件（EAC/BattlEye 驱动、内存校验）→ [[re-anti-cheat]]（驱动分析 + 内核调试，注意授权边界）
 - 目标无环境/脱壳辅助，需模拟执行 → [[re-emulation]]
 - 目标是 shellcode（无文件格式头的裸代码 blob：提取/解码循环/模拟执行）→ [[re-shellcode]]
 - 目标是游戏（Unity/Unreal、CE 内存修改）→ [[re-game]]
@@ -90,7 +92,8 @@ description: >
 
 ## 跨域联合
 
-- [[re-mobile]]：移动 App 原生 .so 库分析 → 本网关 [[re-format-elf]] + [[re-ghidra]]
+- [[re-mobile]]：移动 App 原生 .so 库分析 → 本网关 [[re-format-elf]] + [[re-ghidra]]（专项见 [[re-android-native]]）
+- [[re-hypervisor]] / [[re-anti-cheat]]：hypervisor 与反作弊驱动的逆向分析以本网关技能为底座（[[re-kernel]] / [[re-windbg]] 内核调试）
 - [[re-ctf]]：CTF 逆向题 → 本网关技能为底座
 - [[re-anti-analysis]]：静态发现混淆/壳 → 转入脱壳域
 - [[re-shellcode]]：shellcode 载荷专项分析（提取/解码/模拟执行）→ 反编译底座用本网关（[[re-radare2]] / [[re-ghidra]]）
