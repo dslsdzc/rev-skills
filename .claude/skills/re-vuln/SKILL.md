@@ -4,7 +4,7 @@ type: gateway
 description: >
   漏洞挖掘网关。编排：目标与输入面识别 → 覆盖率引导 fuzzing →
   崩溃分析 → 逆向定位 → 报告。
-  子技能：[[re-fuzzing]] [[re-crash-triage]]。
+  子技能：[[re-fuzzing]] [[re-crash-triage]] [[re-exploit]]。
   触发词：漏洞挖掘、挖洞、fuzz、模糊测试、AFL、libFuzzer、崩溃分析、
   crash、vulnerability hunting、fuzzing。
 ---
