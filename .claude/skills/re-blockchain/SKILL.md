@@ -33,7 +33,7 @@ description: >
 
 ### web3.py（pip，Python 3.8+）—— 脚本化链上分析
 
-- `pip install web3`（官方 PyPI，web3 7.x 要求 Python 3.8–3.12）
+- `pip install web3`（官方 PyPI，web3 7.x 要求 Python ≥3.8，PyPI 声明 `<4` 无 3.12 上限）
 - 验证: `python3 -c "import web3; print(web3.__version__)"`
 
 ### panoramix（pip，Python 3.9–3.11）—— EVM 反编译器（disasm→流程）
