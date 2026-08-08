@@ -3,7 +3,7 @@ name: re-protocol
 type: gateway
 description: >
   协议逆向网关。编排：捕获 → 加密识别 → 密钥 → 解密 → 状态机重建。
-  子技能：[[re-netcap]] [[re-crypto-id]] [[re-crypto-keys]] [[re-crypto-decrypt]] [[re-proto-rev]] [[re-ics]] [[re-iot-proto]] [[re-whitebox]]。
+  子技能：[[re-netcap]] [[re-crypto-id]] [[re-crypto-keys]] [[re-crypto-decrypt]] [[re-proto-rev]] [[re-ics]] [[re-iot-proto]] [[re-whitebox]] [[re-tls]]。
   触发词：协议逆向、抓包、流量分析、解密流量、C2协议、自定义协议、protocol analysis。
 ---
 
@@ -36,6 +36,7 @@ description: >
 - **只要找密钥**（"样本里有没有硬编码密钥"）→ [[re-crypto-keys]]（静态优先，见 [[platform-tips]] 最高原则的静态优先思路）
 - **白盒加密**（大段查表代码、无标准库调用、密钥藏在表里）→ [[re-whitebox]]（识别 → 表提取 → 密钥恢复，衔接加密三件套）
 - **流量捕获环境未就绪** → 先 [[re-sandbox]] 网络隔离（INetSim / fake DNS）再回来 [[re-netcap]]
+- **标准 TLS/加密流量深度**（ClientHello 指纹、SSLKEYLOG 解密、TLS 1.2/1.3）→ [[re-tls]]（标准 TLS 栈；自实现加密转 crypto 三件套）
 
 ## 跨域联合
 
@@ -45,6 +46,7 @@ description: >
 - **IOC 产出（[[re-ioc]]）**：C2 域名/IP/端口、协议指纹、解密出的配置明文进 IOC 列表与 YARA 特征
 - **二进制深挖（[[re-binary-core]]）**：加密实现/解密函数反编译走 [[re-ghidra]] / [[re-ida]] / [[re-radare2]]；密钥在内存走 [[re-memdump]]
 - **白盒加密（[[re-whitebox]]）**：加密识别/密钥链路遇到白盒实现（无显式密钥的大段查表加密）时转入——常规 [[re-crypto-keys]] 路径失效的分支
+- **TLS 专项（[[re-tls]]）**：标准 TLS 流量深度分析——JA3/JA4 指纹、SSLKEYLOG 解密（TLS 1.2/1.3）、证书链分析；解密后的明文流量继续 [[re-proto-rev]]
 - **入口调度**：本网关被 [[re-analyze]] 的 triage.md「分析网络流量 / 未知协议」路径调用（re-protocol → netcap → crypto-* → proto-rev）
 
 ## 常见坑与陷阱

@@ -6,7 +6,8 @@ description: >
   子技能：[[re-triage]] [[re-format-pe]] [[re-format-elf]] [[re-format-macho]]
   [[re-imports]] [[re-ghidra]] [[re-ida]] [[re-radare2]] [[re-gdb]] [[re-x64dbg]]
   [[re-lldb]] [[re-tracing]] [[re-memdump]] [[re-windbg]] [[re-binaryninja]]
-  [[re-emulation]] [[re-kernel]] [[re-game]] [[re-go]] [[re-rust]] [[re-plugin-dev]]。
+  [[re-emulation]] [[re-shellcode]] [[re-kernel]] [[re-game]] [[re-go]] [[re-rust]]
+  [[re-plugin-dev]]。
   触发词：静态分析、看这个程序的逻辑、反编译、逆向这个二进制、binary analysis。
 ---
 
@@ -80,6 +81,7 @@ description: >
 - 要读/转储进程内存 → [[re-memdump]]（默认转储优先，见 [[platform-tips]]）
 - 目标是驱动/内核模块/rootkit → [[re-kernel]]（配 [[re-windbg]] 内核调试）
 - 目标无环境/脱壳辅助，需模拟执行 → [[re-emulation]]
+- 目标是 shellcode（无文件格式头的裸代码 blob：提取/解码循环/模拟执行）→ [[re-shellcode]]
 - 目标是游戏（Unity/Unreal、CE 内存修改）→ [[re-game]]
 - 目标是 Go 二进制（语言专项：符号/字符串表/goroutine）→ [[re-go]]
 - 目标是 Rust 二进制（语言专项：符号解译/泛型展开/所有权）→ [[re-rust]]
@@ -91,6 +93,7 @@ description: >
 - [[re-mobile]]：移动 App 原生 .so 库分析 → 本网关 [[re-format-elf]] + [[re-ghidra]]
 - [[re-ctf]]：CTF 逆向题 → 本网关技能为底座
 - [[re-anti-analysis]]：静态发现混淆/壳 → 转入脱壳域
+- [[re-shellcode]]：shellcode 载荷专项分析（提取/解码/模拟执行）→ 反编译底座用本网关（[[re-radare2]] / [[re-ghidra]]）
 - 本网关技能被 [[re-malware]] 深度逆向环节引用
 
 ## 常见坑与陷阱
