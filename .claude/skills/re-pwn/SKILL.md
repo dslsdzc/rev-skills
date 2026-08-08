@@ -42,7 +42,7 @@ description: >
 
 ### one_gadget（可选）—— libc 一键 RCE
 
-- `gem install one_gadget`（Ruby gem，要求 Ruby ≥ 2.1；Debian/Ubuntu 先 `sudo apt install ruby`；macOS 自带 Ruby，`sudo gem install one_gadget`）
+- `gem install one_gadget`（Ruby gem，one_gadget 1.10.0 要求 Ruby ≥ 3.1（gemspec 声明）；Debian/Ubuntu 先 `sudo apt install ruby`；macOS 自带 Ruby，`sudo gem install one_gadget`）
 - Arch: `sudo pacman -S one_gadget`（Extra 仓库官方包）；Fedora 无包 → gem 安装
 - 验证: `one_gadget /lib/x86_64-linux-gnu/libc.so.6`（列出候选 one_gadget 及其约束条件）
 
@@ -101,7 +101,7 @@ description: >
    ```python
    from pwn import *
    p = process('./target')
-   p.sendline(b'%6$p %7$p')      # 固定读第 6/7 个参数（栈上第 2/3 个 8 字节）
+   p.sendline(b'%6$p %7$p')      # 固定读第 6/7 个参数（%1$–%5$ 是 rsi/rdx/rcx/r8/r9 寄存器，即栈上第 1/2 个 8 字节）
    print(p.recvline())
    ```
    - 泄露：`%N$p` 直接读栈上第 N 个参数（往返几次定位 flag / 返回地址 / libc 地址，见坑 4 的环境差异）

@@ -18,7 +18,7 @@ description: >
    - 逆向题（rev / babyre）：给一个二进制，要求还原算法 / 找输入 / 找 flag —— 按第 2-4 步走
    - 加密 / 算法题：给加密函数 / 密文，要求解出明文或逆算法 —— 涉及 [[re-crypto-id]] / [[re-crypto-decrypt]]，约束求解用 [[re-z3]]
    - 序列号 / 注册类题：校验函数还原 → 注册机（见 [[re-license]] / [[re-keygen]]，硬推比较链用 [[re-z3]]）
-   - pwn / 栈溢出题：动态调试 + 漏洞利用（[[re-gdb]] / [[re-radare2]]，运行在 [[re-sandbox]]）
+   - pwn / 栈溢出题：入门利用走 [[re-pwn]]（[[re-gdb]] / [[re-radare2]] 动态调试，运行在 [[re-sandbox]]）
    - 初勘命令：`file` / `checksec` / 熵 / strings（[[re-triage]]），识别架构、是否带壳、是否静态链接
 2. **简单题直接 [[re-binary-core]]** —— 题不需要自动化时，走通用分析（初勘 → 格式解析 → 反编译 → 调试）：[[re-ghidra]] / [[re-ida]] / [[re-radare2]] 反编译主逻辑，人工还原出 flag / 注册算法。**先估算复杂度**：几行比较 / 简单 XOR 的题 15 分钟人工就够，上 angr 反而慢（见坑 2）
 3. **需自动化 → [[re-angr]] / [[re-z3]]**：
@@ -42,7 +42,7 @@ description: >
 - **花指令 / 平坦化 / 字符串加密可见** → 先 [[re-deobfuscate]] 还原，再按题型走 angr / z3 / 人工（坑 3）
 - **带壳题**（CTF 少见，常见于"脱壳题"）→ 先 [[re-anti-analysis]]（packer-id → unpack-*），脱壳后回本网关
 - **加密 / 密码学题**（AES / RSA / 自定义加密 + 密文）→ [[re-crypto-id]] 识别 → [[re-crypto-decrypt]] 还原；自定义数学关系用 [[re-z3]] 求解
-- **pwn 题** → [[re-gdb]] / [[re-radare2]] + [[re-sandbox]] 动态调试（本网关以逆向题为主，pwn 作为相邻题型移交调试域）
+- **pwn 题** → [[re-pwn]]（漏洞利用入门：栈溢出 / 格式化字符串 / ret2libc）→ [[re-gdb]] / [[re-radare2]] + [[re-sandbox]] 动态调试（本网关以逆向题为主，pwn 作为相邻题型移交调试域）
 - **flag 解出但格式不对** → 检查大小写 / 换行 / 编码（坑 4）
 
 ## 跨域联合
