@@ -3,7 +3,7 @@ name: re-managed
 type: gateway
 description: >
   托管代码逆向网关。编排：识别运行时 → 反编译 → 去混淆 → 恶意场景转 [[re-malware]]。
-  子技能：[[re-dotnet]] [[re-java]] [[re-script-deob]] [[re-wasm]]。
+  子技能：[[re-dotnet]] [[re-java]] [[re-script-deob]] [[re-wasm]] [[re-ai-model]] [[re-blockchain]]。
   触发词：.NET、dnSpy、ILSpy、Java、jar、字节码、PowerShell混淆、VBA宏、JS去混淆、托管代码、managed code。
 ---
 
@@ -28,6 +28,8 @@ description: >
 - **jar / war / class（Java 字节码）** → [[re-java]]（CFR/JD-GUI、javap、加固脱壳）
 - **.ps1 / .docm / .xlsm / .js / .jse / .hta（脚本或宏）** → [[re-script-deob]]（逐层解码，动态执行默认沙箱）
 - **.wasm / WebAssembly 模块（网页/Node 侧载荷）** → [[re-wasm]]（WABT 解析 section、wasm-decompile 反编译、DevTools/wasmtime 动态）
+- **ONNX / safetensors / PyTorch 模型文件** → [[re-ai-model]]（格式识别、权重提取、水印/窃取判定；未知 pkl 默认隔离）
+- **EVM 合约字节码（.bin / hex）** → [[re-blockchain]]（ABI 恢复、panoramix 反编译、漏洞分析）
 - **Android DEX** → 不是本网关——转 [[re-mobile]]（[[re-apk]]），其中含 Java 原生逻辑再回 [[re-java]]
 - **仅脚本调用 native 下载的 PE** → 动态侧跟 [[re-malware]]，静态侧回 [[re-binary-core]]
 
@@ -37,6 +39,7 @@ description: >
 - 恶意脚本/宏：[[re-malware]] → [[re-sandbox]]（动态）→ [[re-script-deob]]（静态还原载荷）
 - 底座 [[re-binary-core]]：初勘（[[re-triage]]）、混合程序原生部分（格式解析 / [[re-ghidra]] 反编译）、混淆深层还原（[[re-deobfuscate]]）
 - 本网关被 [[re-analyze]] 的 triage「.NET/Java/脚本样本」路径调用
+- "代码在数据里"分支：AI 模型（[[re-ai-model]]，内嵌代码转 [[re-binary-core]]）、EVM 合约字节码（[[re-blockchain]]，漏洞侧衔接 [[re-vuln]]）
 
 ## 常见坑与陷阱
 
