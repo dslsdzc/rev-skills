@@ -31,11 +31,11 @@ description: >
 
 ### QEMU / KVM —— 嵌套虚拟化实验环境
 
-- Debian/Ubuntu: `apt install qemu-system-x86 qemu-kvm`（Ubuntu 另加 `libvirt-daemon-system`）
+- Debian/Ubuntu: `apt install qemu-system-x86`（**Debian 12+ 已移除 qemu-kvm 过渡包**，直接装 qemu-system-x86 即含 `qemu-system-x86_64`；Ubuntu 的 qemu-kvm 过渡包仍存在，装了等价于 qemu-system-x86；Ubuntu 另加 `libvirt-daemon-system`）
 - Fedora: `dnf install qemu-system-x86-core libvirt virt-install`（或 `dnf group install virtualization`）
 - Arch: `pacman -S qemu-system-x86 libvirt virt-manager`（启用 `systemctl enable --now libvirtd`）
 - macOS: `brew install qemu`（无 KVM，用 HVF）
-- 验证: `qemu-system-x86_64 --version`；`ls /dev/kvm`（KVM 加速可用）；`kvm-ok`（Debian/Ubuntu 的 cpu-checker 包）
+- 验证: `qemu-system-x86_64 --version`；`ls /dev/kvm`（KVM 加速可用）；`kvm-ok`（Debian/Ubuntu 专用，来自 cpu-checker 包——先 `apt install cpu-checker`）
 
 ### 反编译工作台（[[re-ghidra]] / [[re-ida]]）
 
@@ -58,14 +58,14 @@ description: >
    cpuid -1 -l 0x40000000                            # 0x40000000 叶子的 hypervisor 厂商字符串
    #   "KVMKVMKVM" = KVM、"Microsoft Hv" = Hyper-V、"VMwareVMware" = VMware、"XenVMMXenVMM" = Xen
    ```
-   - 检测要点：hypervisor present bit（CPUID.1:ECX[31]）→ 有 hypervisor；`0x40000000` 返回厂商字符串（`[!xchg]` 汇编技巧：先在 `0x40000000` 之前执行 `mov eax, 0x40000000; cpuid`，ECX 返回字串长度）
+   - 检测要点：hypervisor present bit（CPUID.1:ECX[31]）→ 有 hypervisor；`0x40000000` 返回厂商字符串（12 字符按序分布在 EBX:ECX:EDX 各 4 字节，EAX 返回最大 hypervisor 叶子号）
    - 恶意样本常在启动早期做此检测决定后续行为（[[re-evasion]] 联动，见坑 5）
    - 记录：宿主支持情况（vmx/svm）、是否已在 VM 内（含嵌套，坑 4）
 
 2. **VMCS 结构分析（VT-x）**：
    - 启动路径：`VMXON`（进入 VMX 操作模式）→ `VMPTRLD`（加载当前 VMCS）→ 配置 VMCS 字段 → `VMLAUNCH`/`VMRESUME`（进 guest）→ VM exit 后查 `VM_EXIT_REASON` 字段分派
    - 反编译定位：搜 `VMXON`/`VMPTRLD`/`VMWRITE`/`VMREAD`/`VMLAUNCH` 指令（Ghidra 反汇编直接可读）；VMCS 区域是内存块，先找 VMCS 缓冲区分配与初始化代码
-   - **VMREAD/VMWRITE 的操作数是 VMCS 字段编码**（16 位：bit15=访问类型、bit12-9 宽度、bit8-0 字段编号）——按 Intel SDM 附录 B 把每个魔数解码成字段名（如 0x6C10 = VMCS 的 GUEST_RSP？——以 SDM 表为准逐个核对），在 Ghidra/IDA 里建枚举/结构标注
+   - **VMREAD/VMWRITE 的操作数是 VMCS 字段编码**（32 位，Intel SDM 附录 B 表 B-1~B-4）：宽度由 bit14（置 1=32 位）/bit13（置 1=64 位）两个标志位表示（同置=natural 宽度、同清=16 位）；类型在 bits 11:10（00=control、01=read-only、10=guest-state、11=host-state）；索引在 bits 9:0。解码示例：0x400C=VM-exit controls（32 位，bit14 置）、0x2000=I/O bitmap A（64 位，bit13 置）、0x681E=GUEST_RIP（natural）、0x681C=GUEST_RSP（natural）、0x4402=VM-exit reason（32 位 read-only）——在 Ghidra/IDA 里建枚举/结构标注
    - 关注三块：guest-state（保存 guest 寄存器/CR3/RSP）、host-state（VM exit 后宿主现场）、control 字段（execution control 决定哪些事件触发 VM exit）
    - SVM 对应：VMCB（物理地址经 `VM_HSAVE_PA` MSR），字段是固定偏移——按 AMD APM 布局标注
    - 产物：VMCS 字段标注表（编码 → 字段名 → 作用）+ 初始化/exit 处理流程
@@ -90,7 +90,7 @@ description: >
 
 5. **反虚拟化绕过（[[re-evasion]] 联动）**：
    - 识别检测手段：CPUID 厂商字符串（步骤 1）、时序（RDTSC 指令耗时）、设备名（VM 虚拟设备）、固件/ACPI 特征
-   - 按 [[re-evasion]] 的"规避识别→绕过点定位"框架：hook CPUID（frida `Interceptor.attach(Module.findExportByName(null,'cpuid'))` 改返回值 / 内核 hook）、QEMU `-cpu` 参数伪造厂商字符串、设备名改名
+   - 按 [[re-evasion]] 的"规避识别→绕过点定位"框架：hook CPUID（cpuid 是**指令**而非导出符号，`findExportByName` 拿不到——改 hook libc 导出函数 `__get_cpuid`/`__get_cpuid_max` 改返回值，或 Stalker 指令级追踪拦截 cpuid 指令；内核侧 hook/patch 指令）、QEMU `-cpu` 参数伪造厂商字符串、设备名改名
    - 恶意样本"检测到 VM 就改变行为"（不执行恶意逻辑）也是常见对抗——记录检测点与分支
    - 产物：检测点清单 + 绕过方案（授权研究场景）
 

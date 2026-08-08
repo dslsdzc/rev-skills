@@ -57,7 +57,7 @@ description: >
 ### lldb 远程（[[re-lldb]]）+ usbmuxd/iproxy
 
 - lldb：macOS `xcode-select --install`（自带）；Linux `apt install lldb` / `dnf install lldb` / `pacman -S lldb`
-- usbmuxd/iproxy：macOS `brew install usbmuxd`；Linux `apt install usbmuxd` / `dnf install usbmuxd` / `pacman -S usbmuxd`
+- usbmuxd/iproxy：macOS `brew install usbmuxd`；Linux 的 **iproxy 在 libimobiledevice-utils 包**（Debian/Ubuntu/Fedora）/**libimobiledevice 包**（Arch），仅装 usbmuxd 不含 iproxy：`apt install usbmuxd libimobiledevice-utils` / `dnf install usbmuxd libimobiledevice-utils` / `pacman -S usbmuxd libimobiledevice`
 - 验证: `lldb --version`；`iproxy 2222 22` 后 `ssh -p 2222 root@127.0.0.1` 能登录设备
 - 设备端调试服务 debugserver：越狱工具 / DeveloperDiskImage 提供（见 [[re-ios]] 与 [[re-lldb]]）
 
@@ -69,7 +69,7 @@ description: >
    ```sh
    # 设备：DFU 模式进入 palera1n
    sudo systemctl stop usbmuxd && sudo usbmuxd -f -p &    # 部分环境需重启 usbmuxd
-   sudo palera1n -l                                        # -l = rootless（palera1n 2.x 默认 rootless）
+   sudo palera1n                                          # rootless 默认，无需旗标（v2 选项集 [-DEhpvVdsSLRnPI] 无 -l）
    # 越狱后：Sileo 装 OpenSSH → 转发 → 登录
    iproxy 2222 22 &
    ssh -p 2222 root@127.0.0.1                              # 默认密码 alpine（rootless 后立即改）

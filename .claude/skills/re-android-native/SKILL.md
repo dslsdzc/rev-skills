@@ -87,7 +87,8 @@ description: >
      var RegisterNatives = null;
      var JNI_OnLoad = Module.findExportByName(null, "JNI_OnLoad");
      Interceptor.attach(JNI_OnLoad, { onEnter: function() {
-       // JNIEnv* 在 x0（arm64），函数表在 env[0]，RegisterNatives 是表内第 215 个槽
+       // JNIEnv* 在 x0（arm64），函数表在 env[0]，RegisterNatives 是表内第 215 个槽（0 基，AOSP jni.h
+       // JNINativeInterface 声明序：Get*ArrayRegion 族 199-206、Set*ArrayRegion 族 207-214、GetJavaVM=219 可锚点校验）
        var env = this.context.x0;
        var table = env.readPointer();
        RegisterNatives = table.add(215 * 8).readPointer();
