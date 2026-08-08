@@ -160,6 +160,7 @@ description: >
                   'WriteProcessMemory','CreateThread','WinExec']:
          print(name, hex(djb2(name.encode())))
      ```
+   - 算法对照: Metasploit 系（msfvenom 生成）API hash 默认 ROR13（非 djb2）——穷举对照时两种都要算，命中即确认生成器来源
    - 还原调用约定: 先确定位数/调用约定（Win32 默认 stdcall、x64 默认 fastcall）——决定参数寄存器/栈顺序与返回值位置（坑 3）
    - API 集合 = 行为意图: VirtualAlloc/VirtualProtect + WriteProcessMemory → 注入；CreateThread/CreateRemoteThread → 执行；WinExec/CreateProcess → 运行程序——直接对应 [[re-behavior]] 的 ATT&CK 映射（T1055 进程注入等）
    - 模拟 stub: 把 API 调用点加入 hook_code 的 API_ADDRS，按功能返回假值（如 VirtualAlloc 返回一块已映射内存地址），观察控制流走向

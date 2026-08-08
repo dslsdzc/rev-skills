@@ -31,7 +31,7 @@ description: >
 ### openssl —— 证书解析与 TLS 交互（跨 OS）
 
 - Linux: `apt install openssl` / `dnf install openssl` / `pacman -S openssl`（多数预装）
-- macOS: `brew install openssl`（keg-only，PATH 加 `/opt/homebrew/opt/openssl@3/bin`）
+- macOS: `brew install openssl`（keg-only，PATH 加 `/opt/homebrew/opt/openssl@3/bin`（Apple Silicon）或 `/usr/local/opt/openssl@3/bin`（Intel））
 - Windows: `choco install openssl.light`（PATH 需手动加，见包说明）或 Git for Windows 自带 `openssl.exe`
 - 验证: `openssl version`
 
@@ -71,9 +71,9 @@ description: >
 
 2. **证书链分析（openssl x509 解析）**：
    ```sh
-   # 从 pcap 提取服务器证书（DER 十六进制 → 文件）
+   # 从 pcap 提取服务器证书（DER 十六进制 → 文件；多证书链时字段逗号分隔、hex 带冒号，tr -d ':' 保险）
    tshark -r out.pcap -Y 'tls.handshake.type == 11' -T fields -e tls.handshake.certificate \
-     | head -1 | xxd -r -p > server_cert.der
+     | head -1 | tr -d ':' | xxd -r -p > server_cert.der
    openssl x509 -in server_cert.der -inform DER -text -noout | head -60
    # 实时抓取（对已知主机）
    openssl s_client -connect <host>:443 -servername <host> -showcerts </dev/null 2>/dev/null \
@@ -83,6 +83,8 @@ description: >
      | grep -i 'verify return'
    ```
    - 分析点: 签发者/主题（CN/SAN）、有效期（异常日期/过期）、自签名 vs 受信 CA、SPKI/指纹（`openssl x509 -noout -fingerprint -sha256`）、证书重用（同一证书多个 C2 域 = 批量签发）
+   - 注意: TLS 1.3 的 Certificate 消息（type 11）在加密握手内，`-Y 'tls.handshake.type == 11'` 匹配不到——TLS 1.3 流量需先按步骤 3 解密（SSLKEYLOG）或用 openssl s_client 实时抓取
+   - 平台注: `</dev/null` 是 POSIX 语法、Windows cmd 不适用——Windows 下用 `echo | openssl s_client ...` 或去掉 `</dev/null` 交互式退出
    - 恶意特征: 自签名 + 新注册域名 + 短有效期（90 天-1 年批量自动化签发常见）
 
 3. **SSLKEYLOG 解密（TLS 1.2/1.3 密钥导出）**：
@@ -93,7 +95,7 @@ description: >
    # 或 GUI: 首选项 → Protocols → TLS → (Pre)-Master-Secret log filename
    ```
    - TLS 1.2: keylog 记录 `CLIENT_RANDOM <hex> <master secret>`——主密钥可直接解本会话所有记录
-   - TLS 1.3: keylog 记录的是各阶段 traffic secret（`CLIENT_HANDSHAKE_TRAFFIC_SECRET` / `SERVER_HANDSHAKE_TRAFFIC_SECRET` / `CLIENT_TRAFFIC_SECRET_0` / `SERVER_TRAFFIC_SECRET_0` / `EXPORTER_SECRET`）——没有 1.2 的 master secret，手工推导需按 HKDF-Extract/Expand 从各 secret 派生记录密钥（见坑 1）；Wireshark/tshark 直接读 keylog 文件可自动处理两代协议
+   - TLS 1.3: keylog 记录的是各阶段 traffic secret（`CLIENT_HANDSHAKE_TRAFFIC_SECRET` / `SERVER_HANDSHAKE_TRAFFIC_SECRET` / `CLIENT_TRAFFIC_SECRET_0` / `SERVER_TRAFFIC_SECRET_0` / `EXPORTER_SECRET`）——没有 1.2 的 master secret，手工推导按 HKDF-Expand(-Label) 从各 traffic secret 派生记录密钥（Extract 是更早阶段的运算，见坑 1）；Wireshark/tshark 直接读 keylog 文件可自动处理两代协议
    - 验证解密成功: 解密后能看到明文 HTTP/应用协议字段（步骤 4 语义还原的原料）；解密失败先看 keys.log 里有没有该会话的 CLIENT_RANDOM 或 traffic secret 条目（坑 2）
    - 实时抓取场景: 设置 SSLKEYLOGFILE 后启动 Chrome/Firefox（工具准备），抓包与 keylog 同步产生
 
@@ -126,7 +128,7 @@ description: >
 
 ## 常见坑与陷阱
 
-- **TLS 1.3 密钥导出与 1.2 不同**：现象——用 1.2 的"CLIENT_RANDOM → master secret"思路手工解 1.3 流量解不出，keys.log 里也没有 master secret 条目；原因——TLS 1.3 前向保密 + 每会话独立派生，keylog 记录的是 traffic secret（CLIENT_HANDSHAKE_TRAFFIC_SECRET 等），没有 master secret/RSA premaster；对策——keylog 文件直接交给 Wireshark/tshark（`-o tls.keylog_file:...`）自动处理两代协议；手工推导时按 HKDF-Extract/Expand 从 traffic secret 派生各阶段记录密钥（handshake 与 application 阶段密钥不同）
+- **TLS 1.3 密钥导出与 1.2 不同**：现象——用 1.2 的"CLIENT_RANDOM → master secret"思路手工解 1.3 流量解不出，keys.log 里也没有 master secret 条目；原因——TLS 1.3 前向保密 + 每会话独立派生，keylog 记录的是 traffic secret（CLIENT_HANDSHAKE_TRAFFIC_SECRET 等），没有 master secret/RSA premaster；对策——keylog 文件直接交给 Wireshark/tshark（`-o tls.keylog_file:...`）自动处理两代协议；手工推导时按 HKDF-Expand(-Label) 从各 traffic secret 派生各阶段记录密钥（handshake 与 application 阶段密钥不同）
 - **前向保密（无 keylog 解不了）**：现象——只有 pcap 没有密钥，怎么都解不出明文；原因——ECDHE 会话密钥只存在于会话两端内存，静态位置没有；对策——承认解不了，转指纹/元数据分析（SNI/证书/长度/时序，步骤 5）；提前准备两条路: 抓包前设 SSLKEYLOGFILE（自控客户端）或 mitmproxy 中间人（第三方程序，配坑 4 证书固定绕过）
 - **指纹可伪造**：现象——JA3/JA4 聚类把恶意客户端归到"正常浏览器"簇，或两个无关客户端同指纹；原因——指纹只反映 ClientHello 协商参数，curl/requests/恶意代码可自定义模仿（指纹欺骗是 C2 基础设施常规手法）；对策——指纹当弱信号用于聚类与关联，不做身份判定；命中/未命中都要用证书、SNI、行为侧（进程归属/信标）交叉验证，结论注明证据强度
 - **证书固定绕过需中间人配合**：现象——mitmproxy 中间人后目标程序拒绝连接/证书错误，明文拿不到；原因——应用内嵌公钥/SPKI 指纹做 certificate pinning，不信任系统 CA；对策——[[re-frida]] hook 校验函数（SSL_CTX_set_verify / X509_verify_cert / 自实现 pin 校验）返回成功，或 patch 程序跳过校验，再走 mitmproxy 拿明文；沙箱内操作（[[re-sandbox]]），结论注明绕过方式与版本
