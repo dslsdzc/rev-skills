@@ -123,3 +123,7 @@ description: >
 - **Scapy 内置层绑定劫持自定义载荷**：现象——自定义协议载荷被 Scapy 自动解成 DNS 等其他内置层，字段全乱（如 UDP 53 载荷解出来总是默认值）；原因——`bind_layers()` 的默认绑定（UDP/53→DNS 等）在 `guess_payload_class()` 里先命中；对策——`split_layers()` 解除默认绑定，自定义协议类 override `guess_payload_class()` 显式分发，或解析脚本每包用自定义类强制构造
 - **短包/固定长度字段静默降级 Raw**：现象——解析器对某些包无报错输出 Raw / 字段错位，包一多错得隐蔽；原因——包短于字段最小长度时 Scapy 静默把整包当 Raw（无 Wireshark 式 malformed 标记），`StrFixedLenField` 与包缓存交互还会构建不一致；对策——解析前显式检查载荷长度 ≥ 字段和，短包单独记录不硬解；每个自定义类做 round-trip 验证（`bytes(pkt)` 再解回，比对上机字节）后再批量跑
 - **以太网尾部（trailer/FCS）不保留**：现象——抓到的短帧重注入后，对端 Wireshark 报 "ETHERNET FRAME CHECK SEQUENCE INCORRECT"、帧短 14 字节；原因——Scapy 不显示也不保留以太网 trailer/FCS；对策——重注入用原始字节而非 round-trip 后的包，或在本机环回（lo）用 L3 注入避开以太网层
+
+- **只读序列化函数，布局单边确认**：现象——按 serialize 推的字段顺序在真实流量里对不上；原因——打包/解包可能不对称（条件字段、版本分支）；对策——**序列化/反序列化函数对读互证**（serialize vs parse），两个方向对上了才是真布局；协议库通常同时含打包/解包函数
+- **漏掉协议行为锚点**：现象——特殊命令（心跳/时间校正）走独立组装路径，按通用帧结构解析全乱；原因——协议库内硬编码的特判字符串/命令是行为锚点；对策——grep 原生库与配置里的命令字符串（heartbeat/correcttime 类），先定位特殊路径再按通用结构解析
+- **Java 客户端忽略 JNI 契约**：现象——原生库逆向找不到入口；原因——Java 层通过 JNI 调原生，`Java_包名_类名_方法名` 导出就是接口文档（stripped 库也保留）；对策——`nm -D` 列 JNI 导出，函数名直接给契约（encode/parse/setKey 分工），从导出函数开始逆向而非全库扫

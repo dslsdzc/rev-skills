@@ -99,3 +99,6 @@ description: >
 - **自校验/环境检测样本察觉模拟**：现象——模拟结果与真实运行不符（分支走错、自毁）；原因——样本用 CPUID/rdtsc 时序、API 探测（如 `GetModuleHandleA` 特殊返回）检测非真实环境；对策——先静态定位检测点（[[re-triage]] / [[re-deobfuscate]]），hook 该路径返回真实环境值，或直接 patch 跳过硬校验；结论务必与真实沙箱执行交叉验证
 - **内存权限错误**：现象——执行时报 `Invalid memory read/write/fetch`；原因——访问了未映射页或只读页写；对策——按报错地址检查 `mu.mem_map` 覆盖范围与 `mu.mem_protect(addr, size, UC_PROT_ALL)`，栈页补映射并设 `UC_PROT_READ|UC_PROT_WRITE`
 - **模拟 ≠ 真实执行**：现象——依赖时间/线程的程序行为异常；原因——Unicorn 单线程、`rdtsc` 时序不可靠需 hook 处理、部分 API 语义不完整；对策——模拟只用于确定性任务（解算法、解密、脱壳摘函数），时序/多线程/网络类任务转 QEMU 或真实沙箱；模拟结论用 [[re-tracing]] 对比真实轨迹
+
+- **Android so 优先 unidbg**：现象——Unicorn/Qiling 裸跑 Android .so 缺 JNI/系统调用语义跑不动；原因——so 依赖 JNI 环境（Java 回调、DVM 对象）；对策——用 unidbg（Java，模拟 Android JNI + syscall），loadLibrary 后调 JNI_OnLoad 起步
+- **JNI 回调逐个补的迭代模式**：现象——模拟执行报 `UnsupportedOperationException: 类->方法(签名)`；原因——so 调用了未实现的 Java 回调，这是**正常迭代信号不是死路**；对策——按报错签名逐个实现回调（日志类/配置类/字段读写），一轮一跑，同类项目都有完整回调集可移植；**模拟产出正常结果不等于正确**——环境可能被检测返回诱饵，用真实环境/服务器响应验证

@@ -109,3 +109,6 @@ description: >
 - **资源混淆后无法直接看资源**：现象——`res/` 路径与资源 ID 对不上、strings 定位不到目标资源；原因——资源被混淆随机改名；对策——aapt2 dump 还原映射（步骤 5），必要时结合动态分析对照
 - **原生 .so 被当 Java 分析**：现象——Java 层找不到核心逻辑（算法 / 反调试）；原因——敏感逻辑写在 JNI 的 .so 里；对策——`lib/` 下 so 转 [[re-format-elf]] + [[re-ghidra]]（[[re-binary-core]]），用导出表 / `Java_<包名>_<类名>_<方法名>` 风格符号对 JNI 函数
 - **apktool 回编译失败**：现象——`apktool b` 报资源编译错误；原因——解包时资源被解码、部分资源格式不兼容回编译；对策——`apktool d -r` 保留原资源不解码，只改 smali 后回编译
+
+- **自写 dex 解析四细节**：opcode 是 **u16 低字节**（高字节是寄存器位，读完整 u16 当 opcode 全错位）；`fill-array-data` 是 **0x24**（0x26 是 goto，凭记忆必错）；string_data_item 有 **uleb128 长度前缀**（不跳过会把长度当字符）；code_item 的 `insns_size` 在 **+12**（+4 是 outs_size）——手写解析器前先对照 dex 规范核对布局
+- **jadx 目录只剩启动脚本**：现象——`jadx` 报 ClassNotFound；原因——安装不完整（jar 缺失/被清理）；对策——从 GitHub release 重下完整 zip（codeload.github.com 比 github.com 稳），或直接用 baksmali 等单一工具
