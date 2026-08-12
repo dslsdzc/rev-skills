@@ -52,6 +52,31 @@
 
 静态与动态不是替代关系，大型样本静态定位先行、动态验证在后——先静态缩小范围，动态按需补充。
 
+## 原则：模拟执行优先（能跑就不逆向）
+
+目标含官方原生库（签名算法/加密例程/混淆 VM）时，**模拟执行官方代码比逆向算法快一个数量级**——数周逆向 vs 一天模拟。适用场景：目标库可加载（依赖可满足）、调用方是 JNI/导出函数、只需"结果"不需"原理"。判定信号：算法复杂度高（轮数多/查表大/混淆深）、有现成库可加载、社区有同类模拟先例。
+- 常用载体：unidbg（Android so + JNI 模拟，Java）、QEMU 用户态（`qemu-<arch>` + sysroot）、Qiling/Unicorn（单函数隔离）
+- 模拟执行产出"看起来正常"的结果不等于正确——**真实环境/服务器响应才是唯一裁判**（模拟环境可能被检测并返回诱饵结果），先用低风险路径验证（白名单命令/非敏感操作），再决定是否触碰高价值目标
+
+## 原则：JNI 导出名 = 协议契约路标
+
+Java 层逆向时，`Java_包名_类名_方法名` 导出是**天然接口文档**——函数名直接给契约（encodeRequest/parseData/setAccountKey 一眼分工）；stripped 的 so 也保留 JNI 导出（JVM 运行时需要）。原生库逆向永远从 `nm -D` 列 JNI 导出开始。
+
+## 原则：序列化/反序列化函数对互证
+
+帧/包格式读 serialize 函数拿布局，再用 deSerialize 验证——**两个方向对上了才是真的**。协议类库通常同时含打包/解包函数（serialize/parse、encode/decode），互为对照。
+
+## 原则：社区逆向成果先搜再挖
+
+同类目标的开源项目是**前人逆向成果的沉淀**——协议结构、密钥表、算法还原、模拟器回调集都在里面。自挖之前先搜（GitHub 镜像/码云/codeload、相关生态项目）；即使版本/目标不同，**结构、模式、回调清单可移植**。自己从零解析的时间成本通常是移植的 10 倍。
+
+## 工具链避坑（实测）
+
+- **IDA interr（decompiler bug）**：`create_stkvar` 类内部错误硬崩溃且无法跳过——换 Ghidra，别硬刚
+- **Ghidra 脚本 API 版本差异**：新版 MemoryBlock 无 `getPermissions()`（改 `getExecute()`）；脚本编译失败先查 API
+- **dex 解析细节**：opcode 是 **u16 低字节**（高字节是寄存器位）；`fill-array-data` 是 **0x24**（0x26 是 goto）；string_data_item 有 **uleb128 长度前缀**；code_item 的 `insns_size` 在 **+12**（+4 是 outs_size）
+- **GitHub 下载不稳**：`codeload.github.com` 比 `github.com` 稳（git clone 被重置时 curl codeload 可通）
+
 ## 「直读 vs 转储」决策（默认转储优先）
 
 一次转储获得完整内存布局 + 寄存器/线程状态（ELF notes），可导入 Ghidra/IDA、可存档复现；后续所有定向提取（密钥搜索、脱壳段、DEX 挖掘）都从转储产物里做。
