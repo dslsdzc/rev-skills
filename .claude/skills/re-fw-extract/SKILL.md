@@ -85,6 +85,9 @@ description: >
 4. **嵌套容器逐层解**：
    - unblob / `binwalk -Me` 会自动递归，但嵌套（tar 里再 zip、自定义头包着 gzip）常中途断
    - 逐层手动：先解外层 → `file` 确认内层类型 → 用对应工具（tar/gzip 系统自带；squashfs 用 sasquatch；其他用 [[re-fw-rootfs]] 工具准备的 7z/unsquashfs）再解，直到出现文件系统或 ELF
+   - **结束标记后的附加数据**：图片（PNG `IEND`、JPEG `FFD9`）等格式的结束标记之后常附加容器/压缩流（解析器读到结束标记即停，附加数据对正常查看不可见）——`file` 会把整文件报成图片，检查 `rfind(IEND/FFD9)` 之后的部分，且**结束标记用第一个还是最后一个取决于数据里可能碰巧出现同样的字节对**
+   - **zip 缺签名也能修复**：附加的 zip 可能缺本地文件头开头的 `PK\x03\x04`（4 字节被剥）——用字段自洽验证：补上签名后 version（常见 20/45）、mod date（年 1980+）、compressed/uncompressed size（与 EOCD/中央目录条目一致）全部合理，且 EOCD 在尾部完好 → 补 `PK\x03\x04` 前缀即完整可解（`unzip` 报 "missing 4 bytes" 或 zipfile `OSError: Invalid argument` 是典型征兆）
+   - **套娃模式自动化**：同一手法重复出现（如每层都是"图片+尾部 zip 含下一层"）时写循环自动剥——提取尾部 → 修复 → 解压 → 定位下一层 → 重复，直到无附加数据；中间产物每层命名保留（可回滚）
 
 5. **自动失败时手工切分（dd 按偏移）**：
    ```sh
@@ -108,3 +111,5 @@ description: >
 - **字节序错 → 全错**：现象——解出的文件/ELF/字符串全乱；原因——大端 ARM/MIPS 固件被当小端处理；对策——先 `file` + `readelf -h` 确认字节序（步骤 3），后续解包/分析全程保持一致
 - **大端 MIPS 头被 binwalk 漏**：现象——binwalk 识别不出已知文件系统（如 squashfs）；原因——签名按小端特征匹配，大端魔数反序；对策——hexdump 手工找反序魔数，按偏移 dd，用 sasquatch 解
 - **解包产物混入垃圾**：现象——解出的"文件"是随机数据，`file` 报 data；原因——签名误报或切分偏移错位；对策——每个产物 `file` + 看头 16 字节验证 magic，无效即重试偏移
+- **扩展名与内容不符（伪装扩展名）**：现象——`.jpg` 报 PNG、`.so` 报 tar、`.c` 报 XZ；原因——作者故意用无关扩展名（隐写/套娃/免检场景常见）；对策——永远以 `file`/魔数为准，扩展名只当线索；`file` 输出带 "with extra data prepended" 等提示时直接照做
+- **zip 报错但能列出文件**：现象——`unzip` 报 "missing 4 bytes"/"invalid zip with overlapped components"（zip bomb 误报）或 Python zipfile `OSError: [Errno 22] Invalid argument`；原因——本地文件头缺 `PK\x03\x04` 签名，或数据前有前缀垃圾；对策——先 `unzip -l` 看能否列出（能列出说明 EOCD/中央目录完好），补签名（步骤 4）或用 `UNZIP_DISABLE_ZIPBOMB_DETECTION=TRUE` 强制
