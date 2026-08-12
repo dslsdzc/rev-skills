@@ -101,3 +101,10 @@ description: >
 - **早期初始化链不止 init_array**：现象——查过 `.init_array` 却仍漏掉更早执行的逻辑（如 `strcmp@GOT` 被 hook 但 main 断点处未复现）；原因——动态链接器初始化早期会先跑 `.preinit_array`（比 .init_array 更早），恶意构造器可在 main 之前覆写 GOT/装钩子；对策——`.preinit_array` 与 `.init_array` 都反汇编，在 `__libc_start_main` 调用 init 处断点，核对 GOT 条目在 main 前是否已被改写
 - **伪造节头使 readelf 报错**：现象——`readelf -S`/`-l` 报错或输出中断（e_shentsize 异常、程序头计数离谱、dynamic section 缺失）；原因——混淆/对抗样本伪造头字段使工具解析失败；对策——`xxd` 手工核对 ehdr 关键字段（e_shoff/e_shnum/e_shentsize/e_phnum），按真实值修正后重解析，别当"损坏文件"丢弃
 - **fini 不在 main 后立即执行**：现象——在 main 返回处断点找不到"收尾"逻辑；原因——`fini`/`.fini_array` 在退出清理阶段执行（与 rtld_fini、atexit、析构函数一起），不紧跟 main；对策——收尾逻辑在 exit 路径（exit_group / rtld_fini）上断点，别在 main 尾部找
+
+- **R_X86_64_RELATIVE addend 必须与 vaddr 体系自洽**：`*slot = B + addend`（B=加载 bias）。若产物 vaddr = ImageBase + RVA（PE 转换场景），文件槽内存储值即目标 vaddr → **addend = 存储值**；只有"vaddr = 纯 RVA"体系才用 `存储值 − ImageBase`——混用两套公式是终审级 bug（偏差恒定一个 base，且"能 dlopen"不暴露）
+- **SHF_ALLOC 节必须被 PT_LOAD 覆盖**：动态区（.dynsym/.dynstr/.hash）标记 SHF_ALLOC 但不在任何段内 → 加载器不映射，符号解析失败——手写 ELF 生成器时给动态区单独 PT_LOAD（p_offset 与 p_vaddr 可解耦）
+- **缺 PT_GNU_STACK → dlopen EINVAL**（现代内核禁可执行栈）：`cannot enable executable stack`——发射 `PT_GNU_STACK`（PF_R|PF_W、无 X、align 16）
+- **重定位目标段必须可写**：GLOB_DAT/RELATIVE 的 r_offset 所在段若只读（PF_R），ld.so 写入即 SIGSEGV——含重定位目标的节强制 PF_W（v1 可放弃 RELRO，后续再上 PT_GNU_RELRO）
+- **shstrtab 别用 strlen 取长**：字符串表以 `\0` 开头，strlen 在首字节截断为 1——用显式长度/sizeof；同理会坑 .dynstr 索引
+- **filesz > memsz 是 readelf 报错**（8 条 Error）：`p_memsz = max(vsize, raw_size)` 保证 filesz≤memsz，BSS 清零区语义由 loader 处理

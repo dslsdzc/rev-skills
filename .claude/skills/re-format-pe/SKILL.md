@@ -129,3 +129,10 @@ description: >
 - **TLS 目录本身可被覆写/劫持**：现象——样本看似无壳，但在注入的子进程（svchost 等）里出现非预期执行，断在 OEP 的调试器全程"正常"；原因——恶意样本（如 Ursnif 变体）改写被注入进程的 TLS 目录，使执行落在伪造回调而非 AddressOfEntryPoint，通用脱壳器与只断入口点的调试器全被绕过；对策——动态断点设在 `ntdll!LdrpCallInitRoutine`（回调指针经参数传递）观察全部回调，静态核验 TLS 目录/回调数组所在节是否可写——可写即劫持面
 - **别用 ELF 思维套 PE**：现象——分析 PE 时找 `.interp`/PT_INTERP、期待 `__libc_start_main` 启动路径、按 RTLD_NOW 语义理解加载；原因——两格式动态链接机制根本不同（PE 无 .interp，启动不经过 __libc_start_main）；对策——PE 启动链只认：系统加载器 → TLS 回调 → 入口点（AddressOfEntryPoint）；导入看 IAT，没有 GOT/PLT 概念
 - **PE 代码节内嵌数据 → 线性反汇编误判**：现象——反编译出现大片伪代码或把跳转表当函数；原因——PE 编译器常把跳转表等数据内联进代码节（ELF 则放 `.rodata`），线性反汇编约 1% 误差，函数边界误判率 20%+（尾调用/非标准序言/内联）；对策——反编译结果交叉验证，用工具的数据标注（IDA/ghidra 手工标记数据区）修正，别全信自动函数列表
+
+- **数据目录偏移别凭记忆**：PE32+ optional header 的数据目录数组从 `oh + 112` 起（+96 是 SizeOfHeapCommit）——实测 PE32+ 标准布局（24 前缀 + 88 Windows 特有 + LoaderFlags/NumberOfRvaAndSizes 8 = 112）；写 96 会读到 HeapCommit 的垃圾值
+- **TLS 目录 4 个地址字段是 VA 不是 RVA**（StartAddressOfRawData/EndAddressOfRawData/AddressOfIndex/AddressOfCallBacks）——与多数数据目录条目不同，换算 RVA 前必须先减 ImageBase
+- **RVA→文件偏移判定用 raw_size 而非 vsize**：文件内只有 raw_size 字节存在，vsize 可能更大（BSS 类）；用 vsize 判定会越界读
+- **死导入检测**：IAT 槽存在桩（`jmp [IAT]`）但 .text 无任何指令引用 → 该导入实际走 LoadLibrary+GetProcAddress 动态解析（游戏/插件常见）——静态 IAT 分析结论作废，去字符串区找 `dllname`/`funcname` 动态加载参数
+- **x64 TEB 布局（Wine winnt.h 核实）**：`gs:[0x30]`=Self；`gs:[0x58]`=ThreadLocalStoragePointer（`__declspec(thread)` 的 TLS 数组指针，访问序列 `mov rax,gs:[58]; mov ecx,[_tls_index]; mov rax,[rax+rcx*8]`）；`TlsSlots[64]` 在 **0x1480**（动态 TLS）；`TlsExpansionSlots` 在 0x1780——0x58 不是 TlsSlots
+- **内存格式字节序按名书写**：`VK_FORMAT_B8G8R8A8_UNORM`/DXGI 同名格式回读字节序 = [B,G,R,A]（px[0] 是 B 不是 R）——像素/纹理断言前先验证字节序，同类陷阱对 R8G8B8A8 反向成立
