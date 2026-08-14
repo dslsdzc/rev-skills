@@ -82,3 +82,5 @@ description: >
 - **inline hook 检测只看函数地址**：现象——`!ssdt` 显示的地址正常但函数行为被改；原因——inline hook 不改表项地址、改写函数头指令（5 字节 jmp 或 `mov rax;jmp rax`）；对策——必须逐字节比对函数开头（≥16 字节）与原始内核镜像文件；指令解码用 capstone（[[re-emulation]] 思路）
 - **内核崩溃 = 蓝屏**：现象——驱动加载/触发时目标机蓝屏（bugcheck）；原因——内核态错误无进程隔离，直接宕机；对策——所有加载/触发在调试 VM 内做（宿主 WinDbg 连接），操作前打快照（[[re-sandbox]] + [[platform-tips]] 最高原则），崩溃后 `!analyze -v` 定位再回滚快照重试
 - **DriverEntry 不在入口点**：现象——EP 处只有一小段 stub 或壳代码；原因——驱动加壳/EP 重定向；对策——跟踪 EP stub 跳转找真 DriverEntry，壳驱动先走 [[re-anti-analysis]] 脱壳再分析
+- **硬件信息双副本（序列号/UID 分址存储）**：现象——内核内存改了硬盘序列号，部分查询语句仍返回原值；原因——同一硬件信息存多处：序列号有 `char*` 与 `wchar_t*` 两种副本，UID（`eui.` 固定前缀 + 去下划线序列号）又是独立地址；对策——改全所有副本：CE 搜索同时切 UTF-8 与 UTF-16 两种选项；用不同查询语句互校验修改是否完整（如 `Win32_DiskDrive.SerialNumber` vs `Get-PhysicalDisk.UniqueId`）
+- **内核内存搜索分区限定（防显卡驱动崩溃）**：现象——CE 直接搜整个内核内存，独显物理机上 D3D11 设备被移除、显卡驱动崩溃短暂黑屏；原因——搜到 `MiVaSystemPtes` 等敏感区域；对策——只搜 `[MiVaSystemCache, MiVaNonPagedPool, MiVaPagedPool]` 分区（虚拟机先测）；驱动内用 `MmCopyMemory` 搜索（自带异常处理应对无物理页）+ 处理跨页；修改后重启 WMI 服务，部分查询十分钟内无结果属正常
