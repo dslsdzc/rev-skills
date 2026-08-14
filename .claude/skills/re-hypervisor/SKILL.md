@@ -74,6 +74,11 @@ description: >
    - EPT（Extended Page Tables）：guest 物理地址 → 宿主物理地址的第二层页表（VMM 控制）；恶意 hypervisor 可用 EPT 把同一 guest 页映射到不同宿主页、或在 EPT 层面修改页内容而 guest 页表看起来不变
    - 分析思路：反编译里找 EPT 相关操作——`INVEPT`/`INVVPID`（TLB 失效）使用点、EPT 指针字段（VMCS `EPTP`）赋值、EPT 页表构建函数（从 EPT 指针沿页表结构走）
    - 检测对抗的观察法：guest 内看到的内存内容与宿主侧直接读同一物理页不一致 → EPT 重映射证据（两个视图对照）；[[re-kernel]] 内核调试配合在宿主与 guest 两侧各 dump 同一页
+   - **EPT Hook 双视图机制**（无痕 hook 核心）：同一 GPA 准备两个 HPA——原始页（RW/NX）与影子页（X-only 或补丁代码）——数据访问映射原始页、指令取指映射影子页；CPU 取指触发 Execute Violation（VM-exit reason 48）后在 VM-exit 里切影子页并 INVEPT 失效缓存；扫描器/CRC 读地址得到干净字节，执行却是补丁代码（读侧无痕）
+   - **EPT 无痕 INT3**：只在影子页放 `0xCC`，原始数据页不变——读内存看到原指令、取指却断下；VMCS Exception Bitmap 拦截向量 3 后匹配地址用 `guest_rip - 1`（一字节 INT3 的 RIP 在断点字节之后）；处理完单步恢复再重新布断点；非本框架的 #BP 必须 reinject 回 guest（不能吞其他调试器/系统断点）
+   - **MTF（Monitor Trap Flag）解决"读执行同页"**：影子页指令若读取同页常量（取指要影子页、数据要原始页冲突）→ 临时放开原始页执行并置 MTF，CPU 单步执行一条指令后在 MTF VM-exit 里收紧权限；MTF 是 VM-execution control，不动 guest RFLAGS.TF、不占 DR0-DR7
+   - **EPT 监视 = 模拟无限硬件断点**：DR0-DR3 仅 4 槽，EPT 监视撤销目标页 R/W/X 权限让匹配访问 VM-exit，数量仅受内存/性能限制；硬件断点类需求（含与传统调试器互通，如 hook `SetThreadContext` 探测是否下硬件断点再转发到 EPT 监视）用这套替代
+   - **VMCALL 无痕通信**：guest 执行 VMCALL 产生 VM-exit reason 18（不调用 guest 内任何地址），RAX 放协议标识、RCX 放操作号、其余寄存器传参，是 hypervisor 与 guest 的私有通信通道
    - 产物：EPT 构建/切换代码路径 + 内存视图差异证据
 
 4. **嵌套虚拟化（VMM 内调试）**：
@@ -110,3 +115,6 @@ description: >
 - **EPT 使内存断点失效**：现象——调试器在 guest 里下的内存断点/页保护断点不触发或触发后行为诡异（寄存器对不上）；原因——EPT 的访问位/脏位独立于 guest 页表，VMM 通过 EPT 控制 guest 看到的内存视图（含隐藏页），普通调试器断点基于 guest 页表视角；对策——区分 EPT violation（VM exit reason 48）与 guest page fault（reason 14）；要观察 EPT 层必须看 EPT 页表结构本身（沿 VMCS EPTP 字段展开）而不是 guest 页表；[[re-kernel]] 内核调试下对照宿主/guest 两侧内存视图
 - **CPU 特性差异（VT-x vs SVM）**：现象——在 Intel 机器上整理的 VMCS 偏移/exit reason 编号拿到 AMD 机器全对不上，或相反；原因——VT-x 与 SVM 是两套独立实现：VMCS（VMREAD/VMWRITE 编码）vs VMCB（固定偏移），exit reason 编号体系不同；对策——先确认目标平台（CPUID vendor + vmx/svm 标志，步骤 1），按平台选对应手册（Intel SDM Vol 3C / AMD APM Vol 2），分析笔记标注目标平台与 CPU 型号，不跨平台复用字段表
 - **样本检测 VM 后改变行为（影响结论）**：现象——静态分析很清晰的恶意逻辑，动态运行时完全看不到（样本"正常"运行）；原因——样本检测到自己在 VM/调试环境里会走"无害分支"（反沙箱/反调试常见手法）；对策——按步骤 1 先确定样本视角的虚拟化状态，动态验证必须与样本检测条件一致（或逐项绕过检测）；结论以"检测点还原 + 绕过后的行为"为准，单跑一遍就下结论不可信
+- **AMD NPT 不能照搬 EPT 方案**：现象——Intel 上可用的"只执行页"技巧（影子页 X-only）在 AMD 平台失效；原因——NPT 与 EPT 是两套独立实现，**NPT 不能单独设置只执行属性**（读与执行位绑定）；对策——跨平台实现 hook/隐藏前先确认目标是 Intel（EPT）还是 AMD（NPT），AMD 需换用其他手段（如结合 NX + 数据视图）
+- **"VT 无痕读写"是伪命题**：现象——以为 EPT 能无痕读写任意数据段；原因——影子页表只能无痕改写"代码段"（取指视图切换），数据段无法同时满足两侧视图（读原始 vs 写影子）；对策——无痕写仅限代码段场景（hook 场景）；数据段读取仍靠遍历四级页表（GVA→GPA→HPA 二阶段翻译）直读物理页，与普通驱动思路无本质区别
+- **RDTSC 检测 VM-exit 开销可被补偿**：现象——样本用 `__rdtsc/__rdtscp` 测指令耗时差值识别 hypervisor；原因——VM-exit 有固定开销可测量；对策——VM-exit 汇编入口最早记录 `exit_tsc`，`ReadVirtualTsc` 用有界平滑估计补偿（不能把中断/调度长尾全当 exit 成本），并保证每 vCPU 单调（`max(value, last_guest_tsc+1)`）；原则：样本检测哪里，就在 VM-exit 里处理哪里

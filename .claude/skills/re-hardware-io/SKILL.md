@@ -103,3 +103,4 @@ description: >
 - **JTAG 被熔断/锁定**：现象——openocd 连不上，IDCODE 全 0 或超时；原因——量产板熔断 JTAG、读保护（RDP）开启；对策——试 SWD、`stm32f1x unlock` 类解锁序列，或放弃 JTAG 改走 UART + flash 直读（步骤 4）
 - **5V/3.3V 电平误接烧板**：现象——接线后板子发热/冒烟/永久损坏；原因——电平不匹配（3.3V 板上接 5V TTL）、供电接错、VCC/GND 反接；对策——先万用表测电平与 GND 再接线；3.3V 系统用 3.3V 适配器；绝不带电插拔
 - **先看启动日志再动手**：现象——盲目拆焊 flash / 连 JTAG 导致损坏或数据丢失；原因——跳过低成本观察直接上硬件手段；对策——先 UART 抓启动日志了解系统（步骤 2/5），再决定是否硬件读取——这是 [[platform-tips]] 先给最轻可行方案在硬件域的执行
+- **Intel DCI 调试工具链兼容性坑**：现象——Intel System Studio 2019（System Debugger）在 Win10/11 安装/运行失败，DCI 线缆连不上 CPU；原因——该软件基于 Win7 开发且带环境检测与 License 校验：Win11 提示缺 Win7 安全补丁、公开 License 文件在 Windows 版无效；对策——安装用兼容模式；运行加 `--noprereq` 跳过环境检查；License 校验核心在 `issa.dll` 导出函数中（三个校验函数），patch 后替换即可；DCI 配置按平台选型（如 KBL=Kaby Lake、SPT=200 系主板、DBC=Debug Class 线缆），CLI 调试用 DAL 目录的 `PythonConsole.cmd`（Python 2.7 环境，`itp.cores`/`itp.halt()` 等命令）；ME 端需 UTOK 解锁才响应调试命令（见 [[re-fw-extract]]）
