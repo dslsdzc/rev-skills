@@ -108,3 +108,6 @@ description: >
 - **重定位目标段必须可写**：GLOB_DAT/RELATIVE 的 r_offset 所在段若只读（PF_R），ld.so 写入即 SIGSEGV——含重定位目标的节强制 PF_W（v1 可放弃 RELRO，后续再上 PT_GNU_RELRO）
 - **shstrtab 别用 strlen 取长**：字符串表以 `\0` 开头，strlen 在首字节截断为 1——用显式长度/sizeof；同理会坑 .dynstr 索引
 - **filesz > memsz 是 readelf 报错**（8 条 Error）：`p_memsz = max(vsize, raw_size)` 保证 filesz≤memsz，BSS 清零区语义由 loader 处理
+- **gzexe 包裹的 ELF（伪装 .sh）**：现象——目标文件拖进 IDA 报"不是 ELF 格式"，但文件确实是可执行程序；原因——gzexe 把 ELF gzip 压缩后包在 shell 脚本里（Linux 常见压缩方式）；对策——hexdump 看头确认（脚本头 + 尾部压缩数据），`gzexe -d` 解压还原真正的 ELF 再分析
+- **OLLVM 混淆 + 字符串加密的 ELF：GOT 出口拦截**：现象——静态补丁不可行（`51642` 类关键串运行时才解密，二进制里找不到）；原因——OLLVM 字符串加密使字符串仅运行时出现在内存；对策——不在数据源头动手，在数据出口拦截：程序最终发送必然经 GOT 调 `sendto`/`send`/`write`/`SSL_write` → hook GOT 槽位，在 `buf` 中搜索 needle 替换后原样调用真函数；先用 debug 模式确认目标串确实出现在发送缓冲区再 patch；**OLLVM 可能混淆 GOT 值本身**（`MOVZ+MOVK×3` 拼出的 64 位常量 `got_addend`）——hook 安装时保持与混淆方式一致（改 `MOVZ+MOVK` 立即数而非直接写地址）
+- **code cave 注入 + 哨兵占位（免重编译）**：现象——要注入的 shellcode 地址依赖目标具体布局，每目标重写一次；原因——直接硬编码地址不可复用；对策——shellcode 内所有地址用哨兵值（如 `0xCAFEBABE` 开头）占位，patcher 注入时扫描哨兵替换为实际地址（cave 地址/偏移/原 init 指针均可自动检测）；注入点用 `.init_array`（程序启动自动调用，比 main 早）
