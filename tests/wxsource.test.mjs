@@ -61,12 +61,29 @@ test('parseThread 帖子页标题/作者/正文', () => {
   <a href="user-home-1001878.htm" title="只会逆一点点">头像</a>
   <div class="message message_md_type" isfirst="1">
     <p>正文第一段 <code>mov eax, 0xCC</code></p><p><img src="x.png"></p>
+  </div>
+  <div class="message mt-2 break-all message_rich_type">
+    <p>二楼回帖，不应被提取</p>
   </div>`;
   const t = parseThread(html);
   assert.equal(t.title, '[原创] 实战帖子标题');
   assert.equal(t.author, '只会逆一点点');
   assert.match(t.body, /正文第一段 `mov eax, 0xCC`/);
   assert.match(t.body, /\[图片\]/);
+  assert.doesNotMatch(t.body, /二楼回帖/);
+});
+
+test('parseThread 富文本类型正文（message_rich_type）', () => {
+  const html = `
+  <title>[原创] TikTok X-Dynosaur 恐龙算法-逆向工程-看雪安全社区</title>
+  <div class="message message_rich_type" isfirst="1">
+    <p>富文本正文 <b>加粗</b> 内容</p>
+    <p><code>X-Dynosaur</code> 算法分析</p>
+  </div>`;
+  const t = parseThread(html);
+  assert.equal(t.title, '[原创] TikTok X-Dynosaur 恐龙算法');
+  assert.match(t.body, /富文本正文 加粗 内容/);
+  assert.match(t.body, /`X-Dynosaur` 算法分析/);
 });
 
 test('parseWechat 微信文章 og meta + js_content', () => {

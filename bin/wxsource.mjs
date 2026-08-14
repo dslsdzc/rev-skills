@@ -21,6 +21,11 @@ const BOARDS = {
   ai: 170, 'ai-help': 170, 'ai助力安全': 170, 'ai 助力安全': 170,
   'ai-self': 168, 'ai自身安全': 168, 'ai 自身安全': 168,
   'ai-platform': 123, 'ai平台与数据安全': 123,
+  re: 4, 逆向工程: 4, 软件逆向: 4,
+  ctf: 37, 'ctf对抗': 37,
+  crypto: 132, 密码应用: 132, 密码算法: 132,
+  tools: 10, 安全工具: 10,
+  harmony: 178, 鸿蒙: 178,
   android: 161, 'android安全': 161,
   iot: 128, 'iot安全': 128,
   ios: 166, 'ios安全': 166,
@@ -115,9 +120,13 @@ export function parseThread(html) {
   const title = html.match(/<title>([^<]*)</)?.[1]?.replace(/-[^-]*-看雪安全社区.*$/, '').trim();
   const author = html.match(/<a href="user-home-\d+\.htm"[^>]*title="([^"]+)"[^>]*>/)?.[1] ||
     html.match(/user-home-\d+\.htm"[^>]*>([^<]{2,40})<\/a>/)?.[1];
-  const body = html.match(/<div class="message message_md_type"[^>]*>([\s\S]*?)(?:<\/div>\s*(?:<div|$))/)?.[1] ||
-    html.match(/<div class="message message_md_type"[^>]*>([\s\S]*)/)?.[1] || '';
-  return { title: title || undefined, author, body: htmlToText(body) };
+  // 正文：优先取第一条消息（isfirst=1，markdown 或富文本类型均可），终止于下一条消息
+  const first =
+    html.match(/<div class="message[^"]*"[^>]*isfirst="1"[^>]*>([\s\S]*?)<\/div>\s*<div class="message/) ||
+    html.match(/<div class="message[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<div class="message/) ||
+    html.match(/<div class="message[^"]*"[^>]*isfirst="1"[^>]*>([\s\S]*)/) ||
+    html.match(/<div class="message[^"]*"[^>]*>([\s\S]*)/);
+  return { title: title || undefined, author, body: htmlToText(first ? first[1] : '') };
 }
 
 // ---------- 微信文章解析（备用渠道） ----------
