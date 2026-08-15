@@ -112,3 +112,4 @@ description: >
 
 - **自写 dex 解析四细节**：opcode 是 **u16 低字节**（高字节是寄存器位，读完整 u16 当 opcode 全错位）；`fill-array-data` 是 **0x24**（0x26 是 goto，凭记忆必错）；string_data_item 有 **uleb128 长度前缀**（不跳过会把长度当字符）；code_item 的 `insns_size` 在 **+12**（+4 是 outs_size）——手写解析器前先对照 dex 规范核对布局
 - **jadx 目录只剩启动脚本**：现象——`jadx` 报 ClassNotFound；原因——安装不完整（jar 缺失/被清理）；对策——从 GitHub release 重下完整 zip（codeload.github.com 比 github.com 稳），或直接用 baksmali 等单一工具
+- **容器/双开（VirtualApp 类）样本分析**：现象——样本跑在双开容器里行为异常、hook 不到目标进程，或要分析容器本身；原因——VA/Blackbox 容器通过"代理桩 + 动态注册"模拟系统：启动 Activity 走容器内假 AMS（Binder 动态代理拦截，把 VAPP 请求参数还原后再转发真实系统）；IO 重定向把写死的绝对路径转向容器内安装路径；ContentProvider 的 `onCreate` 作为容器初始化入口（`handleBindApplication` 主动调用）；原理同老版 Android（VA 只支持老版本，Blackbox 为现代参考实现）；对策——分析容器内应用时注意进程真实归属（容器进程 vs 宿主进程）、hook 点选在容器框架层（假 AMS/IO 重定向函数）而非应用层；识别双开环境（双开检测）看 `/proc/self/maps` 容器 so、假包名路径特征；这类原理对免安装运行/插件化分析也通用
