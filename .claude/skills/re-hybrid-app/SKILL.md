@@ -122,3 +122,5 @@ description: >
 - **引擎版本差异**：现象——blutter 报不支持该 Dart 版本 / hermes-dec 解析失败或错位；原因——工具只支持特定版本区间，App 用新引擎（Dart 3.x 新快照格式、Hermes 新 bytecode 版本）；对策——先取版本（libflutter.so 内版本字符串 / `file` 输出 HBC version / 构建时间），更新工具（blutter 会按需下载对应 Dart 源码重编）或换支持该版本的专用工具
 - **JS 与原生桥接边界**：现象——JS/bundle 里找不到加解密与密钥逻辑；原因——敏感逻辑在原生模块（RN NativeModules / Flutter MethodChannel 原生端）；对策——按步骤 5 找桥接注册（通道名 / 原生模块表）→ 转 [[re-binary-core]] 分析对应 so；别在 JS 层死磕
 - **混淆构建**：现象——函数名全是 a/b/c 或 hash；原因——Flutter `--obfuscate` / RN Hermes + 混淆选项构建；对策——仍可用的字符串（报错文案 / API 路径）与行为观察驱动，配合动态 [[re-frida]] hook 桥接层定位
+- **Flutter SSL 校验抓不到包**：现象——抓包工具看不到 Flutter 应用流量或报证书错误；原因——Flutter 自带 SSL 校验（不走系统代理/证书信任链），通杀方案在 github 有开源代码；对策——先用通杀 Flutter SSL 校验方案或 frida 绕过抓包；blutter 还原后 libapp.so 符号可见，可直接基于地址 hook 目标函数（如签名函数 generateMD5 的入参/返回值拿盐值与明文）——不需要完整还原算法
+- **Dart 字符串内存布局（frida 读串关键）**：现象——hook libapp.so 函数拿到指针却读不出字符串；原因——Dart 字符串不是 C 字符串：**指针 +7 偏移处 4 字节 Smi 编码长度（右移 1 位为真实长度），+15 偏移处为 UTF-8 数据**；对策——按此布局写 readDartStringExact 工具函数（加长度上限防误读），hook 入参/返回值都能还原明文

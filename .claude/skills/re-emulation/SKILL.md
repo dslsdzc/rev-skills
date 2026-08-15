@@ -102,3 +102,4 @@ description: >
 
 - **Android so 优先 unidbg**：现象——Unicorn/Qiling 裸跑 Android .so 缺 JNI/系统调用语义跑不动；原因——so 依赖 JNI 环境（Java 回调、DVM 对象）；对策——用 unidbg（Java，模拟 Android JNI + syscall），loadLibrary 后调 JNI_OnLoad 起步
 - **JNI 回调逐个补的迭代模式**：现象——模拟执行报 `UnsupportedOperationException: 类->方法(签名)`；原因——so 调用了未实现的 Java 回调，这是**正常迭代信号不是死路**；对策——按报错签名逐个实现回调（日志类/配置类/字段读写），一轮一跑，同类项目都有完整回调集可移植；**模拟产出正常结果不等于正确**——环境可能被检测返回诱饵，用真实环境/服务器响应验证
+- **iOS so 黑盒调用用 Chomper**：现象——iOS 加固/混淆 so 算法（签名类）静态还原难，想在 PC 上直接调用拿结果；原因——so 依赖 OC 运行时与特定初始化（Token/上下文）；对策——Chomper（Unicorn 封装，模拟 iOS 环境）黑盒调用流程：frida-trace 先摸清初始化函数与算法调用逻辑 → **dlopen 之后做初始化**（hook dlopen 时机，frida-trace 只能看到调用看不到初始化值）→ 构造入参对象（NSMutableURLRequest 等，用 pyobj2nsobj 把 dict 转 OC 对象）→ 主动调用出结果；先初始化 Token/上下文再调算法函数，参数对象按 frida-trace 打印的完整结构构造
