@@ -46,3 +46,4 @@ description: >
 - 一上来就要实物板子 → 成本高、有损坏风险 —— 有固件文件先走 提取→rootfs→仿真，[[re-hardware-io]] 是最后手段
 - 仿真不隔离网络就跑固件 → 固件真实回连外网 —— 默认沙箱 + 网络隔离（[[platform-tips]] 最高原则），通信分析转 [[re-protocol]]
 - rootfs 分析不看启动脚本 → 面对几十个二进制无从下手 —— 先 [[re-fw-rootfs]] 读 rcS / inittab / init.d 定位程序入口
+- **启动链逐层校验（BootROM→FDL→SPL→U-Boot→system）**：现象——patch 掉一层校验刷机仍失败，后面还卡在别的验证；原因——移动 SoC（Unisoc/展锐等）刷机链每层独立验签：BootROM→FDL1→FDL2→SPL Loader→U-Boot/LK→system，SPL 对 sml/trustos/uboot 做 RSA-2048 校验（DHTB+SIMGHDR 格式），失败进死循环；对策——沿整条链逐层追：①**格式特征转常量**：文件头 ASCII（如 `DHTB`）按 32 位小端转整数（`1112819780`），在上一层反编译中搜该常量定位校验入口；②失败陷阱=死循环（校验失败 branch 到 loop），patch 失败分支改 NOP/调整分支让它继续走；③FDL2 加载基址从 spd_dump 命令行第二个 FDL 地址拿（IDA/Ghidra 加载基址用这个，xref 才对得上）；④字符串搜索找"按分区名分发刷写逻辑"的入口；⑤硬件固化方案（RP2350 作 USB Host 自动重放握手注入）只做自动化，真正关键在逆向与魔改加载链
