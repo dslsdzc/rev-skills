@@ -29,14 +29,14 @@ description: >
 
 1. **产物识别**：
    ```sh
-   readelf -s sample | grep -iE 'NimMain|nimGC|NimString' | head
+   readelf -s sample | grep -iE 'NimMain|nimGC|NimString' | head   # ELF；Mach-O 用 llvm-nm
    ```
    - Nim 特征：`NimMain`（入口）、GC 符号（nimGC_*）、`NimString` 结构
    - 入口：`NimMain` 调用链（运行时初始化 → 模块初始化 → main）
 
 2. **字符串与序列结构**：
    - NimStringV2 布局：`len`（int）+ `reserved`（int）+ `data`（char* 或内联）——按版本确认字段序
-   - 定位：`newString` 分配调用点 → 结构布局 → 字符串操作函数（`eqStrings` 等）
+   - 定位：`newString` 分配调用点（Nim 2.0 起为 `newString1`） → 结构布局 → 字符串操作函数（`eqStrings` 等）
    - 分析：字符串比较点是关键逻辑（校验/协议/命令分发）
 
 3. **异常与 raises 路径**：

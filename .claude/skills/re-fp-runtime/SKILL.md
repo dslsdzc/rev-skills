@@ -21,11 +21,11 @@ description: >
 
 ### ghc 工具链（Haskell 侧，可选）
 
-- Linux/macOS: GHC 安装包（`apt install ghc` / `brew install ghc` / ghcup）；验证: `ghc --version`
+- Linux/macOS: GHC 安装包（`apt install ghc` / `brew install ghc` / ghcup）；Windows: ghcup（`winget install ghcup` 或官网安装器）；验证: `ghc --version`
 
 ### ocamlobjinfo（OCaml 侧，可选）
 
-- Linux/macOS: OCaml 工具链（`apt install ocaml` / `brew install ocaml`）；验证: `ocamlobjinfo -version`
+- Linux/macOS: OCaml 工具链（`apt install ocaml` / `brew install ocaml`）；Windows: opam（`winget install OCaml.opam`）或官网安装器；验证: `ocamlobjinfo -version`
 
 ### Ghidra / IDA（反编译底座）
 
@@ -40,17 +40,17 @@ description: >
    readelf -s sample | grep -iE 'ghc|stg_|RTS|HsMain' | head   # GHC 特征
    readelf -s sample | grep -iE 'caml_|camlMain' | head         # OCaml 特征
    ```
-   - GHC：`HsMain` 入口、`stg_*` 运行时符号、`RTS` 段
+   - GHC：`HsMain` 入口、RTS 运行时符号（stg_*/hs_*）
    - OCaml：`camlMain` 入口、`caml_*` 运行时符号
    - **字节码 vs 原生**：OCaml 字节码产物（非 native）特征（`caml_start_program`）→ 字节码可反汇编还原；native 产物走常规反编译
 
 2. **闭包与堆对象**：
-   - GHC：thunk（未求值闭包）与已求值值的堆对象布局——closure header（info table 指针）+ 字段；CAF（顶层常量）在启动时初始化
-   - OCaml：block 头（tag + 大小，低 2 位 = 标记）；tagged int（奇数值 = 直接整数，偶数值 = 指针）
+   - GHC：thunk（未求值闭包）与已求值值的堆对象布局——closure header（info table 指针）+ 字段；CAF 以 thunk 形式静态分配，首次引用才求值（惰性）
+   - OCaml：block 头（tag + 大小）；tagged int 判定用值的最低位（bit 0，奇数=整数，偶数=指针）
    - 分析：字段与构造器是主要线索（数据流优先）
 
 3. **调用约定**：
-   - GHC：函数参数经栈传递（STG 机），返回在栈顶——与常规寄存器约定不同
+   - GHC：参数经栈传递；返回值在寄存器 R1-R3（盒值在 R1）
    - OCaml：参数经寄存器（前 N 个）传递，闭包调用经 `caml_applyN`
    - 分析：先识别运行时包装（`caml_apply` / stg 入口）再进用户逻辑
 
@@ -70,4 +70,4 @@ description: >
 - **thunk 惰性求值误导**：现象——未求值闭包被当已求值数据；原因——惰性求值；对策——区分 thunk 头（info table 指向求值代码）与已求值值
 - **OCaml 字节码非 native**：现象——反编译全是运行时包装；原因——字节码产物；对策——识别 `caml_start_program` 后按字节码反汇编（非常规反编译）
 - **控制流打散导致静态分析失效**：现象——函数体无连续逻辑；原因——函数式编译产物；对策——转数据流分析（步骤 4），不硬追控制流
-- **tagged int 误读**：现象——整数被当指针/指针被当整数；原因——OCaml 值标记位；对策——按低 2 位区分（1=整数，0=指针），访问前先解标记
+- **tagged int 误读**：现象——整数被当指针/指针被当整数；原因——OCaml 值标记位；对策——按最低位区分（1=整数，0=指针），访问前先解标记

@@ -116,7 +116,7 @@ description: >
 - 目标是 Rust 二进制（语言专项：符号解译/泛型展开/所有权）→ [[re-rust]]
 - **目标是 C++（RTTI/异常表密集）** → [[re-cpp-abi]]（RTTI/虚表/异常恢复）
 - **目标是 Swift 产物（$s mangling 特征）** → [[re-swift]]（mangling/witness table/闭包捕获）
-- **目标是 Zig 产物（无 RTTI/异常表、panicking 特征）** → [[re-zig]]（comptime/错误路径）
+- **目标是 Zig 产物（无 RTTI/异常表、panic 函数特征）** → [[re-zig]]（comptime/错误路径）
 - **目标是 Nim 产物（NimMain/NimString 特征）** → [[re-nim]]（运行时/字符串结构）
 - **目标是 Haskell/OCaml 产物（GHC RTS/OCaml block 特征）** → [[re-fp-runtime]]（闭包/数据流）
 - 要写 Ghidra/IDA 脚本或插件（批量标注/解密循环/自定义格式解析，脚本→插件工程化）→ [[re-plugin-dev]]

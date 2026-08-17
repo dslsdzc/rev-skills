@@ -30,14 +30,16 @@ description: >
 1. **产物识别**：
    ```sh
    readelf -s sample | grep -iE 'panicking|std.debug|zig' | head
-   readelf -S sample | grep -E 'eh_frame|gcc_except'   # 无 C++ 异常表特征
+   readelf -S sample | grep gcc_except_table   # 应无输出（Zig 产物常带 .eh_frame，不能作判别）
+   readelf -s sample | grep __gxx_personality_v0   # 应无匹配
+   # 无 .gcc_except_table / 无 __gxx_personality_v0 → 无 C++ 异常机制
    ```
-   - Zig 特征：panicking 函数（panic 处理链）、std 符号模式（std.debug.print 等）、**无 C++ RTTI/异常表**（对比 [[re-cpp-abi]] 的 RTTI/异常密集特征）
+   - Zig 特征：panic 函数（std.debug.panic 等，panic 处理链）、std 符号模式（std.debug.print 等）、**无 C++ RTTI/异常表**（对比 [[re-cpp-abi]] 的 RTTI/异常密集特征）
    - 与 C 混合编译：Zig 符号与 C 符号共存（见步骤 4 边界）
 
 2. **导出符号与启动路径**：
    ```sh
-   readelf -s sample | grep -E 'start|main|init' | head
+   readelf -s sample | grep -wE '_start|main|_init' | head
    ```
    - 启动路径：`_start` → 运行时初始化 → `main`（Zig 的 main 入口）
    - comptime 展开产物：编译期计算已内联/展开——无对应源码结构，按行为分析

@@ -51,7 +51,7 @@ description: >
 
 3. **协议 witness table**：
    - witness table 是协议方法的分发表（Swift 动态分派的核心）
-   - 定位：Mach-O `__swift5_protoc` 段 / ELF `.swift5_protoc` 段的 conformance 记录（`$s...M` 符号），或搜索 `_swift_getWitnessTable` 调用点
+   - 定位：Mach-O `__swift5_proto` 段 / ELF `.swift5_proto` 段（协议描述符为 `__swift5_protos`）的 conformance 记录，或搜索 `_swift_getWitnessTable` 调用点
    - 还原：表内槽位 = 协议要求的方法实现地址 → 结合 [[re-cpp-abi]] 的 vtable 恢复思路反推协议一致性
 
 4. **闭包捕获**：
