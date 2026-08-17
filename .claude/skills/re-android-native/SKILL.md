@@ -116,6 +116,15 @@ description: >
    - 动态验证：frida `Java.perform` 里直接调用 native 方法（`Java.use("com.x.Cls").method(...)`）观察参数与返回；或用 xhook / PLT hook 思路（[[re-frida]] 的 `Interceptor.attach(Module.findExportByName(...))`）观察 native 内部对外部库（libc / 系统库）的调用链
    - 闭环：Java 触发点 → 参数来源 → native 处理逻辑 → 输出回 Java 层
 
+## Keystore 审计
+
+Android 密钥体系分析——目标密钥来自 AndroidKeyStore 时 `getEncoded()` 不可用（硬件背书），须走审计：
+
+- **遍历**：`KeyStore.getInstance("AndroidKeyStore")` → `aliases()` 枚举全部条目
+- **条目属性**：算法（AES/RSA/EC）、用途（encrypt/decrypt/sign/verify）、来源（`KeyInfo.isInsideSecureHardware`——TEE 与 StrongBox 区分）
+- **生物绑定**：`setUserAuthenticationRequired` 的密钥在认证失败时不可用（绕过与检测见 [[anti-dynamic-workflow]]）
+- **与 hook 衔接**：加密拦截（[[re-frida]] 的 [[frida-scripts]]）时密钥来自 Keystore → 记录别名与用途，不记录密钥字节
+
 ## 跨域联合
 
 - [[re-mobile]]：本技能是其工作流第 4 步（原生库）的专项子技能——网关识别到含 `.so` 目标后固定调度

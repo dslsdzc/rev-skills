@@ -106,6 +106,15 @@ description: >
    - RN: NativeModules 注册表与 `requireNativeComponent` / `NativeModules.xxx`——JS 侧找不到的加解密在原生模块里（转步骤 4）
    - 从 UI 文案 / 网络字符串反查: 字符串表（Flutter 快照 / JS bundle）→ 对应函数 → 逻辑
 
+## Flutter MethodChannel 动态拦截
+
+Flutter 平台通道（PlatformChannel）是 Dart ↔ native 通信主干，拦截可观察全部原生能力调用：
+
+- **Java/Kotlin 侧**：hook `io.flutter.plugin.common.MethodChannel` 的 MethodCallHandler——记录 channel 名 / 方法名 / 参数 JSON
+- **engine messenger 层**：`io.flutter.embedding.engine.FlutterEngine` 的 messenger 消息（低层兜底）
+- **与 Dart 侧静态观察互补**：静态找 channel 名与调用点（字符串字面量），动态确认实际流量
+- **输出**：结构化 JSON（channel / method / args），供 [[analysis-contract]] 数据契约消费（证据存档）
+
 ## 跨域联合
 
 - [[re-mobile]]: 混合应用分支固定调用本技能（引擎识别后按框架分流）
