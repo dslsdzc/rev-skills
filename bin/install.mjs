@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// bin/install.mjs — re-skills 多工具安装器
+// bin/install.mjs — rev-skills 多工具安装器
 import { cpSync, rmSync, symlinkSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';

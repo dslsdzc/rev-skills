@@ -25,7 +25,7 @@ description: >
 3. 归域分类：`references/intake.md` 决策表 → grep 技能库兜底 → 仍不确定问用户（不猜）
 4. 三档处理（中性呈现，不带推荐标注）：
    先问用户档位：「这次经验怎么处理？1. 发表 issue 2. 本地入库 3. 不入库」，选定后再执行对应档，不预设默认档
-   - ① 发表 issue：`which gh` + `gh auth status` 探测；可用则 `gh issue create --repo DslsDZC/aihk --label 经验`，标题「经验: <技能>: <一句话>」，正文按 `references/issue-template.md`；不可用 → 输出 markdown 草稿供手动提交；label 报不存在 → 去掉 --label 重试或提示用户先创建；仓库不可达 → 输出草稿
+   - ① 发表 issue：`which gh` + `gh auth status` 探测；可用则 `gh issue create --repo DslsDZC/rev-skills --label 经验`，标题「经验: <技能>: <一句话>」，正文按 `references/issue-template.md`；不可用 → 输出 markdown 草稿供手动提交；label 报不存在 → 去掉 --label 重试或提示用户先创建；仓库不可达 → 输出草稿
    - ② 本地入库：grep 去重 → 追加到该技能 `references/experience.md`（无则创建，条目含来源+日期）→ SKILL.md「常见坑与陷阱」保留精选并追加 experience.md 链接（先建文件再加链接，避免断链）→ `npm test` 校验 → 按步骤 5 约定提交（或先询问用户）
    - ③ 不入库：确认后结束
 5. （文章扫描路径可选）提交 commit：「经验: 第N轮扫描入库X篇——<篇目>」，message 列出每技能新增条目

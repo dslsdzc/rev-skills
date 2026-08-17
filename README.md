@@ -1,4 +1,4 @@
-# re-skills — 通用逆向工程 AI 技能库
+# rev-skills — 通用逆向工程 AI 技能库
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -11,20 +11,20 @@
 ### 方式一：npx（推荐，支持 7 种 AI 工具）
 
 ```bash
-npx re-skills install                     # 交互式，默认 Claude Code
-npx re-skills install --target all        # 安装到全部 7 种工具
-npx re-skills install --target cursor     # 生成 Cursor 规则
-npx re-skills install --target gemini     # Gemini CLI 原生技能
-npx re-skills install --global            # 全局安装
-npx re-skills install --project           # 仅当前项目
-npx re-skills install --dry-run           # 只看计划不安装
-npx re-skills uninstall                   # 卸载
+npx rev-skills install                     # 交互式，默认 Claude Code
+npx rev-skills install --target all        # 安装到全部 7 种工具
+npx rev-skills install --target cursor     # 生成 Cursor 规则
+npx rev-skills install --target gemini     # Gemini CLI 原生技能
+npx rev-skills install --global            # 全局安装
+npx rev-skills install --project           # 仅当前项目
+npx rev-skills install --dry-run           # 只看计划不安装
+npx rev-skills uninstall                   # 卸载
 ```
 
 ### 方式二：Claude Code 插件市场
 
 ```bash
-claude plugin add DslsDZC/aihk
+claude plugin add DslsDZC/rev-skills
 ```
 
 ### 方式三：手动拷贝

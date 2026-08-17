@@ -10,8 +10,8 @@
 
 ## 使用方式
 
-- 本机为 Claude Code/Gemini CLI/Cline/Codex：克隆仓库后 `npx re-skills install --target <工具名>` 或直接引用 .claude/skills/ 目录
-- Cursor/Copilot/Windsurf：`npx re-skills install --target cursor` 等生成规则文件
+- 本机为 Claude Code/Gemini CLI/Cline/Codex：克隆仓库后 `npx rev-skills install --target <工具名>` 或直接引用 .claude/skills/ 目录
+- Cursor/Copilot/Windsurf：`npx rev-skills install --target cursor` 等生成规则文件
 - 完整安装说明见 README.md
 
 ## 关键约定
