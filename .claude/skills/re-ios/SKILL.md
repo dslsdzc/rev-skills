@@ -98,6 +98,7 @@ description: >
 - 二进制解析 → [[re-format-macho]]；断点调试 → [[re-lldb]]；插桩 / 绕过 / 脱壳执行 → [[re-frida]]
 - 本技能被 [[re-analyze]] 的 triage「移动 App 分析」路径调用（re-mobile → re-ios）
 - 桌面 macOS 生态（签名/entitlements/Secure Enclave）→ [[re-macos]]
+- Swift 层分析（mangling/witness table）→ [[re-swift]]
 
 ## 常见坑与陷阱
 

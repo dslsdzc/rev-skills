@@ -83,6 +83,7 @@ description: >
 - [[re-lldb]]：动态调试
 - [[re-frida]]：动态插桩（macOS 桌面支持）
 - [[analysis-contract]]：签名/entitlements 信息按数据契约传递
+- Swift 层分析（mangling/witness table）→ [[re-swift]]
 
 ## 常见坑与陷阱
 

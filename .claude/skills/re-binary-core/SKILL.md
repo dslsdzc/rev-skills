@@ -7,7 +7,8 @@ description: >
   [[re-imports]] [[re-ghidra]] [[re-ida]] [[re-radare2]] [[re-gdb]] [[re-x64dbg]]
   [[re-lldb]] [[re-tracing]] [[re-memdump]] [[re-windbg]] [[re-binaryninja]]
   [[re-emulation]] [[re-shellcode]] [[re-kernel]] [[re-game]] [[re-go]] [[re-rust]]
-  [[re-plugin-dev]] [[re-hypervisor]] [[re-anti-cheat]]、[[re-cpp-abi]]。
+  [[re-plugin-dev]] [[re-hypervisor]] [[re-anti-cheat]]、[[re-cpp-abi]]、[[re-swift]]、[[re-zig]]、
+  [[re-nim]]、[[re-fp-runtime]]。
   触发词：静态分析、看这个程序的逻辑、反编译、逆向这个二进制、binary analysis。
 ---
 
@@ -114,6 +115,10 @@ description: >
 - 目标是 Go 二进制（语言专项：符号/字符串表/goroutine）→ [[re-go]]
 - 目标是 Rust 二进制（语言专项：符号解译/泛型展开/所有权）→ [[re-rust]]
 - **目标是 C++（RTTI/异常表密集）** → [[re-cpp-abi]]（RTTI/虚表/异常恢复）
+- **目标是 Swift 产物（$s mangling 特征）** → [[re-swift]]（mangling/witness table/闭包捕获）
+- **目标是 Zig 产物（无 RTTI/异常表、panicking 特征）** → [[re-zig]]（comptime/错误路径）
+- **目标是 Nim 产物（NimMain/NimString 特征）** → [[re-nim]]（运行时/字符串结构）
+- **目标是 Haskell/OCaml 产物（GHC RTS/OCaml block 特征）** → [[re-fp-runtime]]（闭包/数据流）
 - 要写 Ghidra/IDA 脚本或插件（批量标注/解密循环/自定义格式解析，脚本→插件工程化）→ [[re-plugin-dev]]
 - 怀疑带壳 → 转 [[re-anti-analysis]]
 
