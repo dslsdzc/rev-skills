@@ -111,3 +111,10 @@ description: Go 二进制逆向：符号保留、字符串表、goroutine。触�
 - **自定义结构序列化数据（gob）**：现象——程序数据段是"字节流"但反编译显示用 `encoding/gob` 解码；原因——作者用 gob 编码自定义结构（配置/VM 程序/内嵌对象），`LoadProgram` 类函数里 `gob.NewDecoder` + `Decode` 就是入口；对策——从反编译重建结构体（字段名/字段数从 gob 流里的类型定义提取），**用 Go 生成同结构样本对比字节**（逐字节比对类型定义段，字段名/类型/数量一目了然），字段名损坏（材料/编码导致缺字节）时 gob 按字段号越界报错，可改本地 gob 源码做宽松解码（跳过字段号检查）逼近数据
 - **LD_PRELOAD 对 Go 程序无效**：现象——hook libc 函数（execve/openat）拦截不到 Go 程序的调用；原因——Go 直接 syscall（不经过 libc 符号），LD_PRELOAD 只劫持 libc 动态符号；对策——hook **子进程**（bash 等 C 程序调用的 libc 符号）或 hook 更底层（seccomp/strace 观察真实 syscall）；Go 程序执行的 `exec.Command` 会 fork 子进程，子进程（bash/ls）仍走 libc，可被 LD_PRELOAD 拦截
 - **运行时行为重放（伪服务端）**：现象——Go 恶意程序逻辑复杂但需要网络交互（IRC/HTTP 服务端）才能触发；原因——程序是客户端（信标/C2 bot），离线静态分析看不到完整行为；对策——**伪造服务端重放**：DNS hook（getaddrinfo 劫持域名→127.0.0.1）+ 假 IRC/HTTP 服务器（按 pcap 提取的真实交互序列重放），让程序自己跑完逻辑链；注意握手时序（等 bot JOIN 完成再发消息）与消息格式（bot 按名字/频道校验消息）
+- **Garble 混淆的 Go 二进制**：现象——stripped + 随机函数名 + 字符串全空；原因——Garble 同时混淆函数名与字符串；对策——GoReSym 恢复 pclntab（函数边界不受名字混淆影响）→ GoResolver CFG 签名恢复标准库名 → GoStringUngarbler 批量解密字符串 → 从解密串找 C2/密钥
+- **Go 加密密钥定位**：现象——找不到 AES 密钥；原因——密钥运行时从多个常量拼接；对策——跟踪 `crypto/aes.NewCipher`（或 `crypto/cipher.NewGCM`）第一个参数来源，回溯拼接点
+- **Go 接口调用看不懂**：现象——反编译的 interface 调用是间接跳转；原因——Go interface 经 itab 分派；对策——定位 itab 表手动标注接口类型
+- **符号可用但签名缺失**：现象——函数名有、参数/类型没有；原因——新版本 Go 产物不带完整符号信息；对策——接受函数名可用、签名靠其他证据（配置反序列化类型/调用点）重建
+- **字符串噪声大**：现象——恢复的字符串混入大量标准库常量；原因——Go 标准库字符串常量；对策——按包级别过滤后再筛业务字符串
+- **源码重建原则**：现象——逐行还原不现实；原因——产物无源码对应；对策——按包重建可读代码、保留逻辑而非逐行一致（逻辑优先）
+（来源：reverse-skill field-journal，MIT）
