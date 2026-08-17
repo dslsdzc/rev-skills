@@ -125,6 +125,15 @@ description: >
    - UDS 下载流程（0x27 解锁 → 0x34 请求下载 → 0x36 传输数据 → 0x37 退出传输）或 0x23 读内存获取固件 → 转 [[re-fw-extract]] 解包（ECU/车机固件与 IoT 固件同流程）
    - 直接拿到的升级包文件 → [[re-fw-extract]]；固件 ELF → [[re-binary-core]]；需硬件 flash 读取 → [[re-hardware-io]]
 
+## IVI / T-Box / V2X 路径
+
+按目标形态分流（判定规则）：
+
+- **IVI（车载娱乐系统）**：本质是 Android/Linux 系统——应用层走 [[re-apk]]，系统镜像走 [[re-firmware]]；关注 OEM 定制层（启动器、诊断接口、ADB/调试口）
+- **T-Box（远程信息处理箱）**：蜂窝模组（AT 指令接口）、MCU 固件（[[re-fw-extract]] 提取分析）、远程控制协议（车控指令——门锁/空调/启动，走 [[re-protocol]]）
+- **V2X（车联网通信）**：DSRC / C-V2X 帧结构 → [[re-protocol]] / [[re-ics]] 路径（协议状态机重建、PC5/Uu 接口区分）
+- 判定规则：应用层 → 移动/系统路径（[[re-apk]] / [[re-firmware]]）；通信层 → 协议路径（[[re-protocol]] / [[re-ics]]）；固件层 → 固件路径（[[re-fw-extract]] / [[re-fw-rootfs]]）
+
 ## 跨域联合
 
 - [[re-firmware]]：本技能是其汽车分支（ECU 固件提取后 → 解包 → rootfs → 仿真）
