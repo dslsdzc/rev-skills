@@ -47,7 +47,7 @@ aiHK/re-skills 是 88 个逆向工程技能库（1 入口 re-analyze + 11 大类
 
 - **每技能新增** `references/experience.md`（经验全集，条目带来源与日期；无 references 目录的技能新建）
 - 各技能 SKILL.md「常见坑与陷阱」：保留精选 + 追加链接到本技能 experience.md
-- re-analyze/SKILL.md：第三步编排后加「第 3.5 步：可选经验复盘」→ 调用 [[re-feedback]]
+- re-analyze/SKILL.md：第三步编排后加「第四步（可选）：经验复盘」→ 调用 [[re-feedback]]
 
 ## 工作流（5 步）
 
@@ -65,6 +65,7 @@ aiHK/re-skills 是 88 个逆向工程技能库（1 入口 re-analyze + 11 大类
 | 情况 | 处理 |
 |---|---|
 | gh 未装/未登录/仓库不可达 | 降级为草稿输出 |
+| gh 报 label「经验」不存在 | 去掉 --label 重试，或提示用户先创建 label |
 | 归域不确定 | 问用户，不猜 |
 | 条目重复 | 跳过并告知 |
 | npm test 失败 | 修复格式后再入库 |
