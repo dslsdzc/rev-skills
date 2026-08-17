@@ -3,3 +3,9 @@ node_modules/
 .DS_Store
 /dist/
 /coverage/
+
+# 本地分析产物（勿提交公开仓库）
+/aaa/
+/analysis/
+/demo_target.*
+/sandbox.sh
