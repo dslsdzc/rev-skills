@@ -27,7 +27,7 @@ description: >
 
 ### 逻辑分析仪（信号提取）
 
-- 多平台: Saleae 类（配套软件各平台可用）或开源方案（sigrok/PulseView：`pip install sigrok` 或发行版包）
+- 多平台: Saleae 类（配套软件各平台可用）或开源方案（sigrok/PulseView：`apt install sigrok-cli pulseview` / `brew install sigrok-cli pulseview`（sigrok 无 PyPI 包））
 - 验证: `pulseview --version`
 
 ### 热成像（功耗/时序异常，可选）

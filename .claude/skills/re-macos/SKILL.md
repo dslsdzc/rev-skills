@@ -19,7 +19,7 @@ description: >
 
 - macOS: 系统自带（Xcode 命令行工具 `xcode-select --install`）
 - Linux: 可静态分析 Mach-O（`llvm-otool`，`brew install llvm` 或发行版 llvm 包）
-- 验证: `codesign --version`、`otool --version`
+- 验证: `codesign --version`、macOS: `otool --version`；Linux: `llvm-otool --version`
 
 ### Hopper / IDA / Ghidra（反编译底座）
 
@@ -36,7 +36,7 @@ description: >
 1. **包结构与签名检查**：
    ```sh
    file Sample.app/Contents/MacOS/Sample
-   codesign -dv Sample.app 2>&1 | head            # 签名者/Team ID/要求
+   codesign -dv Sample.app 2>&1 | head            # 签名者/Team ID（要求需 `-d -r-` 查看）
    spctl -a -vv Sample.app 2>&1                   # 公证状态（Gatekeeper）
    defaults read Sample.app/Contents/Info.plist   # Info.plist 关键键
    ```
@@ -54,11 +54,12 @@ description: >
    # 用户级 TCC 库（授权记录）
    ls ~/Library/Application\ Support/com.apple.TCC/
    ```
+   - 前置检查：TCC.db 自身受 TCC 保护——无 Full Disk Access 时读取会权限失败，先确认授权再读
    - TCC.db（SQLite）记录各 App 对隐私资源的授权；分析目标对 TCC 的依赖（它请求了什么权限、何时请求）
    - 注意：TCC 数据属系统隐私数据，只读分析不导出内容（红线 2）
 
 4. **钥匙串与 Secure Enclave**：
-   - 钥匙串条目类型（通用密码/互联网密码/密钥）与 ACL（`kSecAttrAccess` 可访问性类：非锁定/首次解锁/此设备）
+   - 钥匙串条目类型（通用密码/互联网密码/密钥）与 ACL（`kSecAttrAccessible` 可访问性类：非锁定/首次解锁/此设备）
    - Secure Enclave 密钥：`SecKeyCreateWithData` 带 `kSecAttrTokenIDSecureEnclave` —— 私钥**不可提取**（等价 Android Keystore 硬件背书，见 [[re-android-native]] Keystore 审计）
    - 分析：目标读哪些钥匙串条目（SecItemCopyMatching 调用点）、密钥是否 Secure Enclave 绑定（不可提取 → 记录用途而非字节）
 

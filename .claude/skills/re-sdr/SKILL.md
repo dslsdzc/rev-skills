@@ -18,6 +18,7 @@ description: >
 ### RTL-SDR / HackRF（接收硬件）
 
 - 选购指引：RTL-SDR（接收，低成本入门）/ HackRF（收发，重放需要）
+- 驱动: `apt install rtl-sdr` / `brew install rtl-sdr`；HackRF: `apt install hackrf` / `brew install hackrf`
 - 验证: 硬件插入后 `rtl_test` 或 `hackrf_info` 有输出
 
 ### GNU Radio（信号处理）
@@ -54,17 +55,14 @@ description: >
    - 产出：解调位流（0/1 序列）
 
 3. **帧同步与协议恢复**：
-   ```sh
-   # URH 位流分析：preamble/同步字识别、编码反转（NRZ/Manchester）
-   urh --decode
-   ```
+   - URH 打开捕获文件 → 位流分析视图找同步字、试编码反转（NRZ/Manchester）
    - 找同步字（重复模式/固定前缀）→ 定帧边界 → 字段划分（地址/长度/载荷/CRC）
    - 多帧对照（重复发射）→ 不变字段=固定头、变化字段=数据/序号
    - 产出：帧结构表（字段偏移/长度/语义）
 
 4. **重放与交互**（授权场景）：
    - HackRF 回放捕获帧（重放攻击验证——仅授权目标）
-   - 交互式：改字段重发（滚动码/加密需先分析算法——转 [[re-crypto-*]]）
+   - 交互式：改字段重发（滚动码/加密需先分析算法——转 [[re-crypto-id]] / [[re-crypto-decrypt]]）
 
 ## 跨域联合
 
