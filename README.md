@@ -10,7 +10,7 @@
 
 ### 方式一：npx（推荐，支持 7 种 AI 工具）
 
-> 方式一自建安装器额外处理 Cursor / Copilot / Windsurf 的规则聚合（.mdc / 说明文件），这是标准 skills CLI 没有的能力；只装 Claude Code 系可用方式三。
+> 方式一自建安装器额外处理 Cursor / Copilot / Windsurf 的规则聚合（.mdc / 说明文件），这是标准 skills CLI 没有的能力；只装 Claude Code 系可用方式二。
 
 ```bash
 npx rev-skills install                     # 交互式，默认 Claude Code
@@ -23,13 +23,7 @@ npx rev-skills install --dry-run           # 只看计划不安装
 npx rev-skills uninstall                   # 卸载
 ```
 
-### 方式二：Claude Code 插件市场
-
-```bash
-claude plugin add DslsDZC/rev-skills
-```
-
-### 方式三：标准 skills CLI（agentskills.io 兼容）
+### 方式二：标准 skills CLI（agentskills.io 兼容）
 
 本库遵循 [Agent Skills 规范](https://agentskills.io)，可被任意兼容运行时（Claude Code / Codex / Cursor / Gemini CLI 等 50+ 工具）直接发现与安装：
 
@@ -39,7 +33,7 @@ npx skills add DslsDZC/rev-skills -g       # 全局（~/.claude/skills/）
 npx skills add DslsDZC/rev-skills -l       # 先列出技能，不安装
 ```
 
-### 方式四：手动拷贝
+### 方式三：手动拷贝
 
 把 `.claude/skills/` 下的技能目录复制到 `~/.claude/skills/`（Claude Code）或对应工具目录。
 
@@ -47,7 +41,7 @@ npx skills add DslsDZC/rev-skills -l       # 先列出技能，不安装
 
 | 工具 | 安装方式 | 体验 |
 |---|---|---|
-| Claude Code | `--target claude` / plugin | 原生技能（按需加载） |
+| Claude Code | `--target claude` | 原生技能（按需加载） |
 | Gemini CLI | `--target gemini` | 原生技能 |
 | Cline | `--target cline` | 原生技能（兼容） |
 | Codex CLI | `--target codex` | 原生技能 |
@@ -55,21 +49,21 @@ npx skills add DslsDZC/rev-skills -l       # 先列出技能，不安装
 | GitHub Copilot | `--target copilot` → `.github/copilot-instructions.md` | 规则聚合 |
 | Windsurf | `--target windsurf` → `.windsurf/rules/*.md` | 规则聚合 |
 
-## 技能导航（89）
+## 技能导航（91）
 
-入口 → 12 大类网关 → 76 原子技能，详见 `.claude/skills/` 与 `docs/skill-template.md`。快速索引：
+入口 → 12 大类网关 → 78 原子技能，详见 `.claude/skills/` 与 `docs/skill-template.md`。快速索引：
 
 - **re-analyze**：入口（探测 → 偏好 → 识别 → 编排）
 - **re-binary-core**：re-triage、re-format-pe/elf/macho、re-imports、re-ghidra、re-ida、re-radare2、re-gdb、re-x64dbg、re-lldb、re-tracing、re-memdump、re-windbg、re-binaryninja、re-emulation、re-shellcode、re-kernel、re-game、re-go、re-rust、re-plugin-dev、re-hypervisor、re-anti-cheat
 - **re-malware**：re-sandbox、re-behavior、re-ioc、re-ransomware、re-loader、re-fileless
 - **re-firmware**：re-fw-extract、re-fw-rootfs、re-fw-emulate、re-hardware-io、re-automotive、re-uefi
 - **re-protocol**：re-netcap、re-proto-rev、re-crypto-id、re-crypto-keys、re-crypto-decrypt、re-ics、re-iot-proto、re-whitebox、re-tls
-- **re-mobile**：re-apk、re-ios、re-frida、re-mobile-pack、re-hybrid-app、re-android-native、re-ios-jb
+- **re-mobile**：re-apk、re-ios、re-frida、re-frida-script-author、re-mobile-pack、re-hybrid-app、re-android-native、re-ios-jb
 - **re-anti-analysis**：re-packer-id、re-unpack-simple、re-unpack-advanced、re-deobfuscate、re-evasion
 - **re-cracking**：re-license、re-patching、re-keygen、re-drm
 - **re-vuln**：re-fuzzing、re-crash-triage、re-exploit
 - **re-ctf**：re-angr、re-z3、re-pwn
-- **re-managed**：re-dotnet、re-java、re-script-deob、re-wasm、re-ai-model、re-blockchain
+- **re-managed**：re-dotnet、re-java、re-script-deob、re-wasm、re-ai-model、re-blockchain、re-python
 - **re-forensics**：re-mem-forensics、re-disk-forensics、re-ti
 - **re-feedback**：经验反馈元网关——三源收集（会话复盘/文章扫描/手动输入）→ 蒸馏脱敏 → 归域 → 三档处理（发表 issue / 本地入库 / 不入库），re-analyze 第四步挂钩
 
