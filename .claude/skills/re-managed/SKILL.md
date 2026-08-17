@@ -27,6 +27,7 @@ description: >
 - **PE 且确认 .NET 元数据（CLI header / mscoree）** → [[re-dotnet]]（dnSpy/ILSpy 反编译、de4dot 去混淆）
 - **jar / war / class（Java 字节码）** → [[re-java]]（CFR/JD-GUI、javap、加固脱壳）
 - **.ps1 / .docm / .xlsm / .js / .jse / .hta（脚本或宏）** → [[re-script-deob]]（逐层解码，动态执行默认沙箱）
+- **Python 打包样本（.exe 含 PyInstaller/PyArmor 特征 / .pyc / python 打包）** → [[re-python]]（pyinstxtractor 解包、PyArmor-Unpacker、pyc 反编译；纯脚本混淆转 [[re-script-deob]]）
 - **.wasm / WebAssembly 模块（网页/Node 侧载荷）** → [[re-wasm]]（WABT 解析 section、wasm-decompile 反编译、DevTools/wasmtime 动态）
 - **ONNX / safetensors / PyTorch 模型文件** → [[re-ai-model]]（格式识别、权重提取、水印/窃取判定；未知 pkl 默认隔离）
 - **EVM 合约字节码（.bin / hex）** → [[re-blockchain]]（ABI 恢复、panoramix 反编译、漏洞分析）

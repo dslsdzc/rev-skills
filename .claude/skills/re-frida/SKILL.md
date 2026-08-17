@@ -137,6 +137,7 @@ description: >
 - [[re-apk]] / [[re-ios]]：静态分析后需要运行时行为（解密 / hook / 绕过 / 脱壳执行）时调用本技能
 - 系统调用级跟踪互补 → [[re-tracing]]；运行时内存提取 → [[re-memdump]]
 - 本技能被 [[re-analyze]] 的 triage「移动 App 分析」路径调用（re-mobile → re-frida）
+- 脚本生成：目标特征 → 模板选择 → 改写验证 → [[re-frida-script-author]]（模板素材 [[frida-scripts]]）
 
 ## 常见坑与陷阱
 
