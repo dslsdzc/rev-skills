@@ -10,6 +10,8 @@
 
 ### 方式一：npx（推荐，支持 7 种 AI 工具）
 
+> 方式一自建安装器额外处理 Cursor / Copilot / Windsurf 的规则聚合（.mdc / 说明文件），这是标准 skills CLI 没有的能力；只装 Claude Code 系可用方式三。
+
 ```bash
 npx rev-skills install                     # 交互式，默认 Claude Code
 npx rev-skills install --target all        # 安装到全部 7 种工具
@@ -27,7 +29,17 @@ npx rev-skills uninstall                   # 卸载
 claude plugin add DslsDZC/rev-skills
 ```
 
-### 方式三：手动拷贝
+### 方式三：标准 skills CLI（agentskills.io 兼容）
+
+本库遵循 [Agent Skills 规范](https://agentskills.io)，可被任意兼容运行时（Claude Code / Codex / Cursor / Gemini CLI 等 50+ 工具）直接发现与安装：
+
+```bash
+npx skills add DslsDZC/rev-skills          # 项目作用域（.claude/skills/）
+npx skills add DslsDZC/rev-skills -g       # 全局（~/.claude/skills/）
+npx skills add DslsDZC/rev-skills -l       # 先列出技能，不安装
+```
+
+### 方式四：手动拷贝
 
 把 `.claude/skills/` 下的技能目录复制到 `~/.claude/skills/`（Claude Code）或对应工具目录。
 

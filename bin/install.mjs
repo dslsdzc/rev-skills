@@ -101,6 +101,10 @@ async function main() {
   }
   for (const t of targets) {
     if (!TARGETS[t]) throw new Error(`unknown target: ${t} (valid: ${Object.keys(TARGETS).join(', ')}, all)`);
+    if (opts.scope === 'global' && !('global' in TARGETS[t].places)) {
+      console.log(`[${t}] skip: target 仅支持 --project，已跳过（--target all --global 组合）`);
+      continue;
+    }
     let scope = opts.scope;
     if (!scope) {
       const tDef = TARGETS[t];
