@@ -6,7 +6,7 @@
 
 - 入口：`re-analyze`（.claude/skills/re-analyze/）——环境探测 → 偏好询问 → 任务识别 → 编排
 - 大类网关（12）：re-binary-core / re-malware / re-firmware / re-protocol / re-mobile / re-anti-analysis / re-cracking / re-vuln / re-ctf / re-managed / re-forensics / re-feedback（经验反馈元网关）
-- 原子技能（76）：见各网关 SKILL.md 的子技能清单与选择树
+- 原子技能（78）：见各网关 SKILL.md 的子技能清单与选择树
 
 ## 使用方式
 
