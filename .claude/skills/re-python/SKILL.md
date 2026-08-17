@@ -24,8 +24,8 @@ description: >
 
 ### pyinstxtractor（PyInstaller 归档提取）
 
-- 多平台: `pip install pyinstxtractor` 或 GitHub 脚本 `python pyinstxtractor.py`
-- 验证: `pyinstxtractor --help`（或 python 脚本方式运行无报错）
+- 多平台: `pip install pyinstxtractor-ng` 或 GitHub 脚本 `python pyinstxtractor.py`
+- 验证: `pyinstxtractor-ng <目标.exe>` 运行无报错（无独立 --help 命令）
 
 ### PyArmor-Unpacker（PyArmor 加固解包）
 
@@ -41,6 +41,7 @@ description: >
 ### file（打包器识别辅助，通用）
 
 - 各系统自带（Linux binutils / macOS / Windows 需额外装或跳过）
+- 验证: `file --version`
 
 ## 操作步骤
 
@@ -61,7 +62,7 @@ description: >
    python pyinstxtractor.py sample.exe
    # 输出 sample.exe_extracted/ 目录，含 PYZ-00.pyz（依赖归档）与主脚本 .pyc
    ```
-   - 定位主 .pyc（名字与入口脚本对应）；PYZ 内模块用 `python -m pyinstxtractor` 的 `--pylib` 参数或 archive_viewer.py 列出
+   - 定位主 .pyc（名字与入口脚本对应）；PYZ 内模块自动解出至 `PYZ-00.pyz_extracted/`；模块清单可用 archive_viewer.py 查看
 
 3. **PyArmor 解包**（步骤 1 检测到 PyArmor 时）：
    - 按 PyArmor 版本选 PyArmor-Unpacker 三方法之一（README 判断版本 → 对应方法）
@@ -71,8 +72,9 @@ description: >
    ```sh
    python3 -c "import struct,sys; print(struct.unpack('<H', open('main.pyc','rb').read(2))[0])"
    ```
-   - magic 对照（小端 2 字节，常见值；以本机 `python3 -c "import importlib.util; print(importlib.util.MAGIC_NUMBER.hex())"` 为准）：
-     - `0d0a`=3.6、`420d`=3.7、`550d`=3.8、`610d`=3.9、`6f0d`=3.10、`cb0d`=3.11、`d70d`=3.12
+   - magic 对照（小端 2 字节，常见值；以本机 MAGIC_NUMBER 为准）：
+     - `0d33`=3.6、`0d42`=3.7、`0d55`=3.8、`0d61`=3.9、`0d6f`=3.10、`0dcb`=3.11
+     - 3.12+：不写死数值，按本机 MAGIC_NUMBER 换算（`python3 -c "import importlib.util; print(hex(int.from_bytes(importlib.util.MAGIC_NUMBER[:2],'little')))"`）
    - 版本匹配目标则用对应版本 python 或 pycdc 反编译；不匹配先装匹配版本再试
 
 5. **反编译与清理**：
