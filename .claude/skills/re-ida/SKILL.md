@@ -76,6 +76,8 @@ description: >
 
 分析每个函数前先收集（见 [[analysis-contract]] 上下文清单）：xrefs、目标函数引用的字符串、caller/callee 签名、已命名符号表、已恢复 struct。一次性给足再分析；主动申请额外证据每函数不超过 8 次工具调用。
 
+深分析按 [[analysis-contract]] 的「单函数深分析顺序」五步推进（types → constants → vtables → identity → decompilation）；IDA 下类型用 idapython `get_type`/结构体定义，符号/常量证据可用 readelf / strings / objdump 导出辅助。
+
 ## 跨域联合
 
 - [[re-binary-core]]：工作流第 5 步备选反编译器（`RE_DECOMPILER=ida`）
