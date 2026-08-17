@@ -87,6 +87,20 @@ description: >
 
 分析每个函数前先收集（见 [[analysis-contract]] 上下文清单）：xrefs（谁引用它/它引用谁）、目标函数引用的字符串、caller/callee 签名、已命名符号表、已恢复 struct。一次性给足再分析，避免反复翻 xrefs；主动申请额外证据每函数不超过 8 次工具调用。
 
+## 单函数深分析顺序
+
+逐函数深分析按五步严格顺序推进（不可跳步、**禁止先反编译再倒推**），每步结果写回（重命名/注释）后再进下一步：
+
+1. **types——类型定义**：还原参数/返回类型与结构体字段（Type Manager / Apply Function Signature）。找什么：参数与局部变量引用的 struct、switch/比较中的 enum 值、函数指针类型（回调签名）
+2. **constants——常量定义**：识别魔数与加密常量。找什么：疑似 #define 的数字字面量、位掩码及其构成的 flag、有语义的 magic number（如 ELF 头 0x202）、协议专用常量、用作 key/标识符的字符串常量
+3. **vtables——虚表恢复**：定位虚表，反推类关系与调用点。找什么：thunk 到 vtable 分发的虚方法、读/初始化 vtable 指针、对象构造/析构序列、多条分发路径
+4. **function identity——函数名与签名**：对照已命名符号表/导入导出/调用点证据定名。找什么：import/export 的 demangled 符号名、调用点分析推出的调用约定、callee 引用推出的参数个数与类型、返回值使用分析推出的返回类型
+5. **decompilation——反编译分析**（仅在前四步完成后）：完整反编译核对逻辑，产出结论
+
+每步发现记录 provenance（哪个证据支撑哪条结论）；交付时函数应满足：类型全部解析（无裸 ID）、常量已替换为有意义名字、虚调用目标已识别、最终签名带参数名。
+
+工具不绑定：以上步骤在 Ghidra（GUI / headless / ghidra-bridge）、IDA（idapython）、radare2 中有等价操作；符号/常量证据可用 shell 工具（readelf / strings / objdump 导出）辅助收集，但反编译记录以所选反编译器为准。
+
 ## 跨域联合
 
 - [[re-binary-core]]：工作流第 5 步默认反编译器

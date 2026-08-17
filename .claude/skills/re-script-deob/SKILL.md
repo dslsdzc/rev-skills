@@ -95,6 +95,32 @@ description: 脚本/宏去混淆：PowerShell、VBA、JavaScript。触发词：P
    - 美化: `js-beautify layer_01.js -o pretty.js`
    - 动态（沙箱）：`node payload.js` 或浏览器沙箱执行拿下一层
 
+## 具体去混淆链配方
+
+承接步骤 1 的混淆风格分类，按配方执行（方法为核心，工具可替换）：
+
+**eval / 执行函数替换**：把 `eval` / `IEX` / `Invoke-Expression` / `bash` 替换为输出语句（JS 中 `eval = console.log`；PowerShell 中把 `IEX(...)` 换成打印），运行后打印底层代码；解一层、看一层、再解下一层，每层存档（`layer_01.ps1` → `layer_02.ps1` …）。
+
+**JS 常见编码函数（看到即解码目标）**：`unescape()`（URL 解码 %XX）、`String.fromCharCode()`（字符码数组）、`atob()`（Base64）；十六进制 `\xHH` / Unicode `\uHHHH` 批量转义解码（`python3 -c "import sys; print(sys.argv[1].encode().decode('unicode_escape').decode(errors='replace'))" '<串>'`）；`document.write` 换成打印。
+
+**PowerShell -enc / IEX 链**：`-EncodedCommand` 后的 base64 解码注意 UTF-16LE：
+```powershell
+[System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($encoded))
+```
+
+**垃圾代码检测**（识别特征五条）：
+- NOP sled
+- push/pop 成对出现、互相抵消
+- 运算结果为 0/恒等（算术垃圾）
+- 死写入：寄存器写入后、下次写入前从未被读
+- 无条件跳转到下一条指令
+
+真实逻辑形如 `junk, junk, junk, CALL target, junk, junk`——提取所有真实调用目标、忽略周围噪音（可用脚本按 `call` 指令 + 垃圾目标过滤实现）。
+
+**Hex 编码载荷**：hex 转字节后先试常见变换：逐字节减 1、XOR 单字节密钥（0x01 起递增试）。
+
+**常见解码链模式**：`base64 decode → gzip decode → reverse → base64 decode`；每层输出用 `file` 判断类型并验证可读性；验证失败说明层序或编码判断错，回退一层重试。
+
 ## 跨域联合
 
 - [[re-managed]]：网关工作流步骤②（反编译）③（去混淆）固定调用本技能

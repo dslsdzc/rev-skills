@@ -129,6 +129,8 @@ description: >
    - root 检测对抗：先 hook 检测函数改返回值再插桩目标：`Java.use("com.target.rootcheck").isRooted.implementation = function () { return false; };`
    - 仍被检测 → frida-gadget 注入 App 进程（gadget listen（interactive）模式），配合 [[re-apk]] 的 smali 补丁加载 libgadget.so
 
+7. **脚本模板与对抗方法论**：常用脚本骨架见 [[frida-scripts]]（TLS keylog / DEX/SO dump / JNI 注册还原 / 加密拦截 / 检测绕过表）；崩溃迭代法与检测面对照表见 [[anti-dynamic-workflow]]——先基线跑看裸崩，再定点 hook，不预置绕过全家桶。
+
 ## 跨域联合
 
 - [[re-mobile]]：工作流第 3 步动态插桩固定调用本技能

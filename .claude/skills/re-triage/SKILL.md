@@ -107,12 +107,24 @@ description: >
    - 熵 < 4.5：多为明文数据/未压缩代码
    - 分节评估更准：用 `objdump -h` 或 pefile 按节算熵（壳的特征是某些节熵极高）
 
-5. **决定下一步**：
+5. **安全特性与编译器识别**：
+   ```sh
+   readelf -h sample.bin | grep Type              # ET_DYN=PIE / ET_EXEC=非 PIE
+   readelf -l sample.bin | grep -A1 GNU_STACK     # 栈含 E 权限=缺 NX
+   readelf -l sample.bin | grep GNU_RELRO         # 存在=RELRO 开启（Full 再查 BIND_NOW）
+   readelf -s sample.bin | grep __stack_chk_fail  # 有=canary 开启
+   strings sample.bin | grep -iE 'GCC:|clang version|Microsoft Visual'  # 编译器特征
+   ```
+   - 编译器识别辅助后续判断：MSVC 常见 `__security_cookie`，GCC/Clang 常见 `__stack_chk_fail`（canary 形态不同）
+   - 加密常量检测转 [[re-crypto-id]]（AES S-box / TEA delta 指纹）
+   - 安全特性写入输出契约的 sections 摘要，供 [[re-vuln]] / 报告引用
+
+6. **决定下一步**：
    - 正常格式 + 熵正常 → [[re-format-pe]] / [[re-format-elf]] / [[re-format-macho]]（按类型）
    - 熵异常 / 节名可疑（UPX0/.aspack）→ 转 [[re-anti-analysis]] 先确认壳
    - 目标是动态行为 → 沙箱内 [[re-tracing]] + [[re-gdb]]（见 [[platform-tips]] 最高原则）
 
-6. **输出契约**：按 [[analysis-contract]] 数据契约输出结构化摘要——sha256 / arch / format / entropy / sections / imports / strings_refs，作为下一环节（format / 反编译 / 沙箱）的输入字段，不重新扫描。
+7. **输出契约**：按 [[analysis-contract]] 数据契约输出结构化摘要——sha256 / arch / format / entropy / sections / imports / strings_refs / 安全特性，作为下一环节（format / 反编译 / 沙箱）的输入字段，不重新扫描。
 
 ## 跨域联合
 
