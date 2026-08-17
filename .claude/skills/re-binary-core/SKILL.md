@@ -8,7 +8,7 @@ description: >
   [[re-lldb]] [[re-tracing]] [[re-memdump]] [[re-windbg]] [[re-binaryninja]]
   [[re-emulation]] [[re-shellcode]] [[re-kernel]] [[re-game]] [[re-go]] [[re-rust]]
   [[re-plugin-dev]] [[re-hypervisor]] [[re-anti-cheat]]、[[re-cpp-abi]]、[[re-swift]]、[[re-zig]]、
-  [[re-nim]]、[[re-fp-runtime]]。
+  [[re-nim]]、[[re-fp-runtime]]、[[re-variant]]。
   触发词：静态分析、看这个程序的逻辑、反编译、逆向这个二进制、binary analysis。
 ---
 
@@ -119,6 +119,7 @@ description: >
 - **目标是 Zig 产物（无 RTTI/异常表、panic 函数特征）** → [[re-zig]]（comptime/错误路径）
 - **目标是 Nim 产物（NimMain/NimString 特征）** → [[re-nim]]（运行时/字符串结构）
 - **目标是 Haskell/OCaml 产物（GHC RTS/OCaml block 特征）** → [[re-fp-runtime]]（闭包/数据流）
+- **补丁/N-day 对比（修复前后/变体关联）** → [[re-variant]]（函数匹配/补丁 diff）
 - 要写 Ghidra/IDA 脚本或插件（批量标注/解密循环/自定义格式解析，脚本→插件工程化）→ [[re-plugin-dev]]
 - 怀疑带壳 → 转 [[re-anti-analysis]]
 

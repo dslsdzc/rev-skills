@@ -4,7 +4,7 @@ type: gateway
 description: >
   CTF 实践网关。编排：题型识别 → 简单题直接 [[re-binary-core]] →
   需自动化 [[re-angr]]/[[re-z3]] → 混淆 [[re-deobfuscate]]。
-  子技能：[[re-angr]] [[re-z3]] [[re-pwn]]。
+  子技能：[[re-angr]] [[re-z3]] [[re-pwn]]、[[re-stego]]。
   触发词：CTF、赛题、逆向题、pwn、babyre、自动解题、符号执行、angr、z3、solver、找flag。
 ---
 

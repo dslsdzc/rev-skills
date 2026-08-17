@@ -24,6 +24,9 @@
 | Flutter/RN 引擎特征 | [[re-hybrid-app]] |
 | 加固商特征（Android 加固壳） | [[re-mobile-pack]] |
 | RTTI/异常表（.pdata/.xdata）密集 | [[re-cpp-abi]] |
+| PDF/Office 宏/钓鱼文档特征 | [[re-doc-malware]] |
+| 补丁/N-day 对比需求（修复前后/变体） | [[re-variant]] |
+| 文件尾附加/图片异常（隐写怀疑） | [[re-stego]] |
 
 ## B 表：卡住信号 → 换路
 
