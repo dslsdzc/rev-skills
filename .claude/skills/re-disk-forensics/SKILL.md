@@ -118,6 +118,13 @@ description: >
    - 被删除/隐藏分区: testdisk 扫描重建分区表项后，把重建分区按步骤 3 流程恢复文件
    - 提取对象（文件/残片）先算 sha256 再分析；可疑二进制转 [[re-binary-core]] 深挖，敏感串进 [[re-ioc]] IOC 列表
 
+## 数据库文件格式
+
+- **SQLite 结构**：页头（page header 字段）、btree 页（interior/leaf 类型）、记录格式（varint 长度编码 / 类型码）、溢出页（大字段跨页）
+- **WAL 恢复**：WAL 文件帧解析（未 checkpoint 的事务）、checkpoint 边界判定（恢复点）
+- **取证应用**：浏览器/App 数据库——删除记录恢复（freelist 页残留）、未提交事务提取（WAL 内）
+- **工具**：`sqlite3` CLI 只读模式（`sqlite3 -readonly`）、页级解析脚本（python 按页结构遍历）
+
 ## 跨域联合
 
 - [[re-forensics]]：本技能是该网关的磁盘侧取证分支（内存侧为 [[re-mem-forensics]]）——网关选择树按"内存 vs 磁盘"分派
