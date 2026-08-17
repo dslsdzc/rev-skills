@@ -345,11 +345,12 @@ git commit -m "docs: README/AGENTS 同步 re-feedback（89 技能/12 网关）"
 **三档选择先问用户再动手**：现象——拿到经验直接按默认档处理（如直接发 issue），用户其实想本地留底；原因——档位是用户的权利，预设处理侵犯自主判断；对策——步骤 4 先用中性句式问「这次经验怎么处理？1. 发表 issue 2. 本地入库 3. 不入库」，等用户选定再执行
 ```
 
-- [ ] **Step 2: 走查 ① 档（issue/草稿）**
+- [ ] **Step 2: 走查 ① 档（仅验证 gh + 草稿，不真实发 issue）**
 
 Run: `which gh && gh auth status`
-- gh 存在且已登录 → 演练 `gh issue create --repo DslsDZC/aihk --title "经验: re-feedback: 三档选择先问用户再动手" --body "$(cat <填充后的模板>)" --label 经验`；label 报不存在则去掉 `--label 经验` 重试；创建成功后在 issue 页确认内容，随后可关闭该演练 issue
+- gh 存在且已登录 → 用填充后的模板拼出完整 issue 内容（标题「经验: re-feedback: 三档选择先问用户再动手」+ 技能/现象/原因/对策/来源/脱敏声明 六段），**验证 gh 命令形式**（`gh issue create --help` 确认参数写法），**不执行真实创建**；展示填充后的草稿全文供用户核对
 - gh 不存在/未登录 → 确认输出填充后的模板 markdown 草稿（标题 + 技能/现象/原因/对策/来源/脱敏声明 六段），提示用户手动提交
+- 无论哪种情况：不调用 `gh issue create` 真实发帖（用户决定：演练零对外影响）
 
 - [ ] **Step 3: 走查 ② 档（本地入库）**
 
