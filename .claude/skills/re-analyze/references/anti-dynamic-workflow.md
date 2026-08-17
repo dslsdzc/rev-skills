@@ -40,6 +40,14 @@
 - **时间**：sleep / GetTickCount / RDTSC（检测沙箱加速执行）
 - **ptrace**：PTRACE_TRACEME 自我跟踪检测调试器
 
+## 裸系统调用检测
+
+目标自实现系统调用（绕过 libc）时，基于 libc 符号的 hook 与检测全部失效——svc 指令级捕获：
+
+- **架构分支**：arm64 SYS_OPEN=56、svc 机器码 `01 00 00 D4`；arm SYS_OPEN=5、`00 00 00 EF`
+- **手法**：遍历可执行段（r-x）过滤 .so → 特征码扫描命中 → 回读 svc 前一条指令取系统调用号（arm64 读 `mov x8` 立即数位、arm 读 r7）→ 系统调用号等于目标（如 SYS_OPEN）才 attach → 打印文件名与返回值
+- **注意**：arm64 参数索引按系统调用约定核对（open 路径参数在 x0，不照搬经验值）；系统调用号表按目标内核/Android 版本核对
+
 ## 实现教训（内化）
 
 - 返回值只能在 **onLeave 用 `retval.replace()`** 改，onEnter 改不了
