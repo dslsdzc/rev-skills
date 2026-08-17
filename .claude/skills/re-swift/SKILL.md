@@ -19,7 +19,7 @@ description: >
 
 - macOS: Xcode 自带（`xcrun swift-demangle`）；Linux: `apt install swiftlang` 或 Swift 官方工具链
 - Windows: Swift 官方工具链
-- 验证: `echo '$s3foo3bar' | swift-demangle`（输出可读形式）
+- 验证: `echo '$s3foo3bar' | swift-demangle`（macOS 用 `xcrun swift-demangle`；输出可读形式）
 
 ### llvm-objdump（反汇编辅助）
 
@@ -43,14 +43,15 @@ description: >
 
 2. **mangling 解码（批量）**：
    ```sh
-   readelf -s sample | grep '^\$s' | awk '{print $8}' | swift-demangle | head -20
+   readelf -s sample | awk '$8 ~ /^\$s/ {print $8}' | swift-demangle | head -20
+   # Mach-O: llvm-nm sample | awk '$2 ~ /^\$s/ {print $2}' | swift-demangle
    ```
    - 解码内容：模块名/类型/函数签名/泛型参数展开
    - 解码结果写入符号表（供 [[re-ghidra]] / [[re-ida]] 重命名）
 
 3. **协议 witness table**：
    - witness table 是协议方法的分发表（Swift 动态分派的核心）
-   - 定位：搜索 `swift_witnessTable` 相关引用 / 协议 conformance 记录（`_swift_getWitnessTable` 调用点）
+   - 定位：Mach-O `__swift5_protoc` 段 / ELF `.swift5_protoc` 段的 conformance 记录（`$s...M` 符号），或搜索 `_swift_getWitnessTable` 调用点
    - 还原：表内槽位 = 协议要求的方法实现地址 → 结合 [[re-cpp-abi]] 的 vtable 恢复思路反推协议一致性
 
 4. **闭包捕获**：
