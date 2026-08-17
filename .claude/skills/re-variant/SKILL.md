@@ -17,7 +17,7 @@ description: >
 
 ### BinDiff / Diaphora（函数匹配插件）
 
-- BinDiff: Windows 商业工具（安装指引，可替换为开源替代）；Diaphora: 多平台开源（`git clone https://github.com/joxeankoret/diaphora`，IDA/Ghidra 插件）
+- BinDiff: Windows 商业工具（官方安装包，安装后在反编译器内加载插件；可替换为开源替代 Diaphora）；Diaphora: 多平台开源（`git clone https://github.com/joxeankoret/diaphora`，IDA/Ghidra 插件）
 - Ghidra 侧替代: BinDiff 官方 Ghidra 插件或 Diaphora 的 Ghidra 移植
 - 验证: 插件在反编译器内可加载
 
@@ -36,7 +36,7 @@ description: >
 
 1. **函数匹配**：
    ```sh
-   # 命令行快速对比（rizin 系）：指令哈希 + 调用图相似度
+   # 命令行快速对比（rizin 系）：整体相似度；函数级匹配用 `-AA` 分析后 diff
    rz-diff -ss sample_v1 sample_v2 | head -30
    ```
    - 匹配维度：指令哈希（相同代码）、调用图（子图同构）、导入导出对齐、字符串/常量引用

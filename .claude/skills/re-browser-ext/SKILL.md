@@ -26,7 +26,7 @@ description: >
 
 ### node（扩展脚本运行/验证，可选）
 
-- 各平台安装见 [[re-python]] 工具准备模式（node 官方安装包）
+- Linux: `apt install nodejs`；macOS: `brew install node`；Windows: nodejs.org 官方安装包
 - 验证: `node --version`
 
 ## 操作步骤
@@ -37,14 +37,15 @@ description: >
    ```sh
    unzip sample.crx -d ext/          # crx/xpi = zip 容器
    jq '.permissions, .host_permissions' ext/manifest.json
+   # host_permissions 为 MV3 字段；MV2 站点权限在 permissions 内（含 URL 匹配模式）
    ```
    - 结构：manifest.json + 背景脚本（background/service_worker）+ 内容脚本（content_scripts）+ 页面
    - 权限清单：`permissions`（API 权限）、`host_permissions`（站点访问）——权限决定能力边界
 
 2. **恶意行为定位**：
    - 数据外泄：fetch/XHR/beacon（[[re-netcap]] 衔接）、`navigator.sendBeacon`、图片像素外传
-   - 权限滥用：tabs（读取页面）、storage（数据收集）、webRequest（流量篡改/监控）、clipboard（剪贴板窃取）
-   - 注入面：content_scripts 匹配站点、动态注入（`chrome.scripting.executeScript`）
+   - 权限滥用：tabs（读取页面）、storage（数据收集）、webRequest（流量监控；篡改为 MV2 限定，MV3 走 declarativeNetRequest）、clipboard（剪贴板窃取）
+   - 注入面：content_scripts 匹配站点、动态注入（`chrome.scripting.executeScript`（MV3；MV2 为 `tabs.executeScript`））
    - 后台脚本是核心（MV3 的 service worker / MV2 的 background page）
 
 3. **混淆还原**：

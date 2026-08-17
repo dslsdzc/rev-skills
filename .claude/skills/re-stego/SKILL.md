@@ -18,12 +18,12 @@ description: >
 ### zsteg（图片 LSB 扫描）
 
 - 多平台: `gem install zsteg` 或源码（GitHub）
-- 验证: `zsteg -v`
+- 验证: `zsteg -h` 或 `gem list zsteg`
 
 ### steghide（图片/音频隐写）
 
 - Linux: `apt install steghide` / `dnf install steghide`；macOS: `brew install steghide`
-- 验证: `steghide info --help`
+- 验证: `steghide --version`
 
 ### binwalk（尾部扫描）
 
@@ -42,7 +42,7 @@ description: >
    binwalk sample.png | tail -20       # 附加数据扫描
    hexdump -C sample.png | tail -10    # 尾部目检
    ```
-   - 尾部附加：文件正常但尾部有多余数据（衔接 [[re-patching]] 尾部附加经验）
+   - 尾部附加：文件正常但尾部有多余数据（衔接尾部附加经验（[[re-patching]] 补丁制作思路））
    - 提取：binwalk 自动分割或 dd 按偏移提取 → magic 检查（[[re-triage]]）
 
 2. **图片 LSB**：
@@ -62,7 +62,7 @@ description: >
 4. **提取验证**：
    - magic 检查（提取物头部特征）
    - 可读性验证（strings/file）
-   - 隐写前压缩：先解压再提（见坑 3）
+   - 隐写前压缩：先提取再解压（提取物查压缩头——zlib `78 9C` / gzip `1F 8B`，见坑 3）
 
 ## 跨域联合
 

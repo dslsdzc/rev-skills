@@ -28,7 +28,7 @@ description: >
 ### 备份解析工具
 
 - Android: `ab` 备份格式解析（python 脚本或工具）；iOS: `libimobiledevice` 的 `idevicebackup2` + manifest 解析
-- sqlite3（数据库读取，见 [[re-disk-forensics]] 工具准备）
+- sqlite3（数据库读取——Linux: `apt install sqlite3`；macOS: `brew install sqlite3`；Windows: 官方构建）
 
 ## 操作步骤
 
@@ -37,6 +37,7 @@ description: >
 1. **Android 提取**：
    ```sh
    adb backup -f backup.ab -all        # 全量备份（应用需允许备份）
+   # Android 12+ 部分设备已弃用 adb backup——失效时换 root/镜像提取
    # ab 格式：头（ANDROID BACKUP）+ 可选 AES 加密 + tar 负载
    adb shell run-as com.target.app ls data   # 应用沙箱（debuggable 应用）
    ```
@@ -46,7 +47,7 @@ description: >
 
 2. **iOS 提取**：
    ```sh
-   idevicebackup2 backup --full ./backup_dir
+   idevicebackup2 backup ./backup_dir
    # 备份结构：manifest.plist + 按哈希路径组织的文件
    ```
    - 备份解析：manifest.plist（文件映射）、加密备份需密码（无密码则标注不可提取）
