@@ -58,6 +58,7 @@ description: >
    - 识别失败但确认 Python 相关 → 按可疑 PyInstaller 处理
 
 2. **PyInstaller 解包**：
+   - pip 安装用户：`pyinstxtractor-ng sample.exe`；GitHub 脚本用户：`python pyinstxtractor.py sample.exe`
    ```sh
    python pyinstxtractor.py sample.exe
    # 输出 sample.exe_extracted/ 目录，含 PYZ-00.pyz（依赖归档）与主脚本 .pyc
@@ -73,8 +74,8 @@ description: >
    python3 -c "import struct,sys; print(struct.unpack('<H', open('main.pyc','rb').read(2))[0])"
    ```
    - magic 对照（小端 2 字节，常见值；以本机 MAGIC_NUMBER 为准）：
-     - `0d33`=3.6、`0d42`=3.7、`0d55`=3.8、`0d61`=3.9、`0d6f`=3.10、`0dcb`=3.11
-     - 3.12+：不写死数值，按本机 MAGIC_NUMBER 换算（`python3 -c "import importlib.util; print(hex(int.from_bytes(importlib.util.MAGIC_NUMBER[:2],'little')))"`）
+     - `0d33`=3.6、`0d42`=3.7、`0d55`=3.8、`0d61`=3.9、`0d6f`=3.10、`0da7`=3.11、`0dcb`=3.12
+     - 3.13+：不写死数值，按本机 MAGIC_NUMBER 换算（`python3 -c "import importlib.util; print(hex(int.from_bytes(importlib.util.MAGIC_NUMBER[:2],'little')))"`）
    - 版本匹配目标则用对应版本 python 或 pycdc 反编译；不匹配先装匹配版本再试
 
 5. **反编译与清理**：

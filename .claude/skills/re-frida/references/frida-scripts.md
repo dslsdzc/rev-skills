@@ -38,6 +38,34 @@ else {
 // 局限：仅 Android 系统自带 BoringSSL；App 内置/静态链接的 TLS 栈不覆盖
 ```
 
+## SSL 固定绕过（TrustManager trust-all + CertificatePinner）
+
+`SSLContext.init` 时替换为 trust-all 的 `X509TrustManager`（信任任意证书链）；OkHttp 的 `CertificatePinner` 是独立校验层，另行置空：
+
+```javascript
+Java.perform(function () {
+  try {
+    var X509TrustManager = Java.use('javax.net.ssl.X509TrustManager');
+    var TrustAll = Java.registerClass({
+      name: 'com.bypass.TrustAll',
+      implements: [X509TrustManager],
+      methods: { checkClientTrusted: function () {}, checkServerTrusted: function () {},
+                 getAcceptedIssuers: function () { return []; } }
+    });
+    var SSLContext = Java.use('javax.net.ssl.SSLContext');
+    SSLContext.init.implementation = function (km, tm, sr) {
+      console.log(JSON.stringify({ event: 'ssl_trust_all', keystore: String(km), secureRandom: String(sr) }));
+      this.init(km, [TrustAll.$new()], sr);
+    };
+    var Pinner = Java.use('okhttp3.CertificatePinner');
+    Pinner.check.overload('java.lang.String', 'java.util.List').implementation = function (host, certs) {
+      console.log(JSON.stringify({ event: 'cert_pinner_bypass', host: host }));
+    };
+  } catch (e) { console.log(JSON.stringify({ error: String(e) })); }
+});
+// 局限：仅覆盖 Java 层（OkHttp / HttpsURLConnection 等）校验；原生层直调 BoringSSL / libssl 的固定校验不走此路径
+```
+
 ## 内存 DEX dump（类加载点抓取）
 
 hook `art::ClassLinker::DefineClass`（libart.so mangled 符号特征匹配），类加载点从参数取 DexFile 读 `begin_`/`size_`，校验 dex magic 后整段落盘：
@@ -178,7 +206,7 @@ Java.perform(function () {
 | test-keys | `String.contains` / `BufferedReader.readLine` | "test-keys" → false / 改写 "release-keys" |
 | native 文件 | libc `fopen` | basename 命中 → 路径改写 /notexists |
 | native 命令 | libc `system` | 命令命中 → 改写假命令 |
-| 裸系统调用 | svc 指令特征码扫描（arm64: `01 00 00 D4`，SYS_OPEN=56） | 捕获绕过 libc 的文件访问（arm64 读参数注意索引） |
+| 裸系统调用 | svc 指令特征码扫描（arm64: `01 00 00 D4`，SYS_OPENAT=56，无 open 系统调用） | 捕获绕过 libc 的文件访问（arm64 openat 路径参数在 x1，x0 是 dirfd） |
 
 绕过策略不预置全家桶：基线跑原样目标 → 崩溃特征反推保护点（对照表见 [[anti-dynamic-workflow]]）→ 定点 hook；迭代 3-5 层是常态。
 

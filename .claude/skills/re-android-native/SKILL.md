@@ -118,10 +118,10 @@ description: >
 
 ## Keystore 审计
 
-Android 密钥体系分析——目标密钥来自 AndroidKeyStore 时 `getEncoded()` 不可用（硬件背书），须走审计：
+Android 密钥体系分析——目标密钥来自 AndroidKeyStore 时（硬件背书密钥）`getEncoded()` 不可用，须走审计：
 
 - **遍历**：`KeyStore.getInstance("AndroidKeyStore")` → `aliases()` 枚举全部条目
-- **条目属性**：算法（AES/RSA/EC）、用途（encrypt/decrypt/sign/verify）、来源（`KeyInfo.isInsideSecureHardware`——TEE 与 StrongBox 区分）
+- **条目属性**：算法（AES/RSA/EC）、用途（encrypt/decrypt/sign/verify）、来源（`KeyInfo.isInsideSecureHardware`——硬件背书；TEE 与 StrongBox 区分需 `isStrongBoxBacked`，API 28+）
 - **生物绑定**：`setUserAuthenticationRequired` 的密钥在认证失败时不可用（绕过与检测见 [[anti-dynamic-workflow]]）
 - **与 hook 衔接**：加密拦截（[[re-frida]] 的 [[frida-scripts]]）时密钥来自 Keystore → 记录别名与用途，不记录密钥字节
 

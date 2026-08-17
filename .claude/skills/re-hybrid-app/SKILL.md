@@ -111,6 +111,7 @@ description: >
 Flutter 平台通道（PlatformChannel）是 Dart ↔ native 通信主干，拦截可观察全部原生能力调用：
 
 - **Java/Kotlin 侧**：hook `io.flutter.plugin.common.MethodChannel` 的 MethodCallHandler——记录 channel 名 / 方法名 / 参数 JSON
+- **channel 名获取**：hook `MethodChannel.setMethodCallHandler`（onEnter 捕获 channel 实例，含名字）或 `MethodChannel` 构造器直接取 channel 名；更底层可 hook `BinaryMessenger.send`（首参即 channel 名）
 - **engine messenger 层**：`io.flutter.embedding.engine.FlutterEngine` 的 messenger 消息（低层兜底）
 - **与 Dart 侧静态观察互补**：静态找 channel 名与调用点（字符串字面量），动态确认实际流量
 - **输出**：结构化 JSON（channel / method / args），供 [[analysis-contract]] 数据契约消费（证据存档）
