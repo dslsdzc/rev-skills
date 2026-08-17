@@ -112,6 +112,8 @@ description: >
    - 熵异常 / 节名可疑（UPX0/.aspack）→ 转 [[re-anti-analysis]] 先确认壳
    - 目标是动态行为 → 沙箱内 [[re-tracing]] + [[re-gdb]]（见 [[platform-tips]] 最高原则）
 
+6. **输出契约**：按 [[analysis-contract]] 数据契约输出结构化摘要——sha256 / arch / format / entropy / sections / imports / strings_refs，作为下一环节（format / 反编译 / 沙箱）的输入字段，不重新扫描。
+
 ## 跨域联合
 
 - [[re-binary-core]]：工作流第 2 步固定调用本技能

@@ -83,6 +83,10 @@ description: >
    - 或 Decompiler 窗口逐函数 `Copy` 到笔记
    - 导出后核对: C 里无符号函数名保留注释（函数地址），对照原 Listing
 
+## 函数分析上下文清单
+
+分析每个函数前先收集（见 [[analysis-contract]] 上下文清单）：xrefs（谁引用它/它引用谁）、目标函数引用的字符串、caller/callee 签名、已命名符号表、已恢复 struct。一次性给足再分析，避免反复翻 xrefs；主动申请额外证据每函数不超过 8 次工具调用。
+
 ## 跨域联合
 
 - [[re-binary-core]]：工作流第 5 步默认反编译器

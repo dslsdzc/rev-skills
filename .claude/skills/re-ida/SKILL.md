@@ -72,6 +72,10 @@ description: >
      菜单 `File > Produce file > Dump typeinfo` / 用 idb2pat 生成库签名；或换 [[re-ghidra]] 做反编译
    - 免费版功能裁剪：无 Hex-Rays、无调试器、单处理器——按裁剪范围调整流程
 
+## 函数分析上下文清单
+
+分析每个函数前先收集（见 [[analysis-contract]] 上下文清单）：xrefs、目标函数引用的字符串、caller/callee 签名、已命名符号表、已恢复 struct。一次性给足再分析；主动申请额外证据每函数不超过 8 次工具调用。
+
 ## 跨域联合
 
 - [[re-binary-core]]：工作流第 5 步备选反编译器（`RE_DECOMPILER=ida`）

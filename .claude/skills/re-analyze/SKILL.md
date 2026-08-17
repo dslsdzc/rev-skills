@@ -42,6 +42,8 @@ description: >
 
 调用对应大类网关技能（`[[re-binary-core]]` `[[re-malware]]` `[[re-firmware]]` `[[re-protocol]]` `[[re-mobile]]` `[[re-anti-analysis]]` `[[re-cracking]]` `[[re-vuln]]` `[[re-ctf]]` `[[re-managed]]` `[[re-forensics]]`），网关内部自行选择原子技能。每个环节完成后检查新证据，必要时回退调整路径（见 triage.md 复合任务示例）。
 
+分析全流程遵守 [[analysis-contract]]：分析前收集上下文清单（含调查预算，每目标 ≤8 次工具调用）、环节间按数据契约传字段（不重复扫描）、结论交付前做独立复核（证据↔结论逐条核对，输出含置信度的结构化格式）。
+
 ## 第四步（可选）：经验复盘
 
 分析结论交付后，问用户是否把本次踩坑/新方法反馈给技能库——需要则调用 [[re-feedback]]（三档：发表 issue / 本地入库 / 不入库；蒸馏必须脱敏，见该网关红线）。
