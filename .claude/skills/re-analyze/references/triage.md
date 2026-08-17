@@ -28,4 +28,4 @@
 - "脱壳 → 静态 → 动态 → C2 协议 → 报告"：re-anti-analysis → re-binary-core → re-malware(re-sandbox) → re-protocol → re-ioc
 - ".NET 样本 → 恶意判定 → 内存取证"：re-managed(dotnet) →（恶意场景）re-malware → re-forensics(mem-forensics → ti) → re-ioc
 - "崩溃样本 → 漏洞根因"：re-vuln（fuzzing 复现 → crash-triage 定位）→（定位）re-binary-core
-- 每个环节完成后检查是否有新证据改变后续路径（如动态分析发现加壳 → 回退 re-anti-analysis）。
+- 每个环节完成后检查是否有新证据改变后续路径（如动态分析发现加壳 → 回退 re-anti-analysis）。中途再路由统一按 [[rerouting]] 双轨执行（证据触发 / 网关完成必查）。
