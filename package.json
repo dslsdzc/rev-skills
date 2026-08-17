@@ -6,6 +6,6 @@
   "bin": { "rev-skills": "bin/install.mjs" },
   "scripts": { "test": "node validate.mjs && node --test tests/*.test.mjs" },
   "engines": { "node": ">=18" },
-  "license": "MIT",
+  "license": "Apache-2.0 OR CC-BY-4.0",
   "keywords": ["reverse-engineering", "skills", "malware-analysis", "firmware", "claude-code"]
 }

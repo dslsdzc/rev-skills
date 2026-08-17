@@ -1,6 +1,6 @@
 # rev-skills — 通用逆向工程 AI 技能库
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE) [![License: CC BY 4.0](https://img.shields.io/badge/License-CC_BY_4.0-lightgrey.svg)](LICENSE-docs.md)
 
 89 个逆向工程技能，覆盖恶意软件分析、软件逆向、固件/嵌入式、协议逆向、移动应用、脱壳/反混淆、软件破解、漏洞挖掘、托管代码、取证/情报、CTF。**通用、可发布**：不假设用户已装任何工具，每个技能自带跨 OS 安装指引。
 
@@ -67,6 +67,13 @@ claude plugin add DslsDZC/rev-skills
 - 默认沙箱：一切动态分析强制前置
 - 默认转储优先：内存读取默认 gcore 转储
 - 平台经验库：`.claude/skills/re-analyze/references/platform-tips.md`
+
+## 许可证
+
+本仓库双许可：
+
+- **技能文档内容**（`.claude/skills/` 及说明文档）：[CC BY 4.0](LICENSE-docs.md)——允许复制/修改/商业使用，须保留署名
+- **工具代码**（`bin/`、`validate.mjs`、`tests/`）：[Apache-2.0](LICENSE)
 
 ## 开发
 
