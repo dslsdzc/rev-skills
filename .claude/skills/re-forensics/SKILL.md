@@ -28,6 +28,7 @@ description: >
 - **磁盘/文件系统取证（删除恢复、时间线、可疑文件定位）** → [[re-disk-forensics]]（磁盘侧取证，与 [[re-mem-forensics]] 内存侧并列）
 - **内存分析找到可疑对象/回连后需要深挖** → 可疑模块/shellcode 转 [[re-binary-core]]（[[re-ghidra]] / [[re-ida]] 静态）；回连行为验证转 [[re-malware]]（沙箱）
 - **只做文件静态分析，不涉及内存** → 不是本网关，转 [[re-binary-core]] / [[re-malware]]
+- **容器镜像（docker save/skopeo 导出的镜像 tar）** → 下方「容器镜像取证」章节
 
 ## 容器镜像取证
 

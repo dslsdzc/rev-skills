@@ -2,7 +2,7 @@
 name: re-blockchain
 description: >
   EVM 智能合约逆向：字节码反编译、漏洞分析。
-  触发词：智能合约、EVM、Solidity、字节码、合约漏洞、ABI
+  触发词：智能合约、EVM、Solidity、字节码、合约漏洞、ABI、Solana、Move、BPF
 ---
 
 # EVM 智能合约逆向（cast / panoramix / web3.py）
@@ -13,7 +13,7 @@ description: >
 - 用：合约漏洞分析（重入/整数溢出/权限）或漏洞利用前的审计定位
 - 用：恶意合约/代币诈骗合约取证（链上数据获取、只读拉取）
 - 不用：Solidity 源码可得且未混淆——直接读源码更准（审计思路同 [[re-vuln]]），本技能面向无源码/仅字节码
-- 不用：非 EVM 链（Solana/WASM 系链等，指令集不同）；EVM 字节码外的 Wasm 走 [[re-wasm]]
+- 不用：本节未覆盖的非 EVM 链（如 WASM 系链，指令集不同）；WASM 走 [[re-wasm]]
 - 注意：链上交互以只读为主（`cast call`/`cast code`/`cast storage`）；任何写链/部署/动态验证默认本地 anvil 或隔离网络（[[platform-tips]] 沙箱最高原则）；合约分析基本静态，按「静态优先」执行
 
 ## 工具准备
