@@ -10,7 +10,7 @@
 
 示例：
 
-**重打包保持原始格式参数**：现象——重打包/替换资源后的包在真机加载崩溃或解析失败；原因——重打包工具默认输出格式与原格式存在差异（压缩方式/对齐/容器标志）；对策——保留原包的格式参数（压缩标志/对齐方式），产出与原始文件同量级同格式，先本地验证再上真机
+**重打包保持原始格式参数**：现象——重打包/替换资源后的包在真机加载崩溃或解析失败；原因——重打包工具默认输出格式与原格式存在差异（压缩方式/对齐/容器标志）；对策——用 Apktool 等重打包工具（见 [[re-mobile-pack]]）保留原包的格式参数（压缩标志/对齐方式），产出与原始文件同量级同格式，先本地验证再上真机
 
 - 一条一格：一个现象 + 一个根因 + 一个对策，不把多个坑合并进一条
 - 「坑」与「方法」同格式：坑写避坑；方法写「现象——旧做法低效；原因——…；对策——更优路径」
@@ -38,7 +38,9 @@
 | CTF/angr/z3 | [[re-ctf]] 系（[[re-angr]] [[re-z3]] [[re-pwn]]） |
 | .NET/Java/脚本/WASM/合约/AI 模型 | [[re-managed]] 系（[[re-dotnet]] [[re-java]] [[re-script-deob]] [[re-wasm]] [[re-blockchain]] [[re-ai-model]]） |
 | 取证/内存取证/威胁情报 | [[re-forensics]] 系（[[re-mem-forensics]] [[re-disk-forensics]] [[re-ti]]） |
-| 反作弊/内核驱动/虚拟化 | [[re-kernel]] [[re-anti-cheat]] [[re-hypervisor]]（[[re-binary-core]] 系） |
+| 反作弊/内核驱动/虚拟化 | [[re-binary-core]] 系（[[re-kernel]] [[re-anti-cheat]] [[re-hypervisor]]） |
+| 反调试/检测规避 | [[re-anti-analysis]] 系（[[re-evasion]]） |
+| 勒索软件 | [[re-ransomware]] |
 
 兜底：`grep -rn "关键词" .claude/skills/*/SKILL.md` 找最相关技能；仍不确定 → 问用户，不猜。
 
