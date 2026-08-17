@@ -82,6 +82,15 @@ description: >
    - ProcMon: 全系统级（文件/注册表/网络/进程事件），先按进程过滤（Process Name 过滤目标名），再按 Operation 过滤
    - 可疑点: 对注入类 API 连续调用序列（OpenProcess→VirtualAllocEx→WriteProcessMemory→CreateRemoteThread）即恶意行为证据
 
+## 指令级追踪
+
+比系统调用级更深一层——指令粒度执行流：
+
+- **QEMU 插件**：`-plugin` 加载指令级 trace 插件（insn 粒度、call/ret 路径、guest 代码块事件）；用途——脱壳后真实路径还原、反混淆（静态混淆无法隐藏实际执行）
+- **Intel PT**：硬件 trace（`perf record -e intel_pt`）→ 解码（`perf script` 或第三方解析）→ 分支流还原；用途——无插桩开销的完整执行路径
+- **trace 分析**：热点（执行频次排序）、路径还原（调用链重建）、与 [[re-deobfuscate]] 衔接（按真实路径过滤死代码）
+- **输出**：指令级执行流摘要（供 [[analysis-contract]] 证据存档）
+
 ## 跨域联合
 
 - [[re-binary-core]]：工作流第 6 步（行为跟踪）
