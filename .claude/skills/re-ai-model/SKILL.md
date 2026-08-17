@@ -146,6 +146,7 @@ description: >
 - [[re-ioc]]：模型指纹（sha256/张量 hash/水印模式）进 IOC；[[re-triage]]：模型文件初勘入口与哈希存档
 - [[re-script-deob]]：PyTorch 推理/训练脚本还原（state_dict 无结构时的补全路径）
 - 引用 [[platform-tips]] 静态优先（大型样本）与沙箱最高原则分支
+- 模型攻击侧（提取/指纹水印/成员推断）→ [[re-ai-attack]]
 
 ## 常见坑与陷阱
 

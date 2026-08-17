@@ -114,6 +114,7 @@ description: >
 - [[re-hardware-io]]: 串口 / flash 芯片读密钥
 - [[re-sandbox]]: 设备测试网络隔离与授权边界（[[platform-tips]] 最高原则）
 - 本技能被 [[re-analyze]] 的 triage「协议分析」路径引用（re-protocol → re-iot-proto）
+- 射频信号级逆向（采集/解调/帧恢复）→ [[re-sdr]]
 
 ## 常见坑与陷阱
 

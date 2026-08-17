@@ -23,7 +23,7 @@
 | Python 打包特征（PyInstaller/PyArmor） | [[re-python]] |
 | Flutter/RN 引擎特征 | [[re-hybrid-app]] |
 | 加固商特征（Android 加固壳） | [[re-mobile-pack]] |
-| RTTI/异常表（.pdata/.xdata）密集 | （re-cpp-abi 待建，先走 [[re-binary-core]]） |
+| RTTI/异常表（.pdata/.xdata）密集 | [[re-cpp-abi]] |
 
 ## B 表：卡住信号 → 换路
 

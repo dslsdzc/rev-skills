@@ -96,6 +96,7 @@ description: >
 - 提取的 flash 镜像 → [[re-fw-extract]] 解包 → [[re-fw-rootfs]] 分析；需要运行 → [[re-fw-emulate]]
 - 硬件上抓到的通信/协议 → [[re-protocol]]
 - 硬件提取是固件分析的最后手段：软件手段（文件 → 解包 → 仿真）全部耗尽后再上
+- 物理层芯片/PCB 分析（decap/裸片/木马检测）→ [[re-hw-chip]]
 
 ## 常见坑与陷阱
 

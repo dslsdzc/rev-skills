@@ -2,7 +2,7 @@
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE) [![License: CC BY 4.0](https://img.shields.io/badge/License-CC_BY_4.0-lightgrey.svg)](LICENSE-docs.md)
 
-91 个逆向工程技能，覆盖恶意软件分析、软件逆向、固件/嵌入式、协议逆向、移动应用、脱壳/反混淆、软件破解、漏洞挖掘、托管代码、取证/情报、CTF。**通用、可发布**：不假设用户已装任何工具，每个技能自带跨 OS 安装指引。
+97 个逆向工程技能，覆盖恶意软件分析、软件逆向、固件/嵌入式、协议逆向、移动应用、脱壳/反混淆、软件破解、漏洞挖掘、托管代码、取证/情报、CTF。**通用、可发布**：不假设用户已装任何工具，每个技能自带跨 OS 安装指引。
 
 > **使用边界**：本技能库仅用于**安全研究与授权范围内的分析**。使用前须取得目标方授权；禁止用于未经授权的逆向、破解、绕过验证或恶意软件活动。逆向工程的合法性因司法辖区而异（如美国 DMCA 反规避条款、各地软件保护条例），使用者须自行遵守所在地法律，并自行承担违规使用的一切责任。本库内容为通用方法论，不针对任何具体目标。
 
@@ -49,12 +49,12 @@ npx skills add DslsDZC/rev-skills -l       # 先列出技能，不安装
 | GitHub Copilot | `--target copilot` → `.github/copilot-instructions.md` | 规则聚合 |
 | Windsurf | `--target windsurf` → `.windsurf/rules/*.md` | 规则聚合 |
 
-## 技能导航（91）
+## 技能导航（97）
 
-入口 → 12 大类网关 → 78 原子技能，详见 `.claude/skills/` 与 `docs/skill-template.md`。快速索引：
+入口 → 12 大类网关 → 84 原子技能，详见 `.claude/skills/` 与 `docs/skill-template.md`。快速索引：
 
 - **re-analyze**：入口（探测 → 偏好 → 识别 → 编排）
-- **re-binary-core**：re-triage、re-format-pe/elf/macho、re-imports、re-ghidra、re-ida、re-radare2、re-gdb、re-x64dbg、re-lldb、re-tracing、re-memdump、re-windbg、re-binaryninja、re-emulation、re-shellcode、re-kernel、re-game、re-go、re-rust、re-plugin-dev、re-hypervisor、re-anti-cheat
+- **re-binary-core**：re-triage、re-format-pe/elf/macho、re-imports、re-ghidra、re-ida、re-radare2、re-gdb、re-x64dbg、re-lldb、re-tracing、re-memdump、re-windbg、re-binaryninja、re-emulation、re-shellcode、re-kernel、re-game、re-go、re-rust、re-plugin-dev、re-hypervisor、re-anti-cheat、re-cpp-abi
 - **re-malware**：re-sandbox、re-behavior、re-ioc、re-ransomware、re-loader、re-fileless
 - **re-firmware**：re-fw-extract、re-fw-rootfs、re-fw-emulate、re-hardware-io、re-automotive、re-uefi
 - **re-protocol**：re-netcap、re-proto-rev、re-crypto-id、re-crypto-keys、re-crypto-decrypt、re-ics、re-iot-proto、re-whitebox、re-tls
@@ -64,7 +64,11 @@ npx skills add DslsDZC/rev-skills -l       # 先列出技能，不安装
 - **re-vuln**：re-fuzzing、re-crash-triage、re-exploit
 - **re-ctf**：re-angr、re-z3、re-pwn
 - **re-managed**：re-dotnet、re-java、re-script-deob、re-wasm、re-ai-model、re-blockchain、re-python
-- **re-forensics**：re-mem-forensics、re-disk-forensics、re-ti
+- **re-forensics**：re-mem-forensics、re-disk-forensics、re-ti、re-attribution
+- **re-macos**：macOS 应用逆向（签名/entitlements/Secure Enclave）
+- **re-hw-chip**：芯片/PCB 物理层（decap/裸片/木马检测）
+- **re-ai-attack**：模型攻击（提取/指纹/成员推断）
+- **re-sdr**：射频逆向（采集/解调/帧恢复）
 - **re-feedback**：经验反馈元网关——三源收集（会话复盘/文章扫描/手动输入）→ 蒸馏脱敏 → 归域 → 三档处理（发表 issue / 本地入库 / 不入库），re-analyze 第四步挂钩
 
 ## 设计原则
