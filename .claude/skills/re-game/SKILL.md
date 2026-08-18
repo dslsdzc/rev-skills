@@ -94,3 +94,8 @@ description: >
 - **反作弊检测到虚拟化/多开**：现象——VM 里游戏直接退出或行为异常；原因——部分反作弊检测 VBS/VMP 特征与虚拟化环境；对策——按反作弊已知规避清单调整 VM 配置（隐藏 hypervisor 特征选项），仍不行就静态分析为主，动态部分转到无反作弊的旧版本/离线模式
 - **UE5 Dx12 绘制 hook（虚表替换）**：现象——Dx11 的 Present hook（抄 ImGui）在 UE5 Dx12 上失效，Present 断下后堆栈里找不到主模块代码；原因——UE5 自带单独编译的 `D3D12Core.dll`（**Release 版叫 D3D12Core.dll、Debug 版叫 d3d12SDKLayers.dll**，不用系统目录 dll，特征码在系统 dll 里搜不到），且开启 GPU 加速/超分辨率时 Present 上层堆栈被其他 dll 占据；对策——用开源 UE5 源码自己编译一份 D3D12Core.dll 拖 IDA 做参照（`ExecuteCommandLists` 在 CommandQueue 虚表 index=10）；Present 断下后直接定位**主模块下的返回地址**（超分辨率按 dll 名识别，换模式换 dll 名思路不变）；虚表替换点：`mov rax,[rcx]` 调用处取 rcx（对象指针）替换虚表
 - **游戏内 5 字节 hook 检测（反 hook）**：现象——定位到的目标函数头部已被改（经典 5 字节 hook 桩），且游戏自身调用能过、外部 hook 调用失败；原因——游戏/引擎自带调用来源检测（查堆栈返回），非自身调用会还原头部 5 字节；对策——不 hook 被保护函数本体，改在**调用它的位置**（堆栈返回处）hook 取对象指针（rcx/r12 等）替换虚表达成同等效果；识别特征：函数头 5 字节被改 + 函数内部有还原头部逻辑（FName::ToString/StaticFindObject 等关键函数多处同样处理）
+- **IL2CPP 元数据还原**：现象——dump 工具报版本不支持/输出不全；原因——Unity 版本改 metadata 格式；对策——升级 dump 工具（Il2CppDumper 或 Il2CppInspectorRedux），必须用同一次 dump 的产物对（script.json 与 so 匹配，换 IDA 清缓存）
+- **加密的 global-metadata.dat**：现象——元数据文件是密文；原因——反作弊/自定义加密；对策——找初始化解密函数（il2cpp_init 周围），Frida 在 mmap/read 后 dump 内存中已解密的元数据再喂给 dump 工具
+- **IL2CPP 方法 hook**：现象——Frida 裸 hook 报错；原因——IL2CPP 方法非标准 Java/ObjC，需按 metadata 算偏移；对策——用 frida-il2cpp-bridge 库，不硬写 Interceptor.attach
+- **patch 后闪退**：现象——静态修改后启动崩溃；原因——文件 hash 校验/anti-tamper；对策——hook 优先（不改文件）；必须静态 patch 时同步处理校验逻辑；重打包后删 META-INF 重新签名（apksigner）
+（来源：reverse-skill field-journal，MIT）
