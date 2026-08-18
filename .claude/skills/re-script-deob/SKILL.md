@@ -144,3 +144,7 @@ JScrambler 类商业混淆器的手法与对抗：
 - **olevba 提取后仍是混淆的**：现象——`olevba -c` 提取的宏还是满屏 `Chr(65) & Chr(66)` 拼接；原因——olevba 只负责提取不负责还原；对策——用 `--decode` 自动解常见手法，剩余手动还原，最后动态验证还原结果正确
 - **恶意脚本必须沙箱内运行**：现象——本地直接 `pwsh sample.ps1` 后系统被改/发生外联；原因——脚本可能是下载器或持久化植入（`platform-tips` 默认沙箱原则的典型违例场景）；对策——一切动态执行进 [[re-sandbox]]（网络隔离 + 快照），静态解码可免沙箱
 - **正则盲改易破坏脚本结构**：现象——sed 全局替换后语法错误、下一层解不出来；原因——混淆串内部包含被替换的模式、字符串字面量被误伤；对策——优先 AST/结构化解析（PowerShell AST、JS 括号匹配），每次替换后先做语法检查（`pwsh -NoProfile -Command "[scriptblock]::Create((Get-Content layer.ps1 -Raw))"` / `node --check layer.js`）再进入下一步
+- **webpack 打包定位签名函数**：现象——搜 "sign" 结果太多；原因——打包压缩变量名；对策——搜特征串（`sign=`）或用网络面板 initiator 列回溯发起请求的调用栈（比搜源码快）
+- **本地复现结果不一致**：现象——签名逻辑对但服务端不认；原因——参数排序/时间戳精度不对；对策——核对源码 sort 逻辑（按 key 字母序 + 特殊字符规则）；时间戳用 `Math.floor(Date.now() / 1000)`（秒级）
+- **密钥在另一 chunk**：现象——签名函数里找不到密钥；原因——密钥经 require 从其他 chunk 引入；对策——签名函数断点处 console.log 打印密钥变量
+（来源：reverse-skill field-journal，MIT）
