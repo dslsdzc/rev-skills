@@ -116,3 +116,8 @@ description: >
 - **ME 固件（Intel ME / CSME）从启动链入手**：现象——解出 ME 固件分区（FTPR/RBE/BUP）后不知从何下手，代码里一串 ROM_SVC_* 调用看不懂；原因——ME 是独立处理器固件，启动链与普通固件不同：ROM（PCH 内固化，不可提取）验签 FTPR → 解压 RBE（初始化 PCH/SPI、UTOK 校验、boot_cfg）→ kernel（ThreadX RTOS）→ BUP（硬件 bringup，读 boot_cfg 决定开不开 DCI）→ pm/vfs/heci/crypto 等 38 个 user processes；对策——先解 FPT（Flash Partition Table：ME 区域固定偏移处的分区路由表，记录各分区位置/大小/类型——ROM/RBE 无文件系统全靠查它定位分区，UEFIExtract 源码有解析参考），再按 RBE→kernel→BUP 顺序跟进；调试接口/硬件初始化逻辑在 BUP
 - **UTOK 是 ME 调试解锁的 OEM 后门**：现象——想开 ME 调试接口（DCI/DFX）找不到开关；原因——Intel 为 OEM 留的解锁机制：SPI Flash 的 FPT 分区表中独立 UTOK 分区，写入数据即可解锁 DFX 调试接口（无需硬件熔丝）；对策——逆向 RBE 的 `rbe_utok_check` 定位校验逻辑：标志位 UTOK[0x298]==1 才启动调试能力（厂家默认 FF 不启动），且 DCI 开放受多层校验链控制（boot_mode==2、boot_cfg 解析、CT handler 门控、FPF Debug Auth 等），单改标志位不够；定位技巧：ME 运行 base 是 0x4000，字符串偏移按此换算
 - **ME 固件漏洞利用受 ROM cookie 限制**：现象——ME 固件里找到缓冲区溢出（如 Intel-SA-00086：CT 文件 `num_records`（偏移 +0x06 的 uint16）无校验，record 数超 100 覆写栈 cookie/返回地址），ROP 却打不通；原因——ME 的 cookie 由 ROM（mask ROM 不可提取）在 SRAM 预填充进程上下文表生成，无法像 TXE 平台那样用 TLS 绕过；对策——先确认目标平台 cookie 来源（ROM 生成则溢出利用受限），完整逆向认证链路（UTOK→boot_cfg→CT handler 多层校验）后找非溢出路径
+- **分块周期变换**：现象——单一全文件 XOR/旋转只在开头有效；原因——变换按块大小（常见 256/512/1024/2048/4096）重置；对策——先按常见 Flash/传输块大小检查变换是否按块重置周期，显式分块解码
+- **块首自带掩码混淆**：现象——高熵固件被当强加密；原因——分块自带掩码混淆（如 `mask = block[0]`、`plain[i] = ROR8(packed[i], n) XOR mask`）；对策——先用强 crib（向量表 SRAM 栈指针/Thumb Reset Vector）约束恢复首块，再验证模型
+- **众数 crib 不可靠**：现象——文本密集块用众数字节做掩码仍乱码；原因——最常见明文字节不一定是零；对策——改用块首字节模型，验证标准：乱码消失 + 第二份同系列固件复现 + round-trip 逐字节一致
+- **CRC 字符串 ≠ CRC 字段**：现象——看到 CRC 名字符串就假设末尾是标准 CRC；原因——字符串只是元数据键；对策——系统排除常见 CRC/硬件 CRC/Adler/累加族后保留为未知字段，不强行命名
+（来源：reverse-skill field-journal，MIT）
