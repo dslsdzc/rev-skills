@@ -151,3 +151,6 @@ description: >
 - **强加固（Pairipcore 类）整体对抗 Frida**：现象——常见 hook 脚本（证书绕过/反检测/解密）全部失效，spawn 即闪退或行为异常，社区报告 frida-interception 类脚本无法绕过；原因——商业加固做 C++/Java 双层完整性校验 + 伪 VM 指令 + 自定义 dlopen/dlsym/syscall 动态导入混淆 + prctl/clone/waitpid/ptrace 反调试 + `/proc/self/maps`+`/proc/self/status` 进程监控 + 非标准端口扫描，整体防线而非单点；对策——先处理完整性校验与进程监控（hook 校验函数返回、patch 监控点）再过反调试，hook 落到自定义导入解析处而非导出 API，必要时结合 [[re-apk]] 静态改 smali + Native 层插桩配合
 - **hook 出口函数多进程/多实现排查**：现象——hook `SocketOutputStream` 无结果，抓包却看到流量；原因——应用多进程（发流量的逻辑在子进程）或使用 Netty 的 `SocketChannelImpl`（不走 OutputStream 路径）；对策——排查顺序：hook 最外层出口 → 无果 `ps -e` 查子进程分别 hook → 再试 `SocketChannelImpl` 等替代实现；hook 成功后打印堆栈（Netty 的 `MessageToByteEncoder` 链）定位组装/加密代码；从"编解码器链"逐层向上追明文对象与加密产物
 - **对称加密密钥传输追踪**：现象——抓到 RC4/AES 密文包，但密钥每次会话都变、静态搜不到；原因——对称加密密钥动态生成且在线传输（明文/加密后携带/协商）；对策——hook 密钥传入处（加密函数参数 `bArr` 类）拿当前密钥，再向上追踪密钥来源与传输路径，配合抓包对照（首包固定头如 `89 04 01 01` 可作协议锚点）
+- **多层 TLS 校验栈**：现象——单点 hook 后部分请求仍 SSL 错误；原因——App 同时用 OkHttp/原生 HttpsURLConnection/Conscrypt 多套栈；对策——分层覆盖（OkHttp CertificatePinner + TrustManagerImpl.verifyChain + HostnameVerifier 同时 hook），全栈覆盖才算绕过完成
+- **ProGuard 混淆后定位目标类**：现象——类名被改成短名；原因——混淆；对策——jadx 里 Find Usages 反查谁实例化关键 Builder，从实例化点反推原类
+（来源：reverse-skill field-journal，MIT）
