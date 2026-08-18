@@ -133,5 +133,5 @@ description: >
 - **把压缩当加密**：现象——熵 >7.0 高熵区按加密处理，解密脚本对不上；原因——zlib/LZMA 压缩同样高熵；对策——先看高熵区前 2-4 字节是否有压缩格式 magic（`78 9C` gzip/zlib、`1F 8B` gzip），有则先用 `zlib.decompress`/`binwalk`（见 [[re-fw-extract]]）试解压再谈加密
 - **只搜 S-box 会漏掉变体实现**：现象——搜 256 字节 S-box 表没命中，误判"非 AES"，实际是 AES；原因——实现用位切片/即时计算 S-box（不存表），但密钥调度仍常保留 16 字节 Rcon 表，或改用 MixColumns 乘法表（GF(2^8) 乘 2/3/9/11/13/14）；对策——补充搜 Rcon 序列（`01 02 04 08 10 20 40 80 1B 36 ...`，0x1B 是特征值）与乘法表布局，多表交叉确认再定性
 - **指纹命中 ≠ 加密函数在用**：现象——搜到 AES S-box/CRC 表就按该算法分析半天，实际业务是别的加密；原因——常量表可能来自未调用的静态库代码或壳层常量（先脱壳再指纹，见 [[re-anti-analysis]]）；对策——指纹命中后必须 xref 确认表被引用（谁引用、是否在加密路径上），与轮数/分组长度（16/24/32 对齐）交叉，动态侧（步骤 5）最终确认
-- **常见签名模式速查**：现象——签名算法识别慢；对策——按模式快速对照：HmacSHA256(sorted_params, key) 最常见；MD5(params + salt + timestamp) 较老系统；AES(JSON.stringify(params), key) 是加密而非签名；RSA sign 少见（多为金融类）
+- **常见签名模式速查**：现象——签名算法识别慢；原因——签名算法有固定模式族；对策——按模式快速对照：HmacSHA256(sorted_params, key) 最常见；MD5(params + salt + timestamp) 较老系统；AES(JSON.stringify(params), key) 是加密而非签名；RSA sign 少见（多为金融类）
 （来源：reverse-skill field-journal，MIT）

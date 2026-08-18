@@ -103,7 +103,7 @@ description: Go 二进制逆向：符号保留、字符串表、goroutine。触�
 
 ## 常见坑与陷阱
 
-- **strip 后符号全丢，恢复难**：现象——`nm` 无输出、Ghidra 函数全 `sub_*`、找不到 `main.main`；原因——`-ldflags "-s -w"` 或发布流程 strip 掉 symtab/DWARF（pclntab 数据仍在，只是没有符号引用它）；对策——GoReSym/redress 从 `.gopclntab`（节定位失败则按 pclntab magic 字节扫描）恢复函数名/地址 → `goresym_rename.py` 导入 Ghidra/IDA；garble 等混淆连 pclntab 一并破坏 → 工具失效，退化为 strings + 动态行为分析
+- **strip 后符号全丢，恢复难**：现象——`nm` 无输出、Ghidra 函数全 `sub_*`、找不到 `main.main`；原因——`-ldflags "-s -w"` 或发布流程 strip 掉 symtab/DWARF（pclntab 数据仍在，只是没有符号引用它）；对策——GoReSym/redress 从 `.gopclntab`（节定位失败则按 pclntab magic 字节扫描）恢复函数名/地址 → `goresym_rename.py` 导入 Ghidra/IDA；garble 等混淆会混淆函数名（pclntab 结构保留、函数边界仍可恢复，但名字无意义）→ 需 GoResolver/GoStringUngarbler 配合，必要时退化为 strings + 动态行为分析
 - **二进制巨大，runtime 占大头**：现象——Ghidra 导入几万函数、自动分析卡顿、`runtime.*` 淹没目标；原因——Go 静态链接 runtime（调度/GC/内存管理）+ 每函数 morestack 栈检查，通常占 1-2MB+；对策——符号恢复后先过滤：`nm | grep ' main\.'`、GoReSym JSON `grep '^main\.'` 缩小到用户代码；Ghidra 只对目标函数按需反编译；遵循 platform-tips「静态优先（大型样本）」——先静态定位、动态按需补充
 - **goroutine 入口识别**：现象——反编译看不到线性主流程，只见 `runtime.gopark`/`schedule` 调度调用；原因——用户代码以多个 goroutine 并发（`go` 关键字/`runtime.newproc` 派生），无单一主路径，执行顺序由调度器决定；对策——在 `runtime.newproc` 调用点读 funcval 参数得入口地址；入口返回后走 `runtime.goexit`；动态用 dlv（沙箱内）`goroutines` 列出并看各 goroutine 栈
 - **逃逸分析影响栈布局**：现象——源码里的局部变量不在栈上，变成 `runtime.newobject` + 堆指针；原因——Go 编译器逃逸分析把逃逸对象移到堆（GC 管理），栈帧不含预期局部变量；对策——别按 C 风格从栈帧找局部变量；跟踪 newobject 返回的堆指针与类型（GoReSym `-t`/redress `types` 恢复类型结构），对象字段按恢复的类型布局读取
