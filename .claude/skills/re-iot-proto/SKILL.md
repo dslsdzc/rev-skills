@@ -1,11 +1,11 @@
 ---
 name: re-iot-proto
 description: >
-  物联网协议：MQTT/CoAP/BLE/Zigbee。
-  触发词：MQTT、CoAP、BLE、Zigbee、物联网协议、IoT协议
+  物联网协议：MQTT/CoAP/BLE/Zigbee；BLE 链路层（广播解析/配对加密）与 NFC/智能卡（ISO14443/APDU/MIFARE）。
+  触发词：MQTT、CoAP、BLE、Zigbee、物联网协议、IoT协议、BLE链路、BLE嗅探、广播解析、配对加密、GATT、NFC、智能卡、MIFARE、APDU、ISO14443
 ---
 
-# 物联网协议逆向（MQTT / CoAP / BLE / Zigbee）
+# 物联网协议逆向（MQTT / CoAP / BLE / Zigbee / NFC 智能卡）
 
 ## 何时使用 / 何时不用
 
@@ -103,6 +103,89 @@ description: >
    - 协议语义不明 / 自定义 payload → 固件提取（binwalk 解包）→ rootfs 里找协议实现（字符串 / so）、密钥、topic 硬编码 → [[re-fw-emulate]] 仿真设备复现协议行为
    - 协议常量与固件字符串交叉验证（端口、magic、topic 前缀）
    - OTA 通道也是协议面: MQTT topic `ota/update` 下发固件 → 截获的固件镜像可再走 [[re-firmware]]
+
+## BLE 链路层
+
+应用层之外补链路层视角：空口嗅探、广播/连接帧结构、配对加密协商与密钥定位。抓包工具底座见上文「BLE —— bluez + ubertooth」，本节侧重链路语义与深挖点。
+
+### 嗅探硬件与软件（泛化选购指引）
+
+- 主机侧（btmon / Android btsnoop）只能看到本机参与的过程；设备与第三方设备之间的交互需空口嗅探
+- nRF 系 dongle + Sniffer 固件 + Wireshark extcap（桌面端为主）: 选购关注芯片覆盖的蓝牙核心版本（4.2 / 5.x 是否支持 LE Secure Connections 跟踪）、固件是否支持连接事件跟踪（跟随跳频）、天线形式（板载/外置，影响接收距离）
+- ubertooth 类 2.4GHz 嗅探器: 适合广播与无加密连接的链路层数据；不参与连接，加密连接内容看不到
+- 共性局限: 空口嗅探对加密连接只能看时序与包长，内容解密需 LTK（见下）
+
+### 广播包解析
+
+- PDU 类型区分连接意图: ADV_IND（可连接非定向，最常见）、ADV_SCAN_IND（可扫描）、ADV_NONCONN_IND（纯广播）、ADV_DIRECT_IND（定向）
+- 帧结构: 2 字节头（PDU 类型 + 长度）+ Payload（AdvA + AdvData）；AdvData 为 AD structure 链（Length + AD Type + Data）: 0x01 Flags、0x03/0x07 服务 UUID、0x09 完整本地名、0x0A Tx Power、0xFF 厂商数据
+- 解析: `tshark -r ble.pcap -Y btle -T fields -e btle.advertising_address -e btle.advertising_header.pdu_type -e btle.advertising_data`（字段名以 `tshark -G fields | grep -i btle` 为准）；0xFF 厂商数据段常含私有协议与设备标识，值得逐字节对照固件
+- 广播只承载低频状态通告（名字/状态/服务发现），业务数据一般在连接后 GATT 通道
+
+### 连接事件时序与信道 37/38/39
+
+- 主广播信道固定 37/38/39（2402/2426/2480 MHz），广播事件在三信道轮转；扫描请求/响应与 CONNECT_IND 也在这三个信道
+- CONNECT_IND 携带访问地址、跳频增量与连接参数 → 据此可推算后续数据信道序列（0-36）与事件节奏
+- 连接参数: connInterval（1.25ms 步进）、slaveLatency、supervisionTimeout，在 HCI 层 LE Connection Complete 事件可见；连接事件以锚点（anchor point）起算，按 connInterval 周期出现
+- 验证: 抓包中连接数据包间隔应为 connInterval 的整数倍；间隔混乱或单侧缺失 → 跳频跟踪脱同步（见坑 3）
+
+### 配对 / 加密协商
+
+- 流程: Pairing Request/Response（SMP）→ 临时密钥派生 → LTK 生成 →（绑定）双方存储 LTK
+- LE Legacy: 基于 PIN/临时值派生 STK；LE Secure Connections: P-256 ECDH，AuthReq 的 MITM 位决定是否防中间人（Just Works 无用户校验，Passkey / Numeric Comparison 有）
+- 定位点: Wireshark 中 SMP 交换看 AuthReq（SC / MITM / Bonding 位，字段以 `tshark -G fields | grep -i smp` 为准）——先确认模式再决定是解密还是只看时序
+- 绑定（bonding）后重连不重新配对，LTK 交换只出现在首次配对
+- 密钥存储: 主机侧（系统蓝牙配置 / 键值对存储）与设备侧（flash / 外部 EEPROM）→ [[re-firmware]] / [[re-crypto-keys]] 提取；拿到 LTK 填 Wireshark BLE 偏好可解密连接数据
+
+### GATT 服务与特征枚举
+
+- 被动: btmon / btsnoop 抓服务发现（Discover All Primary Services / 特征发现），btatt 层 UUID 与句柄映射直接可见
+- 主动（连接后）: gatttool 类工具（bluez）`primary` / `characteristics` 列出 handle ↔ UUID ↔ 属性
+- 读写/通知点: 特征句柄 + CCCD（0x2902）开启通知/指示后，值流在 btatt.value；`tshark -r ble.pcap -Y btatt -T fields -e btatt.handle -e btatt.value`
+
+### 坑与陷阱
+
+- **广播 vs 连接数据混淆**：现象——在广播包厂商数据段看到疑似业务数据就当上报语义解析，结果与 App 行为对不上；原因——广播只承载低频通告，业务流在连接后的 GATT 通道且可能加密；对策——先按帧类型分流: btle advertising 包解析 AdvData，连接数据看 btatt 层；判断目标设备是否已进入连接态再决定抓哪段
+- **配对模式误判**：现象——按"抓到配对过程即可解密"推进，实际要么连接全密文要么明文无校验；原因——AuthReq 位决定模式: SC=0 且 MITM=0 为 LE Legacy Just Works——无用户校验、不防窃听侧冒充；SC=1 为 LE Secure Connections（ECDH）；对策——解析 SMP Pairing Request 的 AuthReq 先确认模式，再选解密（需 LTK）或只看时序
+- **抓包丢连接事件**：现象——广播与连接建立都在，连接事件断断续续或只有单侧包；原因——数据信道跳频未被跟踪（错过锚点即脱同步）、只固定监听单信道、空口干扰丢包；对策——优先主机侧 btmon / btsnoop（全信道可靠）；空口嗅探用带连接跟踪能力的固件，并按 CONNECT_IND 的访问地址 + 跳频增量验证跟踪
+- **LTK 不在抓包里**：现象——SMP 交换后无 LTK 相关包，解密无密钥；原因——绑定后重连直接用存储密钥，不重新交换；对策——清配对/重置后重抓首次配对，或从设备 flash / App 存储提取（[[re-firmware]] / [[re-crypto-keys]]）
+
+## NFC / 智能卡
+
+接触式 / 无接触智能卡：ISO14443 链路、APDU 交互与常见卡族弱点。硬件用 proxmark3 类通用读写器（泛化选购），抓取/分析前确认授权边界。
+
+### ISO14443 帧结构与防冲突流程
+
+- ISO14443A 流程: REQA（0x26 短帧）→ ATQA → 防冲突（UID 按级联 CL1/CL2/CL3 逐位协商）→ SELECT → SAK（卡类型标识）
+- 帧结构: SOF + 数据字节（每字节带奇偶校验）+ CRC_A（2 字节）+ EOF；短帧 7 位（REQA/WUPA）
+- SAK 判型: 0x08/0x88 类 → MIFARE Classic 族（Crypto-1，扇区/块结构）；0x20/0x40 类 → DESFire 族（文件系统 + AES/3DES）——先判型再选路径（见坑 1）
+- 读写器流程: `hf 14a reader` 类命令（proxmark3 类通用）一次输出 ATQA / UID / SAK，据此进入对应卡族工具
+
+### APDU 交互
+
+- ISO7816-4 APDU: CLA + INS + P1 + P2 + Lc + 数据 + Le；响应 SW1/SW2（0x9000 成功）
+- 常见指令: 0xA4 SELECT（选应用）、0xB0 READ BINARY、0xB2 READ RECORD、0x20 VERIFY（口令验证）、0xD0 UPDATE BINARY——但各卡/应用命令集有差异（见坑 2）
+- 接触式走 ISO7816 T=0/T=1；无接触卡常把 APDU 透传（如 DESFire ISO 模式），抓包位置不同
+- 定位技巧: 抓已知合法交互（读写器日志 / 手机 NFC 日志）对照指令序列，比对着文档猜快
+
+### MIFARE Classic 与 Crypto-1 弱点（泛化）
+
+- Crypto-1 为 48 位流密码，认证时读写器发 challenge、卡返回加密响应；PRNG 与认证协议有已知弱点，可基于非加密认证响应样本做密钥恢复（重放 / 已知明文思路）
+- 前提: 卡响应任意读写器的认证请求（未被配置拒绝未知密钥）；前提不满足则该思路不适用，转密钥提取（[[re-crypto-keys]] / [[re-firmware]]）或固件分析
+- 边界: 仅针对 Crypto-1 类卡；AES 类卡（DESFire 族）结构不同，不适用
+
+### proxmark3 类设备流程（泛化选购）
+
+- 选购关注: 13.56MHz 高频支持（必备）、固件是否活跃更新、是否支持现场刷写、天线性能与外壳形式
+- 流程: 上电自检 → `hf 14a reader` 判型 → 按卡族选攻击/读写流程 → 验证结果
+- 授权边界: 只读与写卡/复制均需授权，实验室环境确认卡归属与目的（[[platform-tips]] 最高原则）
+
+### 坑与陷阱
+
+- **卡类型判断错误（MIFARE vs DESFire 结构不同）**：现象——按 Classic 扇区/块结构解析一张卡，地址与数据全对不上；原因——Classic（Crypto-1、扇区块结构、SAK 0x08/0x88 类）与 DESFire（文件系统、AES/3DES、SAK 0x20/0x40 类）内部结构完全不同；对策——先看 SAK（结合 ATQA）判卡族再选解析/攻击路径，不要拿一个结构套所有卡
+- **APDU 命令集差异**：现象——同一指令在 A 卡成功、B 卡返回 0x6A82（文件未找到）/ 0x6D00（指令不支持）类错误；原因——不同卡/应用对 CLA 前缀、INS、P1/P2 约定不同（专有 CLA、扩展指令、参数含义差异）；对策——先 SELECT 目标应用，用已知合法交互抓包对照指令序列，按 SW 状态码逐条校准
+- **Crypto-1 攻击前提**：现象——密钥恢复流程跑不起来或结果错误；原因——思路需要先拿到卡侧非加密认证响应样本，卡拒绝未知读写器认证、或环境无法插中间人时无从入手；对策——先验证卡是否响应任意读写器认证请求，前提成立再走攻击流程，否则转密钥提取 / 固件路径（[[re-crypto-keys]] / [[re-firmware]]）
+- **UID 与数据块混淆**：现象——写卡/复制后目标卡行为异常或读写失败；原因——UID 与厂商块（块 0）存在锁定/校验，部分卡族 UID 不可改，改后访问控制失效；对策——写前先读厂商块与扇区尾块（access bits），确认可写性与授权边界
 
 ## 跨域联合
 
