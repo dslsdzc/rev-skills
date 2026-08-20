@@ -36,8 +36,8 @@ description: >
 
 1. **函数匹配**：
    ```sh
-   # 命令行快速对比（rizin 系）：整体相似度；函数级匹配用 `-AA` 分析后 diff
-   rz-diff -ss sample_v1 sample_v2 | head -30
+   # 命令行快速对比（rizin 系）：函数级匹配（-B 自动分析后按函数对比，含相似度列）
+   rz-diff -B -t functions sample_v1 sample_v2 | head -30
    ```
    - 匹配维度：指令哈希（相同代码）、调用图（子图同构）、导入导出对齐、字符串/常量引用
    - 工具（BinDiff/Diaphora）输出：matched / changed / new / deleted 函数集

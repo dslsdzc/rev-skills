@@ -53,7 +53,7 @@ description: >
    otool -l sample | grep -A8 'segname __DATA'
    llvm-objdump --macho --section-headers sample
    ```
-   记录各段的 vmaddr/vmsize/fileoff；`__TEXT,__text` 是代码，`__DATA,__data` 是可写数据（GOT 等价物 `__DATA_CONST`）。
+   记录各段的 vmaddr/vmsize/fileoff；`__TEXT,__text` 是代码，`__DATA,__data` 是可写数据，GOT 在 `__DATA_CONST,__got`（只读常量段；旧二进制在 `__DATA,__got`）。
 
 3. **LC_MAIN 入口**：
    ```sh

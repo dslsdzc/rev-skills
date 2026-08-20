@@ -120,7 +120,7 @@ description: >
 ### Delphi（VCL）特征与定位
 
 - **类体系字符串**：VCL 类名以短字符串（1 字节长度前缀）明文存放，`TPersistent`/`TApplication`/`TComponent` 类名成体系出现是强信号；先扫字符串定位类名，再反向找引用者
-- **vmt（虚方法表）定位**：类 vmt 是代码节里的指针数组，起点处 vmtSelfPtr 自指；元数据挂在 vmt 负偏移区——32 位下类名字符串指针在 vmt-0x20、实例大小在 vmt-0x24、TypeInfo（RTTI 指针）在 vmt-0x10、published 方法表在 vmt-0x18；64 位指针翻倍、偏移按 8 对齐（vmtClassName 约 -0x40）。偏移别死记，用「类名指针 → 类名内容」双向校验
+- **vmt（虚方法表）定位**：类 vmt 是代码节里的指针数组，起点处 vmtSelfPtr 自指；元数据挂在 vmt 负偏移区（**经典布局，Delphi 7 及以前**）——32 位下类名字符串指针在 vmt-0x20、实例大小在 vmt-0x24、TypeInfo（RTTI 指针）在 vmt-0x10、published 方法表在 vmt-0x18；64 位指针翻倍、偏移按 8 对齐（vmtClassName 约 -0x40）。现代 Delphi（XE2+）布局已重新设计。偏移别死记，用「类名指针 → 类名内容」双向校验
 - **RTTI 还原类结构**：从 vmt 负偏移的 TypeInfo 指针出发，RTTI 记录含类型名与 published 属性/方法名表，可系统还原类体系与对象布局，作为后续反编译的骨架
 - **Borland 资源段特征**：.rsrc 内 RT_RCDATA 出现命名资源 `PACKAGEINFO`（包/单元列表）、`DVCLAL`（版本校验标记）；配合「无 Rich Header」（Borland 工具链不生成）交叉确认
   ```python
@@ -134,7 +134,7 @@ description: >
 
 ### VB6 特征与入口定位
 
-- **运行时导入**：导入表含 `MSVBVM60.DLL`（VB6 运行时，别名 MSVB60），具名导入多为 `__vba*`/`rtc*` 前缀（`__vbaStrCmp`/`__vbaStrCopy`/`rtcMsgBox` 等）——锁定运行时后，整个 MSVBVM60 API 调用面就是分析锚点
+- **运行时导入**：导入表含 `MSVBVM60.DLL`（VB6 运行时；VB5 为 MSVBVM50.DLL），具名导入多为 `__vba*`/`rtc*` 前缀（`__vbaStrCmp`/`__vbaStrCopy`/`rtcMsgBox` 等）——锁定运行时后，整个 MSVBVM60 API 调用面就是分析锚点
 - **特定资源**：.rsrc 内 RT_RCDATA 命名资源 `CUSTOM`（工程名/启动信息）；版本信息段常带 VB 运行时标识
 - **入口定位思路**：入口先进 `MSVBVM60!ThunRTMain` 做运行时初始化，项目主逻辑在其后调用链中；以 `__vba*` 字符串处理 API 的引用点为锚反查业务代码，比死跟入口省力
 
@@ -175,7 +175,7 @@ description: >
 - **别用 ELF 思维套 PE**：现象——分析 PE 时找 `.interp`/PT_INTERP、期待 `__libc_start_main` 启动路径、按 RTLD_NOW 语义理解加载；原因——两格式动态链接机制根本不同（PE 无 .interp，启动不经过 __libc_start_main）；对策——PE 启动链只认：系统加载器 → TLS 回调 → 入口点（AddressOfEntryPoint）；导入看 IAT，没有 GOT/PLT 概念
 - **PE 代码节内嵌数据 → 线性反汇编误判**：现象——反编译出现大片伪代码或把跳转表当函数；原因——PE 编译器常把跳转表等数据内联进代码节（ELF 则放 `.rodata`），线性反汇编约 1% 误差，函数边界误判率 20%+（尾调用/非标准序言/内联）；对策——反编译结果交叉验证，用工具的数据标注（IDA/ghidra 手工标记数据区）修正，别全信自动函数列表
 
-- **数据目录偏移别凭记忆**：PE32+ optional header 的数据目录数组从 `oh + 112` 起（+96 是 SizeOfHeapCommit）——实测 PE32+ 标准布局（24 前缀 + 88 Windows 特有 + LoaderFlags/NumberOfRvaAndSizes 8 = 112）；写 96 会读到 HeapCommit 的垃圾值
+- **数据目录偏移别凭记忆**：PE32+ optional header 的数据目录数组从 `oh + 112` 起（+96 是 SizeOfHeapCommit）——实测 PE32+ 标准布局（24 标准 + 80 Windows 特有（含 8 字节 ImageBase）+ LoaderFlags/NumberOfRvaAndSizes 8 = 112）；写 96 会读到 HeapCommit 的垃圾值
 - **TLS 目录 4 个地址字段是 VA 不是 RVA**（StartAddressOfRawData/EndAddressOfRawData/AddressOfIndex/AddressOfCallBacks）——与多数数据目录条目不同，换算 RVA 前必须先减 ImageBase
 - **RVA→文件偏移判定用 raw_size 而非 vsize**：文件内只有 raw_size 字节存在，vsize 可能更大（BSS 类）；用 vsize 判定会越界读
 - **死导入检测**：IAT 槽存在桩（`jmp [IAT]`）但 .text 无任何指令引用 → 该导入实际走 LoadLibrary+GetProcAddress 动态解析（游戏/插件常见）——静态 IAT 分析结论作废，去字符串区找 `dllname`/`funcname` 动态加载参数

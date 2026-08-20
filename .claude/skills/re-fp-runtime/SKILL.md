@@ -40,9 +40,9 @@ description: >
    readelf -s sample | grep -iE 'ghc|stg_|RTS|HsMain' | head   # GHC 特征
    readelf -s sample | grep -iE 'caml_|camlMain' | head         # OCaml 特征
    ```
-   - GHC：`HsMain` 入口、RTS 运行时符号（stg_*/hs_*）
+   - GHC：`main`（RTS 入口）+ RTS 运行时符号（stg_*/hs_*；旧版产物为 `HsMain` 入口）
    - OCaml：`camlMain` 入口、`caml_*` 运行时符号
-   - **字节码 vs 原生**：OCaml 字节码产物（非 native）特征（`caml_start_program`）→ 字节码可反汇编还原；native 产物走常规反编译
+   - **字节码 vs 原生**：`caml_start_program` 在 native 与字节码运行库中都存在，**不可作字节码判据**——字节码产物识别改用 `ocamlobjinfo`/字节码段特征（ocamlrun 脚本头），native 产物走常规反编译
 
 2. **闭包与堆对象**：
    - GHC：thunk（未求值闭包）与已求值值的堆对象布局——closure header（info table 指针）+ 字段；CAF 以 thunk 形式静态分配，首次引用才求值（惰性）
@@ -68,6 +68,6 @@ description: >
 
 - **RTS 版本差异**：现象——closure 布局解读失败；原因——GHC/OCaml 版本演进；对策——按目标版本确认布局
 - **thunk 惰性求值误导**：现象——未求值闭包被当已求值数据；原因——惰性求值；对策——区分 thunk 头（info table 指向求值代码）与已求值值
-- **OCaml 字节码非 native**：现象——反编译全是运行时包装；原因——字节码产物；对策——识别 `caml_start_program` 后按字节码反汇编（非常规反编译）
+- **OCaml 字节码非 native**：现象——反编译全是运行时包装；原因——字节码产物；对策——识别 ocamlrun 脚本头/字节码段特征后按字节码反汇编（非常规反编译；`caml_start_program` 两种产物都有，不作判据）
 - **控制流打散导致静态分析失效**：现象——函数体无连续逻辑；原因——函数式编译产物；对策——转数据流分析（步骤 4），不硬追控制流
 - **tagged int 误读**：现象——整数被当指针/指针被当整数；原因——OCaml 值标记位；对策——按最低位区分（1=整数，0=指针），访问前先解标记

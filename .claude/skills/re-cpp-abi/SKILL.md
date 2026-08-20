@@ -68,8 +68,8 @@ description: >
 
 4. **异常处理表**：
    ```sh
-   readelf -S sample | grep -E 'pdata|xdata'    # PE：.pdata/.xdata
-   readelf -S sample | grep -E 'eh_frame|gcc_except'   # ELF：.eh_frame
+   readelf -S sample | grep -E 'eh_frame|gcc_except'   # ELF：.eh_frame（readelf 不解析 PE，PE 走下方命令）
+   llvm-readobj --coff-unwind-info sample.exe            # PE：.pdata/.xdata（或 objdump -h / pefile）
    ```
    - PE：`.pdata` 的 RUNTIME_FUNCTION（Begin/End/UnwindInfo）→ `.xdata` 展开数据 → 异常处理器（__CxxFrameHandler3）
    - ELF：`.eh_frame` 的 FDE/CIE → 展开规则与 LSDA（.gcc_except_table）→ 异常处理函数
