@@ -1,15 +1,16 @@
 {
   "name": "rev-skills",
-  "owner": "DslsDZC",
-  "version": "0.0.2",
-  "schemaVersion": 1,
   "description": "通用逆向工程技能库：107 个技能（恶意软件/固件/协议/移动/脱壳/破解/托管/取证/CTF）",
+  "owner": {
+    "name": "DslsDZC",
+    "url": "https://github.com/DslsDZC/rev-skills"
+  },
   "plugins": [
     {
       "name": "rev-skills",
+      "source": "./",
       "description": "逆向工程技能库",
-      "version": "0.0.2",
-      "source": { "type": "github", "repo": "DslsDZC/rev-skills", "path": "." }
+      "version": "0.0.2"
     }
   ]
 }

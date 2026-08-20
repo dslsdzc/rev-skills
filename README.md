@@ -37,6 +37,17 @@ npx skills add DslsDZC/rev-skills -l       # 先列出技能，不安装
 
 把 `.claude/skills/` 下的技能目录复制到 `~/.claude/skills/`（Claude Code）或对应工具目录。
 
+### 方式四：Claude Code 插件市场
+
+本仓库自带 `.claude-plugin/marketplace.json`，可作为自托管插件市场直接添加：
+
+```text
+/plugin marketplace add DslsDZC/rev-skills
+/plugin install rev-skills
+```
+
+（若同名插件来自多个市场，用 `rev-skills@rev-skills` 消歧。）
+
 ## 多工具适配
 
 | 工具 | 安装方式 | 体验 |
