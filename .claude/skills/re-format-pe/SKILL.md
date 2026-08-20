@@ -113,6 +113,51 @@ description: >
    print("cert table file offset:", hex(sec.VirtualAddress), "size:", hex(sec.Size))
    ```
 
+## 老运行时识别（Delphi / VB6）
+
+老 PE 样本里两类遗留运行时——Delphi（VCL）与 VB6——结构特征鲜明，不必等反编译，格式解析阶段（节表/资源/导入）即可判定。
+
+### Delphi（VCL）特征与定位
+
+- **类体系字符串**：VCL 类名以短字符串（1 字节长度前缀）明文存放，`TPersistent`/`TApplication`/`TComponent` 类名成体系出现是强信号；先扫字符串定位类名，再反向找引用者
+- **vmt（虚方法表）定位**：类 vmt 是代码节里的指针数组，起点处 vmtSelfPtr 自指；元数据挂在 vmt 负偏移区——32 位下类名字符串指针在 vmt-0x20、实例大小在 vmt-0x24、TypeInfo（RTTI 指针）在 vmt-0x10、published 方法表在 vmt-0x18；64 位指针翻倍、偏移按 8 对齐（vmtClassName 约 -0x40）。偏移别死记，用「类名指针 → 类名内容」双向校验
+- **RTTI 还原类结构**：从 vmt 负偏移的 TypeInfo 指针出发，RTTI 记录含类型名与 published 属性/方法名表，可系统还原类体系与对象布局，作为后续反编译的骨架
+- **Borland 资源段特征**：.rsrc 内 RT_RCDATA 出现命名资源 `PACKAGEINFO`（包/单元列表）、`DVCLAL`（版本校验标记）；配合「无 Rich Header」（Borland 工具链不生成）交叉确认
+  ```python
+  import pefile
+  pe = pefile.PE('sample.exe')
+  if hasattr(pe, 'DIRECTORY_ENTRY_RESOURCE'):
+      for entry in pe.DIRECTORY_ENTRY_RESOURCE.entries:
+          name = entry.name.string if entry.name else None
+          print(name, hex(entry.struct.Type))
+  ```
+
+### VB6 特征与入口定位
+
+- **运行时导入**：导入表含 `MSVBVM60.DLL`（VB6 运行时，别名 MSVB60），具名导入多为 `__vba*`/`rtc*` 前缀（`__vbaStrCmp`/`__vbaStrCopy`/`rtcMsgBox` 等）——锁定运行时后，整个 MSVBVM60 API 调用面就是分析锚点
+- **特定资源**：.rsrc 内 RT_RCDATA 命名资源 `CUSTOM`（工程名/启动信息）；版本信息段常带 VB 运行时标识
+- **入口定位思路**：入口先进 `MSVBVM60!ThunRTMain` 做运行时初始化，项目主逻辑在其后调用链中；以 `__vba*` 字符串处理 API 的引用点为锚反查业务代码，比死跟入口省力
+
+### 老壳注意
+
+- PECompact 类轻壳特征：节表被合并（常剩 1-2 节）、IAT 极小化（API 运行时动态解析）、EP 处为解码循环/跳转 stub
+- 壳会改写节表与 RVA→文件偏移映射，直接按原偏移解析 vmt/RTTI 会失真——先 [[re-packer-id]] 确认壳型，轻壳走简单脱壳流程（[[re-unpack-simple]]）再定位运行时
+
+### 识别先行原则
+
+- 格式解析阶段（节表/资源/导入）就下运行时结论，为后续选路：
+  - 判定 Delphi → 走 RTTI 还原类结构路线（vmt/TypeInfo 定位）
+  - 判定 VB6 → 走 MSVBVM60 API 调用面路线（`__vba*`/`rtc*` 语义还原）
+  - 两者皆无 → 按常规 C/C++ PE 处理
+- 识别不出时回头查壳（老样本轻壳率高），别在无壳假设下硬解
+
+### 常见坑
+
+- **Delphi 字符串按 C 风格读**：现象——字符串区出现「乱码」、反编译字符串截断错位；原因——Delphi 字符串是 AnsiString：数据指针前 4 字节是长度、再前 4 字节是引用计数（ShortString 为 1 字节长度前缀），均非 NUL 结尾的 C 字符串；对策——按长度前缀取串（长度在前、无结尾符），字符串扫描按「长度+内容」模式而非 NUL 截断
+- **VB6 的 OLE 自动化调用点被当普通 API**：现象——反编译出现大段 `__vba*` 包裹的 vtable/IDispatch 分发序列，对象参数被误判成普通寄存器传参；原因——VB6 组件调用经 OLE 自动化（IDispatch）分发，调用点在运行时按 DISPID 解析，静态只看到「取接口指针 → 调分发函数」；对策——按「对象 + 属性/方法名 + DISPID」语义还原调用面，别把分发序列当独立函数逐个分析
+- **老壳导致 RTTI 偏移失真**：现象——按 vmt 负偏移取类名/RTTI 指针得到垃圾值或指向节外；原因——PECompact 类压缩壳合并节、重写映射，压缩态下原偏移失效；对策——先 [[re-packer-id]] 查壳，轻壳脱壳后重做 vmt/RTTI 定位
+- **VB6 编译模式不分（p-code vs native）**：现象——p-code 模式同样有「代码节」，按常规反汇编读出来是变长乱指令；原因——VB6 有两种产物：native 直接编译为 x86（混 `__vba*` 调用），p-code 把逻辑编成字节码流交运行时解释执行，代码节实为解释器+字节码数据；对策——先判编译模式（代码节反汇编可读性、`__vba*` 调用密集度），p-code 走字节码解释，native 走常规反编译，别套同一条流程
+
 ## 跨域联合
 
 - [[re-binary-core]]：工作流第 3 步，PE 目标的格式解析
