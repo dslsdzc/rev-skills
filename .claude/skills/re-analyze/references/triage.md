@@ -12,9 +12,9 @@
 | 样本带壳 / 脱壳 | re-anti-analysis 网关 → 壳识别(re-packer-id) → 脱壳(re-unpack-simple/advanced) → 验证 |
 | 破解 / 授权绕过 / 注册码 | re-cracking 网关 → （若带壳）re-anti-analysis → 授权定位(re-license) → 补丁/注册机(re-patching/re-keygen) |
 | 漏洞挖掘 / 崩溃分析 | re-vuln 网关 → fuzzing → crash-triage →（定位）re-binary-core |
-| 分析固件 / IoT 设备 | re-firmware 网关 → 提取(re-fw-extract) → rootfs(re-fw-rootfs) → 仿真(re-fw-emulate) →（UEFI/BIOS 固件 → re-uefi）→（若见通信）re-protocol |
+| 分析固件 / IoT 设备 | re-firmware 网关 → 提取(re-fw-extract) → rootfs(re-fw-rootfs) → 仿真(re-fw-emulate) →（UEFI/BIOS 固件 → re-uefi）→（MCU 镜像 → re-fw-extract 内 MCU 节；跑 RTOS → re-rtos）→（TEE/可信应用 → re-tee）→（若见通信）re-protocol |
 | 分析网络流量 / 未知协议 | re-protocol 网关 → 捕获(re-netcap) → 解析(re-proto-rev) → 加密(re-crypto-id/keys/decrypt) |
-| 移动 App 分析 | re-mobile 网关 → APK(re-apk) / iOS(re-ios) → 动态(re-frida) →（若含原生库）re-binary-core |
+| 移动 App 分析 | re-mobile 网关 → APK(re-apk) / iOS(re-ios) → 动态(re-frida) →（Flutter → re-flutter；鸿蒙 hap → re-harmonyos；RN/混合 → re-hybrid-app）→（若含原生库）re-binary-core |
 | 一般软件逆向 / 看逻辑 | re-binary-core 网关 → 初勘(re-triage) → 格式(re-format-*) → 反编译(re-ghidra/ida/radare2) → 按需动态 |
 | shellcode / 位置无关载荷 | re-binary-core 网关 → 初勘(re-triage) → 提取/解码循环(re-shellcode) → 模拟执行(re-emulation) |
 | CTF 赛题 | re-ctf 网关 → 题型识别 → re-angr / re-z3 / re-pwn / 反混淆(re-deobfuscate) →（底座）re-binary-core |
