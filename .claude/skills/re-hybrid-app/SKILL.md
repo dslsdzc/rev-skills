@@ -2,7 +2,7 @@
 name: re-hybrid-app
 description: >
   Flutter/React Native 混合应用逆向。
-  触发词：Flutter、React Native、混合应用、dart、libapp.so
+  触发词：Flutter、React Native、混合应用、dart、libapp.so、Hermes、Hermes 字节码、hbc、RN bundle、index.android.bundle、NativeModules、TurboModule、Metro
 ---
 
 # 混合应用逆向（Flutter / React Native）
@@ -115,6 +115,46 @@ Flutter 平台通道（PlatformChannel）是 Dart ↔ native 通信主干，拦�
 - **engine messenger 层**：`io.flutter.embedding.engine.FlutterEngine` 的 messenger 消息（低层兜底）
 - **与 Dart 侧静态观察互补**：静态找 channel 名与调用点（字符串字面量），动态确认实际流量
 - **输出**：结构化 JSON（channel / method / args），供 [[analysis-contract]] 数据契约消费（证据存档）
+
+Flutter 专项详见 [[re-flutter]]
+
+## React Native / Hermes（RN 字节码与桥接）
+
+### 识别：HBC 与 RN 产物
+
+- **`.hbc` / Hermes 字节码**：文件头 4 字节魔数 `c61fbc03` 类（小端），`file` 输出形如 "Hermes JavaScript bytecode, version XX"；无魔数、以 `var __BUNDLE_START_TIME__` 等 JS 源码开头的是明文 bundle
+- **RN 应用结构**：`assets/index.android.bundle`（Metro 打包的业务 JS / HBC，RN 0.70+ 默认 Hermes 编译）、`lib/<abi>/libhermes.so`（Hermes 引擎）、`libreactnativejni.so`（JNI 桥）
+- **Hermes 与标准 JS 引擎区别**：Hermes 是 AOT 预编译字节码（VM 指令、运行期不做 JIT 编译），标准引擎（JSC / V8 类）产物是明文 JS 源码包；二者决定后续走字节码反汇编还是纯 JS 恢复
+
+### Hermes 字节码：反汇编思路
+
+- **结构**：文件头（魔数 + 版本号）→ 字节码段 → 函数表 / 字符串表；版本号在文件头，直接决定工具兼容性
+- **反汇编**：hermesc 类工具（`-dump-bytecode` 系）或 hbc 反汇编类 Python 实现（见「工具准备」）→ 产出 hasm 汇编；字符串表可整体提取（跨段抓可打印串）先拿线索
+- **函数表特征**：每条函数含 id / 偏移 / 指令数 / 参数个数——按调用关系（LoadConstString 与 CallN 配对）追踪业务入口
+
+### JS bundle 提取：Metro 结构与恢复
+
+- **Metro 打包结构**：模块工厂经 `__d(factory, moduleId, deps)` 注册进全局注册表，`__r(moduleId)` 运行时 require；bundle 顶部有 `__BUNDLE_START_TIME__` 与 polyfill 前缀
+- **恢复业务 JS**：美化（jsbeautify 类工具）→ 按 `__d(` 切分模块边界 → 每模块独立还原（工厂体 + 依赖数组）→ 混淆 / 字符串加密衔接 [[re-script-deob]]
+- **模块对应**：大块模块（字符串长 / 依赖多）常是业务主包，可对照页面功能缩小范围
+
+### 原生桥接：NativeModules / TurboModule
+
+- **JS 侧定位**：`NativeModules.xxx` 访问点 / `TurboModuleRegistry.get('Xxx')`——桥接名即模块名
+- **原生侧映射**：JNI 桥 `com.facebook.react` 包下的模块注册表（`@ReactMethod` 注解类方法 / `getNativeModules()` 列表）；TurboModule 接口方法签名与 JS 调用名一一对应
+- **桥接边界即敏感数据交换点**：JS 侧找不到的加解密在原生模块（转 [[re-binary-core]]），与 Flutter MethodChannel 同理
+
+### 动态：hook JS 运行时（[[re-frida]]）
+
+- **模块加载点**：hook `__d` / `__r` 可枚举全部已加载模块与 id、dump 模块工厂源码；运行期再注册的模块即远程下发（热更新）特征
+- **console 输出**：hook console.log / warn 实现，拿业务日志与错误栈
+- **桥接层兜底**：hook NativeModules 方法调用（入参 / 返回值），观察 JS↔原生交换数据
+
+### 坑与陷阱
+
+- **Hermes 字节码不跨版本**：现象——同一样本在一种环境下反汇编正常，换版本或换工具输出乱码、直接报错；原因——HBC 格式随引擎版本演进、不保证向后兼容，反汇编类工具只覆盖特定版本区间；对策——先取版本（`file` 输出 / libhermes.so 内版本字符串 / 构建时间），选对应版本的 hermesc 类工具或更新反汇编工具，版本不匹配时优先换工具而非手动修字节
+- **bundle 加密 / 混淆（Metro 加密层）**：现象——bundle 解出后是密文 / 乱码，或模块函数名不可读；原因——构建管线在 Metro 输出层加密（bundle 内嵌解密器，运行期解密）或启用混淆插件；对策——在 bundle 内找解密器特征（XOR 循环 / 自解密函数 / 硬编码密钥），静态还原解密器整体解密，或 [[re-frida]] 在解密函数返回处 dump 明文，混淆部分衔接 [[re-script-deob]]
+- **字节码与明文 JS 混合（部分页面走远程 bundle）**：现象——本地 bundle 是明文 JS 且内容正常，但关键页面逻辑缺失，或运行期出现本地没有的模块；原因——混合交付：部分页面打包进 assets，敏感 / 更新页走远程下发 bundle（热更新、灰度），本地包只含壳与加载逻辑；对策——先核对本地 bundle 完整性（`__d` 模块数与页面功能对比），抓包 / 文件系统快照归档远程 bundle，再按明文或 HBC 路径处理
 
 ## 跨域联合
 
