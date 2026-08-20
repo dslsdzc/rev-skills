@@ -72,7 +72,7 @@ description: RTOS 结构分析：FreeRTOS/ThreadX/Zephyr/RT-Thread 任务表与 
 
 5. **内核对象（队列/信号量/互斥/定时器）**：
    - 从内核 API 调用点反推：`xQueueSend`/`xQueueReceive`/`xSemaphoreTake`/`xTimerCreate`（FreeRTOS）、`tx_queue_send`/`tx_semaphore_get`/`tx_mutex_put`/`tx_timer_create`（ThreadX）、`k_sem_take`/`k_mutex_lock`/`k_queue_get`/`k_timer_start`（Zephyr）、`rt_sem_take`/`rt_mutex_take`/`rt_mq_recv`（RT-Thread）——调用点第一个参数就是对象指针，沿交叉引用回溯到对象定义处（.bss 静态实例或内存池）
-   - ThreadX 对象头有魔数 ID 可逐个确认：TX_QUEUE 0x51554555 'QUEU'、TX_SEMAPHORE 0x53454D41 'SEMA'、TX_MUTEX 0x4D555445 'MUTE'、TX_TIMER 0x54494D52 'TIMR'、TX_EVENT_FLAGS 0x4556454E 'EVEN'、TX_BYTE_POOL 0x42595445 'BYTE'、TX_BLOCK_POOL 0x424C4F43 'BLOC'
+   - ThreadX 对象头有魔数 ID 可逐个确认（以官方源码为准，勿凭资料记忆）：TX_QUEUE 0x51554555 'QUEU'、TX_SEMAPHORE 0x53454D41 'SEMA'、TX_MUTEX 0x4D555445 'MUTE'、TX_TIMER 0x4154494D 'ATIM'、TX_EVENT_FLAGS 0x4456444E 'DVDE'、TX_BYTE_POOL 0x42595445 'BYTE'、TX_BLOCK_POOL 0x424C4F43 'BLOC'（旧资料中 TIMR/EVEN 写法不实，勿沿用）
    - FreeRTOS 中信号量/互斥是队列（Queue_t）特例（结构同构），定时器为 Timer_t；用 Ghidra 定义结构体后，调用点参数类型传播自动改善反编译
    - 对象用途从语义推断：谁 send 谁 receive、take 之后处理什么，即任务间通信链路
 
