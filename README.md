@@ -28,9 +28,9 @@ npx rev-skills uninstall                   # 卸载
 本库遵循 [Agent Skills 规范](https://agentskills.io)，可被任意兼容运行时（Claude Code / Codex / Cursor / Gemini CLI 等 50+ 工具）直接发现与安装：
 
 ```bash
-npx skills add DslsDZC/rev-skills          # 项目作用域（.claude/skills/）
-npx skills add DslsDZC/rev-skills -g       # 全局（~/.claude/skills/）
-npx skills add DslsDZC/rev-skills -l       # 先列出技能，不安装
+npx skills add dslsdzc/rev-skills          # 项目作用域（.claude/skills/）
+npx skills add dslsdzc/rev-skills -g       # 全局（~/.claude/skills/）
+npx skills add dslsdzc/rev-skills -l       # 先列出技能，不安装
 ```
 
 ### 方式三：手动拷贝
@@ -42,7 +42,7 @@ npx skills add DslsDZC/rev-skills -l       # 先列出技能，不安装
 本仓库自带 `.claude-plugin/marketplace.json`，可作为自托管插件市场直接添加：
 
 ```text
-/plugin marketplace add DslsDZC/rev-skills
+/plugin marketplace add dslsdzc/rev-skills
 /plugin install rev-skills
 ```
 
