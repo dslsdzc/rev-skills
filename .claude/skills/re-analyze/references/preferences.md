@@ -20,7 +20,7 @@
 | 选项 | 依据 |
 |---|---|
 | Ghidra（默认推荐） | 免费开源、跨平台、Linux 最顺 |
-| IDA | 商业付费（有 7.x 免费版）、Windows 生态最强、插件丰富；用户明确选或目标为 Windows 闭源软件时推荐 |
+| IDA | 商业付费（有免费版 IDA Free，当前 8.x：x86/x86-64 限定、无 SDK/IDAPython、非商用）、Windows 生态最强、插件丰富；用户明确选或目标为 Windows 闭源软件时推荐 |
 | radare2/rizin | 命令行轻量、终端友好、脚本化强；内存紧张或 CLI 工作流 |
 
 内存 <4GB → 提示 Ghidra 可能吃力，建议 radare2 或先加内存。

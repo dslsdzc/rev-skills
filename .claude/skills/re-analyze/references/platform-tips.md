@@ -74,7 +74,7 @@ Java 层逆向时，`Java_包名_类名_方法名` 导出是**天然接口文档
 
 - **IDA interr（decompiler bug）**：`create_stkvar` 类内部错误硬崩溃且无法跳过——换 Ghidra，别硬刚
 - **Ghidra 脚本 API 版本差异**：新版 MemoryBlock 无 `getPermissions()`（改 `getExecute()`）；脚本编译失败先查 API
-- **dex 解析细节**：opcode 是 **u16 低字节**（高字节是寄存器位）；`fill-array-data` 是 **0x24**（0x26 是 goto）；string_data_item 有 **uleb128 长度前缀**；code_item 的 `insns_size` 在 **+12**（+4 是 outs_size）
+- **dex 解析细节**：opcode 是 **u16 低字节**（高字节是寄存器位）；`fill-array-data` 是 **0x26**（31t）、goto 是 **0x28**（0x24 是 filled-new-array）；string_data_item 有 **uleb128 长度前缀**；code_item 的 `insns_size` 在 **+12**（+4 是 outs_size）
 - **GitHub 下载不稳**：`codeload.github.com` 比 `github.com` 稳（git clone 被重置时 curl codeload 可通）
 
 ## 「直读 vs 转储」决策（默认转储优先）

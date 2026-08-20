@@ -53,10 +53,10 @@ description: >
 
 - **底座 [[re-binary-core]]**：第 4 步逆向定位固定调用（[[re-triage]] 初勘与存证 / [[re-ghidra]] 反编译定位 / [[re-ida]] / [[re-radare2]]）；本网关 ①-⑤ 的静态环节都落在底座技能上（规格 2.4：崩溃样本定位 = re-vuln → re-binary-core + re-memdump）
 - **崩溃 core → [[re-memdump]]**：进程已死 / 已有 core dump 时，崩溃样本分析走内存转储与 core 提取
-- **CTF pwn → [[re-ctf]]**：pwn 赛题的 fuzzing / 崩溃分析交本网关（规格 2.4 规划：CTF pwn 题 → re-vuln，接线随全库同步（Task 35））；赛题二进制同样适用本网关流程
+- **CTF pwn → [[re-ctf]]**：pwn 赛题的 fuzzing / 崩溃分析交本网关；赛题二进制同样适用本网关流程
 - **动态执行沙箱**：fuzz / 复现崩溃都是动态执行，默认在 [[re-sandbox]] 内跑（[[platform-tips]] 最高原则）
 - **网络目标**：[[re-netcap]] 抓包做种子语料与输入面确认
-- **入口调度**：本网关由 [[re-analyze]] 按触发词分派（漏洞挖掘 / fuzz / 崩溃分析）；triage 显式接线随二期全库同步落地
+- **入口调度**：本网关由 [[re-analyze]] 按触发词分派（漏洞挖掘 / fuzz / 崩溃分析），triage 已显式接线
 - **产出**：PoC hash / 崩溃特征 / 漏洞指纹可进 [[re-ioc]]
 
 ## 常见坑与陷阱

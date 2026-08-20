@@ -3,7 +3,7 @@ name: re-mobile
 type: gateway
 description: >
   移动应用分析网关。编排：APK 静态 → iOS → 动态 Frida → 原生库。
-  子技能：[[re-apk]] [[re-ios]] [[re-frida]] [[re-mobile-pack]] [[re-hybrid-app]]
+  子技能：[[re-apk]] [[re-ios]] [[re-frida]] [[re-frida-script-author]] [[re-mobile-pack]] [[re-hybrid-app]]
   [[re-android-native]] [[re-ios-jb]] [[re-flutter]] [[re-harmonyos]]。
   触发词：移动App、APK、ipa、Android逆向、iOS逆向、frida、mobile app analysis。
 ---
