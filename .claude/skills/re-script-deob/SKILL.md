@@ -148,3 +148,7 @@ JScrambler 类商业混淆器的手法与对抗：
 - **本地复现结果不一致**：现象——签名逻辑对但服务端不认；原因——参数排序/时间戳精度不对；对策——核对源码 sort 逻辑（按 key 字母序 + 特殊字符规则）；时间戳用 `Math.floor(Date.now() / 1000)`（秒级）
 - **密钥在另一 chunk**：现象——签名函数里找不到密钥；原因——密钥经 require 从其他 chunk 引入；对策——签名函数断点处 console.log 打印密钥变量
 （来源：reverse-skill field-journal，MIT）
+- **转译产物先还原再分析**：现象——JS 里看到 `var state=0; while(true){switch(state){…}}` 状态机循环或 `_asyncToGenerator(function*(){…})` 包装，逻辑像一团乱麻；原因——generator/async 被 Babel/Regenerator 等转译链降级为状态机与包装器，源级语义被机械摊平；对策——识别「真常量条件 while + 单 switch 体」模式后按 case 顺序展平为线性语句，人工状态变量随之消失；async 则先全程序扫描出被包装的 generator 函数，再把函数体内 Yield 还原为 Await 并内联包装器；先看 helper 函数名确认转译链（Babel/Regenerator 等各有特征指纹），针对已知工具链写反变换，比通用还原更省力
+（来源：hermes-decomp（SymbioticSec），MIT）
+- **补丁前先算清改动长度**：现象——改完的脚本/bundle 无法运行或结构表解析错乱；原因——同长改动可以原位覆写，变长改动会牵动后续全部偏移与结构段，未联动修正就会写坏文件；对策——同长→原位覆写，不动结构表；变长→重建受影响的结构段（如字符串表）并搬迁后续段、联动修正所有偏移；共享存储/重叠引用的数据一律拒绝补丁；补丁后重新解析一遍结构表做一致性校验，不一致即回滚——不支持的场景显式报错，绝不停工写坏文件
+（来源：hermes-decomp（SymbioticSec），MIT）
