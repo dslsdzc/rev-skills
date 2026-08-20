@@ -2,7 +2,7 @@
 name: re-format-pe
 description: >
   PE 格式解析：DOS/NT 头、节表、导入导出、TLS 回调、Rich Header、证书表。
-  触发词：PE格式、解析exe、section表
+  触发词：PE格式、解析exe、section表、Delphi、VB6、vmt、MSVBVM60、RTTI、老程序
 ---
 
 # PE 格式解析

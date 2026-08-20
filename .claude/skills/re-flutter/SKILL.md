@@ -145,4 +145,4 @@ description: Flutter/Dart AOT 逆向：libapp.so 快照分区解析、符号还�
 - **引擎与业务代码混淆**：现象——分析深陷 libflutter.so 的 `dart::` 内部函数或 `_kDartVmSnapshot*` 段（dart:core/io 标准库），时间空耗；原因——引擎层与 VM 快照是所有 Flutter App 共用代码，不是业务；对策——业务只分析 libapp.so 的 `_kDartIsolateSnapshot*`；libflutter.so 只取 VM 导出（步骤 4/5）
 - **frida 版本不匹配**：现象——`frida-ps -U` 报协议错误 / unable to communicate；原因——主机 frida-tools 与设备 frida-server 版本号不一致，或架构不符；对策——严格按 [[re-frida]] 工具准备：`frida --version` 对照下载同版本 frida-server，选对架构（arm64/arm/x86_64）
 - **快照版本与解析脚本不匹配**：现象——分区偏移错位、strings blob 内容乱码或解析中断；原因——Dart 版本间快照布局有差异（版本串在头部可见），手工/第三方脚本只覆盖特定版本；对策——先读头部版本串；解析按版本分支；版本过新时以通用方法兜底（magic 扫描 + 分区语义推演）
-- **hook 读 Dart 字符串读出乱码**：现象——hook 到 Dart 对象指针但打印乱码；原因——Dart 字符串不是 C 字符串（对象指针 +7 偏移处 4 字节 Smi 编码长度，右移 1 位为真实长度，+15 起为 UTF-8 数据）；对策——写 readDartString 工具函数按此布局读取并加长度上限（布局细节见 [[re-hybrid-app]] 坑条目）
+- **hook 读 Dart 字符串读出乱码**：现象——hook 到 Dart 对象指针但打印乱码；原因——Dart 字符串不是 C 字符串（对象指针 +7 偏移处 4 字节 Smi 编码长度，右移 1 位为真实长度，+15 起为 UTF-8 数据，该偏移为社区实测值）；对策——写 readDartString 工具函数按此布局读取并加长度上限（布局细节见 [[re-hybrid-app]] 坑条目）；**偏移随 Dart 版本浮动**——以 `gen_snapshot --print-object-layout-to` 导出的权威偏移或实测为准，别在异版本上照抄死偏移
