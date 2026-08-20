@@ -118,3 +118,5 @@ description: .NET CIL 逆向：dnSpy/ILSpy 反编译、de4dot 去混淆、Confus
 - **dnSpy 仅 Windows**：现象——Linux/WSL 双击 dnSpy.exe 报错无法运行；原因——WinForms + .NET Framework 的 GUI 工具；对策——Linux/macOS 用 ILSpy（GUI 或 `ilspycmd`），坚持 dnSpy 可 Wine 跑
 - **.NET 自包含发布（单文件）**：现象——`file` 显示普通 PE、工具打开无托管结构/反编译为空；原因——self-contained single-file 把 host + 运行库 + IL 捆成一个 native 可执行；对策——先解包：`sfextract sample.exe -o extracted/`（或 ILSpy 直接打开/导出），对解出的程序集再反编译
 - **混合模式程序集**：现象——反编译只见少量托管类，主逻辑找不到；原因——C++/CLI 或 wrapper 把 native 代码与托管混合；对策——托管侧按本技能，native 侧转 [[re-binary-core]]（[[re-ghidra]] / [[re-imports]]）
+- **薄壳启动器程序集误判导出失败（dnSpy 无头批量）**：现象——单个程序集反编译产物源码极少（几行到几十行），主逻辑找不到，误以为导出失败；原因——该程序集只是薄壳启动器，主逻辑在伴随程序集/库中（纯托管，区别于上一条的 native 侧）；对策——目录级批量反编译拿整体视图再判断：Windows 侧用 dnSpy 控制台（`dotnet dnSpy.Console.dll`）输出 solution + 每程序集一个 .csproj + 源码树，Linux 对位 `ilspycmd -p`；批量时显式传依赖搜索路径（指向目标所在目录），否则伴随库引用解析不全；成功与否以「产物计数非零 + 退出码 0」双通道确认
+（来源：LazyReverse（a0yami），MIT）
