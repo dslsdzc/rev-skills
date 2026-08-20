@@ -25,7 +25,7 @@ description: >
 
 ### binaryninja Python API
 
-- 安装: Binary Ninja 安装目录下运行 `python install_api.py`（把 API 注册进 Python 环境）；或 `pip install binaryninja`（需要匹配版本的已安装软件与 license）
+- 安装: Binary Ninja 安装目录下运行 `python install_api.py`（把 API 注册进 Python 环境；PyPI 无 binaryninja 包，`pip install binaryninja` 会失败）
 - 验证: `python3 -c "import binaryninja; print(binaryninja.core_version())"` 输出与软件版本一致的版本号
 
 ## 操作步骤
@@ -57,7 +57,7 @@ description: >
                print(f"big function: {f.name} @ {hex(f.start)} len={n}")
    ```
    - 批量改名: `bv.get_function_at(0x401000).name = "check_license"` 后 `bv.save()` 写回
-   - 插件: `File > Manage Plugins` 浏览社区插件；插件目录 `%APPDATA%/binaryninja/plugins`（Windows）/ `~/.binaryninja/plugins`（Linux/macOS）
+   - 插件: `File > Manage Plugins` 浏览社区插件；插件目录按平台：Windows `%APPDATA%\Binary Ninja\plugins`、Linux `~/.binaryninja/plugins`、macOS `~/Library/Application Support/Binary Ninja/plugins`（macOS 非 `~/.binaryninja`，放错不会被加载）
    - 无头模式: 商业版可用 headless（`binaryninja.headless.main()` 或 CLI `binaryninja-headless`）；个人版受限时用 GUI 内 `File > Python` 面板执行同样代码
 
 5. **对比选型（价格 / 插件生态）**：

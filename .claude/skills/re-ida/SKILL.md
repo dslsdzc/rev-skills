@@ -19,7 +19,7 @@ description: >
 
 ### IDA（商业版 / 免费版）
 
-- 下载: hex-rays.com（IDA Freeware 8.x 免费，支持 x86/x64；其他架构与分析器需商业版）
+- 下载: hex-rays.com（IDA Free 免费版，支持 x86/x64；其他架构与分析器需商业版）
 - Windows: 安装程序直接运行；`choco install ida-free`（社区包，或官网手动下载）
 - macOS/Linux: 官网 tar 包解压运行 `ida` / `ida64`
 - 验证: 启动后成功打开一个样本完成 auto-analysis，函数窗口有内容
@@ -70,7 +70,7 @@ description: >
 5. **免费版限制处理**：
    - 免费版无 Hex-Rays: 用反汇编 + idapython（按步骤 4 方式人工还原循环/算法），或直接导出给 Ghidra:
      菜单 `File > Produce file > Dump typeinfo` / 用 idb2pat 生成库签名；或换 [[re-ghidra]] 做反编译
-   - 免费版功能裁剪：无 Hex-Rays、无调试器、单处理器——按裁剪范围调整流程
+   - 免费版功能裁剪：无本地 Hex-Rays（有 x86/x64 云端反编译可先试）、调试器仅限本地 x86/x64、无反汇编器扩展——按裁剪范围调整流程
 
 ## 函数分析上下文清单
 

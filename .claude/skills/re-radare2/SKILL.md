@@ -21,7 +21,7 @@ description: >
 
 - macOS: `brew install rizin`
 - Arch: `pacman -S rizin`
-- Debian 13+ / Ubuntu 24.04+: `apt install rizin`；旧发行版用 GitHub release 二进制（官方 `rizin-*.deb`）
+- 官方 release 二进制（GitHub rizinorg/rizin releases：static tar.xz / Windows zip / macOS pkg）或 `rz-pm` 安装（Debian/Ubuntu 仓库无 rizin 包，`apt install rizin` 会失败）
 - Fedora/RHEL: 官方 release 二进制（/usr/bin 解压或 dpkg 转换）
 - Windows: 官方 release zip 解压即用（`rz-bin.exe`）
 - 验证: `rizin -v`、`rz-bin -V`

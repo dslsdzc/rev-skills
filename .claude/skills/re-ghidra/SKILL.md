@@ -45,8 +45,8 @@ description: >
 2. **GUI：导航/交叉引用/反编译**：
    - `File > Import File` → 选择样本 → `Analyze`（等左下角进度完成）
    - 跳转: `Go To`（G）输入地址；入口点已在 Program Trees 标记 `entry`
-   - 交叉引用: 光标在函数/变量上按 `Ctrl+Shift+F`（References to）
-   - 反编译: 在 Listing 中按 `F5`（Decompiler 窗口），右键反编译视图可 copy
+   - 交叉引用: 光标在函数/变量上按 `R`（References 窗口），或右键 > References > Show References To
+   - 反编译: 在 Listing 中按 `Ctrl+E`（Decompiler 窗口）或右键 > Decompile Function，反编译视图可 copy
    - 下划线地址差异: Listing 显示 VA（含 ImageBase），脚本中常用 `getAddressFactory().getDefaultAddressSpace().getAddress("0x401000")`
 
 3. **重命名+类型传播标记**：
@@ -111,5 +111,5 @@ description: >
 - **内置脚本解释器是 Jython 2.7，不是 Python 3**：现象——脚本一跑就报 `SyntaxError`（f-string/海象运算符）或 `ImportError`（找不到 pip 安装的三方库）；原因——Ghidra 内置 Jython 2.7，是 Python 2 语法与标准库，不支持 Python 3 语法，也无法 import pip 装的包；对策——脚本按 Python 2 兼容语法写（不用 f-string、用 `xrange`），需要现代 Python 能力（numpy 等）时改用 ghidra-bridge 让外部 Python 3 解释器驱动分析（见工具准备）
 - **脚本/扩展选型失当 → 自动化维护成本失控**：现象——一次性批处理逻辑越写越复杂、每次手动触发很烦，或需要常驻自动化却反复手动点脚本；原因——Script（脚本：轻量单文件、手动触发、适合一次性/简单重复任务）与 Extension（扩展：可注册菜单/面板/事件监听、随工程加载自动执行、ZIP 打包团队分发）的边界没分清；对策——简单重复任务用脚本即用即走；需要 UI 集成、外部服务接入、加载时自动执行或团队标准化分发时才做扩展
 
-- **脚本 API 跨版本不兼容**：现象——headless 脚本编译失败（skipping 且报 `getPermissions()` 类方法不存在）；原因——Ghidra 版本间 MemoryBlock 等 API 变更（新版改 `getExecute()`）；对策——写脚本前先查当前版本 API（小验证脚本），编译失败先怀疑 API 差异而非业务逻辑
+- **脚本 API 跨版本不兼容**：现象——headless 脚本编译失败（skipping 且报 `getPermissions()`/`getExecute()` 类方法不存在）；原因——Ghidra 版本间 MemoryBlock 等 API 变更（12.x 为 `isExecute()`，不同版本方法名不同）；对策——写脚本前先查当前版本 javadoc（小验证脚本），编译失败先怀疑 API 差异而非业务逻辑
 - **全量分析太慢就 -noanalysis**：只做符号表/字符串/单函数反编译时，`analyzeHeadless -noanalysis` 导入后脚本可直接用——符号（含 JNI 导出）与字符串扫描不依赖 auto-analysis，秒级完成

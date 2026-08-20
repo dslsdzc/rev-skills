@@ -64,7 +64,7 @@ description: >
    (lldb) expr $rax = 0                   # 写寄存器
    (lldb) expr (char*)0x100000000         # 类型化读地址
    (lldb) expr -O -- @"hello"             # Objective-C 求值（objc 运行时）
-   (lldb) memory read -c 20 -s 4 $rsp     # 读内存
+   (lldb) memory read -c 20 -s 4 -f x $rsp     # 读内存（缺 -f x 会报格式冲突错误）
    (lldb) memory write -s 1 0x100000000 0x90  # 写字节（绕过校验）
    ```
 
