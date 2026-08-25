@@ -11,6 +11,7 @@ description: >
 - 用：Windows 用户态进程调试（启动/附加、断点、单步、寄存器）；崩溃/异常分析（`!analyze -v`）；内核调试（双机/VM/本地 kd）；驱动与内核模块分析（配合 [[re-kernel]]）；崩溃 dump（minidump/full dump）分析
 - 用：时间旅行调试（TTD）——`ttd.exe` 录制 .run 轨迹后任意回放，适合「复现一次慢慢查」的校验/解密逻辑（见 [[commands]] TTD 节）
 - 不用：Linux 目标（走 [[re-gdb]]）；macOS 目标（[[re-lldb]]）；只需轻量 GUI 调试（[[re-x64dbg]] 更快）
+- 不用：只做静态分析/反编译（[[re-ida]] / [[re-ghidra]] / [[re-binaryninja]]）；无需与运行态互动的纯静态流程不需要调试器
 - 不用：WSL 内跨边界 attach Windows 进程（[[platform-tips]] WSL 分支：跨边界走 Windows 侧工具）
 
 ## 工具准备
@@ -63,6 +64,7 @@ description: >
 
 3. **异常分析 `!analyze -v`**：
    - 目标崩溃停下后: `!analyze -v` → 读 `EXCEPTION_CODE`、`FAULTING_IP`、`STACK_TEXT`、`PROCESS_NAME`
+   - 内核蓝屏对应 bugcheck 码（`BUGCHECK_CODE`，如 0xD1 驱动访问无效内存）——先记码再往下查，常见码含义要能对上故障方向
    - 现场恢复: 从 `STACK_TEXT` 取 `EXCEPTION_RECORD` 地址 `.exr <addr>`（异常记录），再取 `CONTEXT` 地址 `.cxr <addr>` 恢复寄存器现场，之后 `k` 出真实调用栈（栈损坏时唯一可靠的栈回溯方式）
    - dump 现场更简单: 打开 dump 后直接 `.ecxr`（自动用异常上下文设寄存器现场）→ `k`——minidump 分析标准开局
    - dump 分析: `File > Open Crash Dump` 打开 `.dmp`（用户态用 `.dump /ma` 生成；内核蓝屏用 `%SystemRoot%\Minidump\*.dmp` 或完全 dump），同样 `!analyze -v` 出 bugcheck 码与故障模块
