@@ -48,7 +48,8 @@ description: >
 
 1. **驱动入口 DriverEntry 定位**：
    - PE 入口（AddressOfEntryPoint）= 链接器入口，.sys 通常即 DriverEntry（或 EP 处 stub 一跳进入，见坑 5）
-   - 签名特征: `DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)`（x64 参数 rcx/rdx）
+   - 签名特征: `DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)`（x64 参数 rcx/rdx）；返回 STATUS_SUCCESS 才加载成功，失败路径常含 IoDeleteDevice 清理
+   - DriverEntry 还常注册 `DriverUnload`（卸载时清理/撤销 IOCTL）——恶意驱动常留空实现防卸载
    - 从 DriverEntry 追踪: `IoCreateDevice` 调用、注册 MajorFunction 的数组赋值循环——这就是分发表的来源
 
 2. **IRP 分发表（MajorFunction）**：
@@ -56,6 +57,7 @@ description: >
    - 对每项非默认 handler 反编译（签名 `NTSTATUS (*)(PDEVICE_OBJECT, PIRP)`）
    - 关注顺序: `IRP_MJ_DEVICE_CONTROL`（0x0E，用户态交互）、`IRP_MJ_INTERNAL_DEVICE_CONTROL`（0x0F）、`IRP_MJ_CREATE`（0x00）/`IRP_MJ_CLOSE`（0x02）、`IRP_MJ_READ`（0x03）/`IRP_MJ_WRITE`（0x04）
    - 每个 handler 里看: `IoGetCurrentIrpStackLocation(irp)` 取参数 → 分支处理（IOCTL 码分派）
+   - handler 内先看参数校验（InputBufferLength/OutputBufferLength 检查）——长度校验缺失是驱动类漏洞常见成因（漏洞面分析转 [[re-vuln]] 思路）
 
 3. **设备对象 / 符号链接**：
    - `IoCreateDevice` 参数: DeviceName（`\Device\MyDriver`）；`IoCreateSymbolicLink` 参数: SymbolicLinkName（`\DosDevices\MyDriver` → 用户态 `\\.\MyDriver`）
@@ -65,6 +67,7 @@ description: >
 4. **服务注册与加载入口**：
    - SCM 注册: `CreateServiceW`（Type=SERVICE_KERNEL_DRIVER 1、Start=2 自动/3 手动/0 引导）或 INF 安装——恶意加载器常用 `Start=3` + 手动启动
    - 注册表: `HKLM\SYSTEM\CurrentControlSet\Services\<驱动名>` 的 ImagePath 指向 .sys
+   - 服务启动失败码速查: 577 = 签名错误、1275 = 未签名驱动被拒（x64）——先查测试签名状态再查代码
    - 由用户态样本（[[re-binary-core]]）的创建服务调用反推驱动名，与静态 .sys 对应——确认加载链
 
 5. **rootkit 特征**：
