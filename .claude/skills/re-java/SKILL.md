@@ -58,6 +58,7 @@ description: Java 字节码逆向：CFR/JD-GUI、jar 解包、Java 加固。触�
    - war: 类在 `WEB-INF/classes/`，依赖在 `WEB-INF/lib/`
    - fat jar（Spring Boot）: 类在 `BOOT-INF/classes/`，嵌套依赖 `BOOT-INF/lib/*.jar` 需逐个解
    - aar（Android）: 内含 `classes.jar`，解出后再按本技能处理
+   - Multi-Release jar: 同路径多版本类在 `META-INF/versions/N/`（N=9/11/17…）下覆盖——运行时按 JDK 选版加载，逆向按目标 JDK 看对应层，别只看顶层
 
 2. **类结构识别**：
    ```sh
@@ -66,6 +67,8 @@ description: Java 字节码逆向：CFR/JD-GUI、jar 解包、Java 加固。触�
    ```
    - 找入口：MANIFEST.MF 的 `Main-Class` → `javap -c -p <入口类>` 看 main 逻辑
    - 混淆程序集先看类名是否可读（a/b/c → 步骤 4）
+   - class 文件头速查：`xxd -l 8 <类>.class` → `CA FE BA BE` + minor(2) + major(2)；Java 版本 = major − 44（52=Java 8、55=11、61=17、65=21，实测 JDK 21 产物 major=65）；`javap -v` 首行直接打印 minor/major
+   - 常量池：计数在 major 之后（u16，索引 0 占位），`javap -v` 列条目类型（String/Class/NameAndType/Methodref/Utf8 等）——字符串字面量、类名、签名全在常量池，混淆样本的明文串先在这里找
 
 3. **逻辑还原（CFR / JD-GUI）**：
    ```sh
@@ -116,3 +119,6 @@ description: Java 字节码逆向：CFR/JD-GUI、jar 解包、Java 加固。触�
 - **Allatori/字符串加密需先解密**：现象——反编译只见 `StringEncryptor.decrypt("...")` 调用，看不到任何明文；原因——字符串运行时才解密；对策——静态定位解密算法与 key → python3 复刻批量还原；或动态在解密调用后取明文（JDB `eval` / Frida），沙箱内执行
 - **反编译不完全正确**：现象——CFR/JD-GUI 输出语法错误、goto/label 混乱、try-catch 结构诡异、lambda 还原失败；原因——字节码到 Java 不存在无损还原；对策——对照 `javap -c -p` 字节码手工修正，多反编译器交叉验证
 - **Java 加固（如 Virbox）类似壳需先脱**：现象——JD-GUI 打开报错/空白、`javap` 输出损坏、文件头非标准；原因——加固器加密 class 字节码、运行时才解密（本质是壳）；对策——先脱加固：运行时 dump class（attach agent / 专用脱壳工具为主；`-Xbootclasspath` 仅 JDK 8 可用，JDK 9+ 已移除该选项）→ 对脱出的标准 class 再反编译；思路同 [[re-anti-analysis]] 的"先脱壳后分析"
+- **javap 报 unsupported class file version**：现象——`javap` 报 `major version 65` 之类不支持；原因——class 文件版本高于本机 JDK 工具版本；对策——按 major−44 换算目标 Java 版本，装对应或更新的 JDK；只读版本与常量池可先用 `xxd` 手工看头字段，不必等工具
+- **Multi-Release jar 分析错层**：现象——`unzip -o` 解出顶层类后反编译，逻辑与运行时行为不符（版本分支消失）；原因——多版本类在 `META-INF/versions/N/`，不同 JDK 加载不同层；对策——解包后检查 `META-INF/versions/`，按目标 JDK 选层分析；顶层与 versions 层的差异就是版本条件逻辑
+- **lambda 反编译出现合成方法**：现象——CFR/JD-GUI 输出 `lambda$xxx$n` 方法或 `invokedynamic` 调用；原因——lambda 体编译为合成私有方法 + invokedynamic 引导；对策——`javap -v -p` 的 BootstrapMethods 表定位 lambda 体方法（捕获变量在合成方法参数里），按普通方法分析即可
