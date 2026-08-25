@@ -30,11 +30,10 @@
 
 - SIP 限制：系统签名进程（大部分 /usr/bin 与系统守护）dtruss 拒绝跟踪或权限失败——先拿普通用户态程序验证命令可用性
 - 需要 root：`sudo dtruss`；无 Xcode CLT 时无 DTrace 工具链
-- 输出到 stderr：管道/落盘必须 `2>&1` 重定向
 
 ## 版本差异
 
-- **strace 7.x（当前主线）**：6.x 起 seccomp-bpf 过滤默认启用（attach 模式除外，`--seccomp-bpf` 可显式控制）——常规跟踪更快；6.3 起指定 `--syscall-limit` 时自动关闭 seccomp 路径
+- **strace 7.x（当前主线）**：seccomp-bpf 为 opt-in（5.3 起，`--seccomp-bpf` 显式启用，与 `-p` attach 不兼容）；6.4 起指定 `--syscall-limit` 时自动关闭 seccomp-bpf 路径
 - **ltrace 0.8.x**：长期小步维护，选项稳定（-e/-l/-S/-c/-i/-w）；与 0.7.x 差异主要在输出格式细节
 - **发行版打包差异**：RHEL 系偏旧（strace 5.x 常见，无 6.x 新选项）——新选项不存在时按本机 help 为准
 - **内核侧配置影响**：Yama ptrace_scope、seccomp 策略影响 attach 与跟踪能力——行为怪异先查内核配置

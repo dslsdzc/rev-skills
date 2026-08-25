@@ -40,10 +40,11 @@
 
 | 用途 | 命令 |
 |---|---|
-| 基本跟踪 | `sudo dtruss -f ./target 2>&1`（输出到 stderr，需重定向） |
-| 只看系统调用 | `-s` |
-| 过滤调用 | `-e write,read` |
-| 汇总 | `-c` |
+| 基本跟踪 | `sudo dtruss -f ./target`（DTrace 输出走 stdout） |
+| 调用栈 | `-s`（打印 stack backtraces） |
+| 耗时统计 | `-e`（elapsed times，微秒） |
+| 过滤调用 | `-t <syscall>`（如 `-t write`） |
+| 汇总 | `-c`（syscall counts 次数统计） |
 
 ### 后处理管道
 

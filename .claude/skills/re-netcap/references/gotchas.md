@@ -12,7 +12,7 @@
 - **捕获过滤 ≠ 显示过滤**：`host`/`port`/`net` 是 BPF 语法，只能用于 `tcpdump -i` 与 `tshark -f`；`-Y` 与 Wireshark 过滤框用字段语法（`ip.addr == ...`/`tcp.port == ...`）——混用报 filter error 或静默无结果
 - **字段名易错三例**：`tcp.dport` 不存在（合法名 `tcp.dstport`/`tcp.srcport`/`tcp.port`，`tshark -e tcp.dport` 直接报错）；`ip.addr` 匹配源或目标任一端，单侧用 `ip.src`/`ip.dst`；Wireshark 3.x 起协议名 `ssl` 全部改 `tls`（`tls.handshake.*` 而非 `ssl.*`）
 - **BPF 括号被 shell 吃掉**：`( )` 在 shell 里是子 shell——过滤表达式整体加引号
-- **过滤语法版本差异**：4.0 起比较运算符两侧空白放宽（`ip.addr==1.2.3.4` 合法），3.x 严格要求——旧脚本升级后先重验一遍
+- **过滤语法版本差异**：4.0 起 AND 优先级高于 OR（旧写法需加括号）；仅空白分隔（如 `ip.addr 10.0.0.1`）为语法错误；集合元素须逗号分隔；`ip.addr==1.2.3.4` 无空格写法在 3.x 同样合法
 
 ## 中间人层：TLS 解密边界
 
@@ -30,7 +30,7 @@
 
 ## 版本差异
 
-- **Wireshark/tshark 4.x**：显示过滤空白要求放宽（4.0 起）；协议名 `ssl` 已于 3.x 改名 `tls`，4.x 不再兼容旧名；4.2+ 持续新增字段与导出格式
+- **Wireshark/tshark 4.x**：显示过滤空白要求收紧（仅空白分隔在 4.0 起为语法错误，3.6 起弃用）；AND 优先级高于 OR（旧写法需加括号）；协议名 `ssl` 已于 3.x 改名 `tls`，4.x 不再兼容旧名；4.2+ 持续新增字段与导出格式
 - **tcpdump/libpcap**：默认 snaplen 262144（1.x 起）；`-C` 单位 MB、`-G` 单位秒——单位写错会多写/少写轮转文件
 - **mitmproxy**：新版统一 `--mode regular|transparent` 显式指定（旧版 `--transparent` 独立参数形式随版本移除，以本机 `mitmproxy --help` 为准）；CA 在 `~/.mitmproxy/`，旧版本 CA 文件名有差异，信任库导入前先 `ls ~/.mitmproxy/` 核对
 - **字段名跨版本漂移**：升级 Wireshark 后旧过滤/导出脚本失效，先 `tshark -G fields` 对一遍再跑
