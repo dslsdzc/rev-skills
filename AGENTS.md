@@ -1,6 +1,6 @@
 # AGENTS.md — 逆向工程技能库
 
-本仓库是通用逆向工程 AI 技能库（107 个技能）。任何支持 AGENTS.md 的工具（Claude Code、Codex、Gemini CLI、Cursor、Zed、Qwen Code 等）都可读取本文件。
+本仓库是通用逆向工程 AI 技能库（112 个技能）。任何支持 AGENTS.md 的工具（Claude Code、Codex、Gemini CLI、Cursor、Zed、Qwen Code 等）都可读取本文件。
 
 ## 技能索引（三层结构）
 

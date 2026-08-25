@@ -58,13 +58,13 @@ description: >
    ```
    按 [[platform-tips]] Linux 内存转储极端段: `[vsyscall]`（0xffffffffff600000）、`[vdso]`/`[vvar]` 读取失败正常，dump 进 core 也只是垃圾页——转储后提取时跳过，或用 maps 白名单方式直读（步骤 5）。
 
-3. **导入 Ghidra/IDA 或 Volatility 分析**：
+3. **导入 Ghidra/IDA 分析（core 复盘）**：
    ```sh
    gdb -q ./target out         # core 复盘: bt / info registers / x/gx $rsp
    eu-stack -e out | head -30  # 快速栈回溯
-   vol -f out linux.pslist     # volatility3 Linux 进程列表（Windows: windows.info）
    ```
    Ghidra: `File > Import File` 选 core（Ghidra 支持 ELF core 导入），符号/堆栈线索可用。
+   - gcore 产物是单进程 ELF core，不是整机物理内存镜像——Volatility 的 `linux.pslist` 等插件只适用于整机镜像（采集方式如 LiME/`dd if=/dev/mem`），gcore 上按 [[re-mem-forensics]] 流程跑会失败；进程级枚举用 gdb/`eu-stack`/ELF core 解析与定向提取即可
 
 4. **定向提取：密钥/DEX/字符串（magic 扫描）**：
    ```sh

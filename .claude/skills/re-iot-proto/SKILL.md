@@ -83,7 +83,7 @@ description: >
    - topic 即控制语义: `device/<id>/sensor`、`ota/update`、`cmd/relay` 等——先按 topic 分桶（`-e mqtt.topic | sort | uniq -c`）
    - payload 常见 JSON / protobuf / 自定义二进制 → 字段含义对照设备 App 或固件（步骤 5）
    - 主动交互验证（授权内）: `mosquitto_sub -h <broker> -t '#' -v`（全量订阅）、`mosquitto_pub -h <broker> -t <topic> -m '{"relay":1}'`；`coap-client -m get coap://<ip>/sensor`、`coap-client -m put -e '{"on":1}' coap://<ip>/relay`
-   - 加密（8883 / 5684）: TLS 用 SSLKEYLOGFILE 或 RSA 私钥解密；DTLS PSK 在 Wireshark dtls 偏好填十六进制预共享密钥（密钥来源见步骤 4 与 [[re-crypto-keys]]）
+   - 加密（8883 / 5684）: TLS 用 SSLKEYLOGFILE 解密；RSA 私钥只适用于旧式 static-RSA 密钥交换（TLS 1.3 与 ECDHE 会话解不开）；DTLS PSK 在 Wireshark dtls 偏好填十六进制预共享密钥（密钥来源见步骤 4 与 [[re-crypto-keys]]）
 3. **BLE 抓包（adv / GATT）**：
    - Android btsnoop: 开发者选项开启 snoop 日志 → 复现 App 与设备交互 → 拉取 `btsnoop_hci.log` 用 Wireshark 打开（自动解 HCI）
    - Linux: `btmon -w out.btsnoop`（配合目标连接过程；写出的 btsnoop 格式 Wireshark 直接打开）
@@ -163,8 +163,8 @@ description: >
 
 ### APDU 交互
 
-- ISO7816-4 APDU: CLA + INS + P1 + P2 + Lc + 数据 + Le；响应 SW1/SW2（0x9000 成功）
-- 常见指令: 0xA4 SELECT（选应用）、0xB0 READ BINARY、0xB2 READ RECORD、0x20 VERIFY（口令验证）、0xD0 UPDATE BINARY——但各卡/应用命令集有差异（见坑 2）
+- ISO7816-4 APDU: CLA + INS + P1 + P2，其后 Lc/数据/Le 按 case 组合出现（Case1 三者皆无；Case2 无 Lc/数据可有 Le；Case3 有 Lc+数据无 Le；Case4 全有）——解析边界前先判定 case；响应 SW1/SW2（0x9000 成功）
+- 常见指令: 0xA4 SELECT（选应用）、0xB0 READ BINARY、0xB2 READ RECORD、0x20 VERIFY（口令验证）、0xD0 WRITE BINARY、0xD6 UPDATE BINARY——但各卡/应用命令集有差异（见坑 2）
 - 接触式走 ISO7816 T=0/T=1；无接触卡常把 APDU 透传（如 DESFire ISO 模式），抓包位置不同
 - 定位技巧: 抓已知合法交互（读写器日志 / 手机 NFC 日志）对照指令序列，比对着文档猜快
 
@@ -202,7 +202,7 @@ description: >
 ## 常见坑与陷阱
 
 - **MQTT 明文 topic 泄露控制语义**：现象——pcap 里 topic 直接写明 `device/x/ota/update`、`cmd/relay`，业务意图一目了然但 payload 加密或二进制；原因——设备常只加密 payload、topic 明文（或 broker 无 TLS）；对策——topic 是语义金矿：先 `-e mqtt.topic | sort | uniq -c` 分桶，按 topic 定位关键流再解 payload；payload 二进制用 JSON/protobuf 假设对照固件（步骤 5）
-- **DTLS/PSK 加密需密钥**：现象——5684 / 8883 流量熵高全是密文，dissector 只出乱码；原因——DTLS/TLS 加密层（PSK/RSA）；对策——PSK 从设备固件 / App 侧提取（[[re-crypto-keys]] → [[re-firmware]]），Wireshark dtls 偏好填十六进制 PSK；TLS 用 SSLKEYLOGFILE / RSA 私钥；拿不到密钥则该通道只能看时序，标注局限并转向语义推测
+- **DTLS/PSK 加密需密钥**：现象——5684 / 8883 流量熵高全是密文，dissector 只出乱码；原因——DTLS/TLS 加密层（PSK/RSA）；对策——PSK 从设备固件 / App 侧提取（[[re-crypto-keys]] → [[re-firmware]]），Wireshark dtls 偏好填十六进制 PSK；TLS 用 SSLKEYLOGFILE（RSA 私钥仅旧式 static-RSA 会话可用，现代 ECDHE/TLS 1.3 解不开）；拿不到密钥则该通道只能看时序，标注局限并转向语义推测
 - **BLE 白名单/配对绑定**：现象——连接请求之后没有后续数据，或设备根本不广播；原因——白名单过滤未知主机、已配对设备按绑定信息直接连接（跳过广播 / 配对过程）；对策——清除设备配对 / 出厂重置后重抓首次连接配对过程；广播阶段数据（adv 包，含设备信息与服务 UUID）先抓全
 - **Zigbee 网络密钥获取困难**：现象——zbee 帧可解析但 APS / ZCL 全密文（payload 乱码）；原因——network key 未在手，链路/网络层加密；对策——按步骤 4 密钥路径逐项试: 组网期抓包 → 默认 TC link key → 固件提取（zbgoodfind 扫固件找 key）；TC link key 与 network key 两层密钥都要拿
 - **抓包硬件/信道错配**：现象——BLE 只抓到零星广播、Zigbee 一个包都没有；原因——BLE 40 信道跳频（普通适配器只能看到广播或部分连接包）、Zigbee 信道选错（11-26 选错即静默）；对策——BLE 用 btmon / btsnoop（主机侧全信道）或 ubertooth 配合 follow；Zigbee 用 sniffer 信道扫描（zbstumbler）确认工作信道再抓

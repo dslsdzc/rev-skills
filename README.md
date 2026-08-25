@@ -99,7 +99,7 @@ npx skills add dslsdzc/rev-skills -l       # 先列出技能，不安装
 ## 开发
 
 ```bash
-npm test   # 结构校验（frontmatter/死链/工具准备）
+npm test   # 结构校验（frontmatter/死链/工具准备）+ 安装器单元测试
 ```
 
 发布流程：`npm test` 通过 → git tag → npm publish → 同步 marketplace.json 版本。

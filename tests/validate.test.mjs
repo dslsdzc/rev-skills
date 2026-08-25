@@ -1,8 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { fileURLToPath } from 'node:url';
 import { parseFrontmatter, checkSkillDir, collectSkills, SKILL_PREFIX } from '../validate.mjs';
 
-const FIX = new URL('./fixtures/', import.meta.url).pathname;
+// Windows 下 URL.pathname 产出 /D:/... 形式，不能直接当本地路径；用 fileURLToPath 统一转换
+const FIX = fileURLToPath(new URL('./fixtures/', import.meta.url));
 
 test('parseFrontmatter 解析合法 frontmatter', () => {
   const md = `---\nname: re-abc\ndescription: 测试。\n---\n\n# 标题\n\n正文`;

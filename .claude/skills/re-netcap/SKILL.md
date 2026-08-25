@@ -43,9 +43,9 @@ description: >
 
 ### nfqueue —— 内核态流量转发/中间人抓包点（Linux）
 
-- Linux: `apt install iptables libnetfilter-queue1 python3-nfqueue` / `dnf install iptables libnetfilter_queue-devel python3-scapy` / `pacman -S iptables libnetfilter_queue python-nfqueue`
+- Linux: `apt install iptables libnetfilter-queue1 python3-netfilterqueue` / `dnf install iptables libnetfilter_queue-devel python3-netfilterqueue` / `pacman -S iptables libnetfilter_queue python-netfilterqueue`；或 `pip install NetfilterQueue`（需内核 nfnetlink_queue 支持）
 - macOS/Windows: 不支持（用 WSL2 内核或 Linux VM 做转发点）
-- 验证: `python3 -c "import nfqueue"`；`iptables -L -n | grep -i NFQUEUE` 能看到规则
+- 验证: `python3 -c "from netfilterqueue import NetfilterQueue"`；`iptables -L -n | grep -i NFQUEUE` 能看到规则
 
 ## 操作步骤
 
@@ -54,7 +54,7 @@ description: >
 1. **选择抓包点（本机 / 网关 / 中间人）**：
    - 本机: 目标程序跑在本机 → `tcpdump -i eth0 host <目标IP>`（或 Wireshark 选接口直接抓）
    - 网关/转发点: 目标在沙箱 VM / 其他主机 → 在网关主机或 VM 虚拟网卡（virbr0 / vboxnet0）抓，`tcpdump -i virbr0`
-   - 中间人: 需要看 HTTPS 明文 → nfqueue 或 mitmproxy 透明代理，把目标流量强制引到本机（见步骤 4、5）
+   - 中间人: 需要看 HTTPS 明文 → mitmproxy 透明代理把目标流量强制引到本机（见步骤 4、5）；纯包级截获（不拆 TLS）才用 nfqueue handler
    - 沙箱场景: 抓包点在沙箱虚拟网卡 + [[re-sandbox]] 的 INetSim/fake DNS 落点（见步骤 5）
    - 决策记录：写下抓包点与理由（为什么这个点能同时看到请求与响应）
 
@@ -75,13 +75,13 @@ description: >
    tshark -r out.pcap -T fields -e ip.src -e ip.dst -e tcp.dport | sort | uniq -c | sort -rn   # 会话统计
    tshark -r out.pcap -Y 'http.request' -T fields -e http.host -e http.request.uri             # 只看 HTTP 请求
    tshark -r out.pcap -Y 'tls.handshake.type == 1' -T fields -e tls.handshake.extensions_server_name   # SNI
-   tshark -r out.pcap -w filtered.pcap -Y 'host 1.2.3.4'                                       # 按显示过滤导出子集
+   tshark -r out.pcap -w filtered.pcap -Y 'ip.addr == 1.2.3.4'                                 # 按显示过滤导出子集（display filter 语法，`host` 是 BPF 捕获语法不适用）
    ```
    - 统计结论（会话数、协议分布、异常连接）记入分析笔记，是 [[re-proto-rev]] 步骤 1 的输入
 
 4. **HTTPS 解密准备（mitmproxy CA）**：
    ```sh
-   mitmproxy -p 8080 --mode transparent        # 透明模式（配合 nfqueue 转发）
+   mitmproxy -p 8080 --mode transparent        # 透明模式（配合步骤 5 的 nat REDIRECT 引流）
    # 或
    mitmproxy --set console_eventlog_verbosity=error --listen-port 8080 --mode regular   # 常规代理模式
    ```
@@ -93,12 +93,19 @@ description: >
    - 前置：按 [[re-sandbox]] 步骤 2 做网络隔离——断网（Host-only / `--net=none`）/ fake DNS（/etc/hosts 或 dnsmasq 指向本机）/ INetSim（沙箱 DNS 指向 INetSim 主机）
    - 抓包点：INetSim 主机侧抓全量（`tcpdump -i eth0 -w c2.pcap`），同时拿到样本请求与模拟响应——C2 分析标准做法
    - 验证: 沙箱内样本回连被 INetSim 记录且 pcap 有对应流量；`ping 8.8.8.8` 不通确认无真实外联（[[platform-tips]] 最高原则）
-   - 需要 nfqueue 重定向时（透明代理）:
+   - 需要透明代理（mitmproxy）时用 nat REDIRECT 引流到其监听端口（mitmproxy 不消费 NFQUEUE 队列）:
+     ```sh
+     sudo sysctl -w net.ipv4.ip_forward=1
+     sudo iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080   # 网关入口
+     sudo iptables -t nat -I OUTPUT -p tcp --dport 80 -j REDIRECT --to-port 8080       # 本机出站（按需）
+     ```
+     mitmproxy 以透明模式监听 8080 承接；分析完清理 nat 规则并还原 ip_forward
+   - NFQUEUE 仅留给显式绑定的用户态 handler（如 python `netfilterqueue` 对每个包返回 verdict），无 handler 时流量阻塞:
      ```sh
      sudo iptables -I FORWARD -j NFQUEUE --queue-num 1      # 转发链
      sudo iptables -I OUTPUT -j NFQUEUE --queue-num 1       # 本机出站（按需）
      ```
-     python 侧用 nfqueue 绑定处理或交给 mitmproxy 透明模式消费队列；分析完删规则 `iptables -D FORWARD -j NFQUEUE --queue-num 1`
+     分析完需同时删除 FORWARD 与 OUTPUT 两条规则
 
 ## 跨域联合
 

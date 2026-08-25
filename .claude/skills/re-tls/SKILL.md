@@ -26,7 +26,7 @@ description: >
 - Linux: `apt install wireshark tshark` / `dnf install wireshark-cli wireshark` / `pacman -S wireshark-cli wireshark-qt`
 - macOS: `brew install --cask wireshark`（含 tshark CLI）；Windows: `choco install wireshark`
 - 验证: `tshark --version`；`tshark -r out.pcap -Y 'tls.handshake.type == 1' | head -1` 能解析 ClientHello
-- JA3 字段（Wireshark 3.0+ 内置）与 JA4 字段（Wireshark 4.2+ 原生，仅客户端）: 验证 `tshark -r out.pcap -T fields -e tls.handshake.ja4 | head -1` 有输出
+- JA3 字段（Wireshark 3.6+ 内置）与 JA4 字段（Wireshark 4.2+ 原生，仅客户端）: 验证 `tshark -r out.pcap -T fields -e tls.handshake.ja4 | head -1` 有输出；本机字段存在性以 `tshark -G fields | grep -iE 'ja3|ja4'` 为准
 
 ### openssl —— 证书解析与 TLS 交互（跨 OS）
 
@@ -57,7 +57,7 @@ description: >
 
 1. **ClientHello 指纹（JA3/JA4）**：
    ```sh
-   # JA3（ClientHello 协商参数哈希，Wireshark 3.0+ 内置）
+   # JA3（ClientHello 协商参数哈希，Wireshark 3.6+ 内置）
    tshark -r out.pcap -Y 'tls.handshake.type == 1' -T fields \
      -e tls.handshake.ja3 -e ip.src -e tls.handshake.extensions_server_name \
      | sort | uniq -c | sort -rn
@@ -103,7 +103,7 @@ description: >
    ```sh
    # 解密后按应用层协议还原（TLS 只是载体，语义在 ALPN/上层协议）
    tshark -r decrypted.pcapng -Y 'http' -T fields -e http.request.method -e http.host -e http.request.uri
-   tshark -r decrypted.pcapng -Y 'tls.alpn' -T fields -e tls.alpn | sort | uniq -c   # 协商的应用协议
+   tshark -r decrypted.pcapng -Y 'tls.handshake.extensions_alpn_str' -T fields -e tls.handshake.extensions_alpn_str | sort | uniq -c   # ALPN 应用协议：ClientHello 里是候选列表，最终协商结果看 ServerHello 的该字段
    ```
    - 流程: 解密（步骤 3）→ 识别上层协议（ALPN: http/1.1、h2、自定义；或按端口/特征）→ 会话重组 → 语义提取（C2 命令/配置/明文凭据）
    - 自定义协议: 明文还原后转 [[re-proto-rev]] 做状态机重建（[[re-protocol]] 工作流第 5 步）
