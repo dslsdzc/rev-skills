@@ -22,10 +22,10 @@ description: >
 ### jadx —— Java 反编译主力（含 JADX GUI）
 
 - 官方/GitHub release：`https://github.com/skylot/jadx/releases` 下载 `jadx-<版本>.zip`，解压后运行 `bin/jadx`（Linux/macOS）或 `bin\jadx.bat`（Windows）；GUI 是 `bin/jadx-gui`
-- macOS: `brew install jadx`
-- 依赖 Java 11+：Linux `apt install openjdk-17-jre` / `dnf install java-17-openjdk` / `pacman -S jre17-openjdk`；macOS `brew install openjdk`
+- macOS: `brew install jadx`；Arch: `pacman -S jadx`
+- 依赖 Java 11+（官方要求 11+ 且 64 位）：Linux `apt install openjdk-17-jre` / `dnf install java-17-openjdk` / `pacman -S jre17-openjdk`；macOS `brew install openjdk`
 - Windows/WSL: WSL 内用 Linux 版 zip
-- 验证: `jadx --version`
+- 验证: `jadx --version`；版本注——release zip 与 brew/pacman 包同步更新，以实测版本为准
 
 ### apktool —— 解包 / 回编译（官方/GitHub release）
 
@@ -40,7 +40,7 @@ description: >
 - Android SDK build-tools 自带。安装 cmdline-tools 后：`sdkmanager "build-tools;34.0.0"`，路径 `$ANDROID_HOME/build-tools/34.0.0/aapt2`
 - macOS: `brew install --cask android-commandlinetools` 后 `sdkmanager "build-tools;34.0.0"`
 - Windows: Android Studio → SDK Manager 勾选 build-tools
-- 验证: `aapt2 version`
+- 验证: `aapt2 version`；版本注——build-tools 版本随 SDK 更新（示例 34.0.0，新版 SDK 自带更高版本），命令接口稳定，按已装版本使用即可
 
 ### dex2jar（可选）—— dex → jar
 
@@ -52,6 +52,13 @@ description: >
 
 - apksigner 在 Android SDK build-tools（同 aapt2 路径）；keytool 随 Java 自带
 - 验证: `apksigner --version`；`keytool -help`
+
+### adb —— 设备安装 / 重打包闭环验证
+
+- Android SDK platform-tools 自带（`sdkmanager "platform-tools"`）
+- Linux: `apt install adb`（Debian/Ubuntu）；macOS: `brew install --cask android-platform-tools`；Arch: `pacman -S android-tools`
+- Windows: platform-tools zip 官方下载
+- 验证: `adb version`
 
 ## 操作步骤
 
@@ -74,7 +81,7 @@ description: >
    jadx -d java-out app.apk          # 批量反编译全部 dex 类
    jadx app.apk                      # 或 GUI 模式逐类浏览
    ```
-   先看入口类（Application / MainActivity）与算法 / 校验类；敏感串（密钥、URL、校验逻辑）按 `grep -rE 'key|secret|sign|license' java-out/` 定位。dex2jar 等价替代：`d2j-dex2jar.sh app.apk` 得 jar 后用 jd-gui。反编译不出业务代码 → 加固识别（步骤 5）。
+   先看入口类（Application / MainActivity）与算法 / 校验类；敏感串（密钥、URL、校验逻辑）按 `grep -rE 'key|secret|sign|license' java-out/` 定位。dex2jar 等价替代：`d2j-dex2jar.sh app.apk` 得 jar 后用 jd-gui，jar 也可转 [[re-java]] 流程（CFR/JD-GUI 浏览、Java 加固识别）。反编译不出业务代码 → 加固识别（步骤 5）。
 
 4. **smali 补丁思路**：
    ```sh
@@ -89,17 +96,22 @@ description: >
 5. **加固/混淆识别**：
    - 壳特征：jadx 只见壳类（`com.stub.StubApp`＝爱加密、`com.secneo.apkwrapper` / `com.bangcle.*`＝梆梆，乐固等）；`lib/` 多一个壳 so（`libjiagu.so`＝360 加固、`libDexHelper.so`＝爱加密…）；`classes.dex` 体积异常小（真 dex 运行时解密）
    - 资源混淆特征：`res/` 资源路径被随机改名、`resources.arsc` 结构异常
-   - 识别为加固 → 转脱壳域（[[re-anti-analysis]]）或动态取内存 DEX（[[re-frida]] / [[re-memdump]]）；资源混淆用 aapt2 还原：
+   - 识别为加固 → 转脱壳域（[[re-anti-analysis]] / [[re-mobile-pack]]）或动态取内存 DEX（[[re-frida]] / [[re-memdump]]）；壳名/节区/熵的细粒度指纹对照走 [[re-packer-id]]；资源混淆用 aapt2 还原：
      ```sh
      aapt2 dump badging app.apk      # 包名 / 入口 / 权限速览
      aapt2 dump resources app.apk    # 混淆后的资源映射
      ```
 
+6. **AAB 与 split APK（分发形态边界）**：
+   - `.aab`（Android App Bundle）：本质是 zip，内含 dex 与资源——jadx 可直接打开读代码；真机安装需经 bundletool 生成 APKS，拿到 .aab 按步骤 1-3 走即可
+   - split APK（`base.apk` + `config.*.apk`）：主 dex 与代码在 base，语言/密度等配置在 split——静态分析以 base 为主，资源差异在 split 中比对；apktool 对 base 与 split 分别解包
+
 ## 跨域联合
 
 - [[re-mobile]]：工作流第 2 步（APK 静态分支）固定调用本技能
 - 需要运行时（解密 / hook / 绕过）→ [[re-frida]]；运行时内存取 DEX → [[re-memdump]]
-- 加固 / 带壳 → [[re-anti-analysis]]（脱壳域）；原生 .so → [[re-binary-core]]（[[re-format-elf]] / [[re-ghidra]]）
+- 加固 / 带壳 → [[re-anti-analysis]]（脱壳域）与 [[re-mobile-pack]]（加固脱壳专项）；原生 .so → [[re-binary-core]]（[[re-format-elf]] / [[re-ghidra]]）
+- dex→jar 后的 Java 层深挖（混淆 / Java 加固）→ [[re-java]]
 - 本技能被 [[re-analyze]] 的 triage「移动 App 分析」路径调用（re-mobile → re-apk）
 
 ## 常见坑与陷阱
@@ -109,6 +121,7 @@ description: >
 - **资源混淆后无法直接看资源**：现象——`res/` 路径与资源 ID 对不上、strings 定位不到目标资源；原因——资源被混淆随机改名；对策——aapt2 dump 还原映射（步骤 5），必要时结合动态分析对照
 - **原生 .so 被当 Java 分析**：现象——Java 层找不到核心逻辑（算法 / 反调试）；原因——敏感逻辑写在 JNI 的 .so 里；对策——`lib/` 下 so 转 [[re-format-elf]] + [[re-ghidra]]（[[re-binary-core]]），用导出表 / `Java_<包名>_<类名>_<方法名>` 风格符号对 JNI 函数
 - **apktool 回编译失败**：现象——`apktool b` 报资源编译错误；原因——解包时资源被解码、部分资源格式不兼容回编译；对策——`apktool d -r` 保留原资源不解码，只改 smali 后回编译
+- **split APK 只分析 base 会缺资源**：现象——目标字符串/资源在 base 里找不到；原因——语言/密度配置拆在 `config.*.apk` split 里；对策——apktool 对 base 与各 split 分别解包，资源差异按 split 比对（步骤 6）
 
 - **自写 dex 解析四细节**：opcode 是 **u16 低字节**（高字节是寄存器位，读完整 u16 当 opcode 全错位）；`fill-array-data` 是 **0x24**（0x26 是 goto，凭记忆必错）；string_data_item 有 **uleb128 长度前缀**（不跳过会把长度当字符）；code_item 的 `insns_size` 在 **+12**（+4 是 outs_size）——手写解析器前先对照 dex 规范核对布局
 - **jadx 目录只剩启动脚本**：现象——`jadx` 报 ClassNotFound；原因——安装不完整（jar 缺失/被清理）；对策——从 GitHub release 重下完整 zip（codeload.github.com 比 github.com 稳），或直接用 baksmali 等单一工具
