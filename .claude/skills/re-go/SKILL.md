@@ -43,6 +43,13 @@ description: Go 二进制逆向：符号保留、字符串表、goroutine。触�
 - 用法: `redress info sample`（编译器版本/GoRoot/main 包路径）、`redress packages sample --std --vendor`（包列表）、`redress source sample`（源码树投影）、`redress types struct sample --methods`（类型）
 - 验证: `redress version`
 
+### garble —— Go 混淆识别（恶意样本常见，无独立工具）
+
+- garble 是 Go 官方团队维护的混淆器（构建期变换，非运行时壳）——Go 恶意样本越来越常见，需先识别再分析
+- **识别特征**：①字符串/节表含 `garble` 标识或 `garble` 版本串 ②`-dwarf=false` 构建无 DWARF（`readelf -S` 无 `.debug_*`）③函数名 hash 化（`main.main` → 短 hash 名，pclntab 保留但名字不可读）④`-literals` 构建字符串乱码
+- **常见构建标志**：`garble -dwarf=false -literals build`（去调试 + 字符串混淆；另有 `-tiny` 去生成名/内联信息）
+- 分析要点见步骤 3（hash 函数名 / runtime string decrypt / interface wrapper）
+
 ### bloaty（体积分析，可选）
 
 - Debian/Ubuntu: 无官方包 → GitHub `google/bloaty` release 或源码构建（cmake+ninja，需 protobuf）
@@ -74,10 +81,14 @@ description: Go 二进制逆向：符号保留、字符串表、goroutine。触�
    - pclntab magic 直接判版本段：`.gopclntab` 开头 4 字节 `0xfffffffb` = Go 1.2–1.15、`0xfffffffa` = 1.16–1.17、`0xfffffff0` = 1.18–1.19、`0xfffffff1` = 1.20+（头部布局见步骤 6；GoReSym 等工具按这四个值扫描）
 
 3. **符号表利用**：
+   - **工具选择（目标 → 工具）**：
+     - 恢复函数名（strip 后符号）→ **GoReSym**：`GoReSym -p sample > gosyms.json` → `goresym_rename.py` 导入反编译器恢复命名
+     - 类型恢复（结构体字段/接口/方法签名）→ **redress**：`redress types struct sample --methods`（或 GoReSym `-t` 输出类型信息）
+     - 版本识别 → buildinfo（`go version -m` / `go tool buildid`）+ pclntab magic（步骤 2）——不需要符号工具
    - Go 默认保留符号（除非 `-ldflags "-s -w"`）：`nm sample | grep ' main\.'` 列出用户代码函数
    - Ghidra 导入后函数树按包分组；注意 ELF 入口点 `_rt0_amd64_linux` 只是平台桩，真正用户入口是 `main.main`（由 `runtime.main` 调用），`main.init` 是初始化逻辑
    - 反编译 `main.main` 读主逻辑，从 `main.` 命名函数沿调用链展开；符号全保留时无需猜名
-   - strip 后（坑 1）: GoReSym 生成 `gosyms.json` → `goresym_rename.py` 导入恢复命名
+   - **garble 混淆样本**（恶意 Go 样本常见，见工具准备）：pclntab 仍可解析但函数名 hash 化——GoReSym 列出 hash 名，结构/调用链仍可用；`-literals` 字符串在 init 中解密，运行后内存取明文或静态还原解密循环；interface wrapper 使调用链多一层间接，沿 wrapper 到真实实现
 
 4. **字符串表**：
    ```sh
