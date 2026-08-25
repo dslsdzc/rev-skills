@@ -12,6 +12,7 @@ description: >
 - 不用：纯静态读 Unity mono 逻辑（直接 [[re-dotnet]] 反编译 `Assembly-CSharp.dll`，无需本技能）
 - 不用：移动端游戏（[[re-mobile]] / [[re-apk]] / [[re-ios]] / [[re-frida]]）
 - 不用：只要成品修改器/外挂——本技能是分析路径，不做发布工具，在线对战反作弊风险自担
+- 不用：Electron 应用的 V8 字节码 .jsc（走 [[re-electron]]）
 
 ## 工具准备
 
