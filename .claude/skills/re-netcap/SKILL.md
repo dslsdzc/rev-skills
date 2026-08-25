@@ -3,6 +3,7 @@ name: re-netcap
 description: >
   网络流量捕获：tcpdump/Wireshark/抓包。
   触发词：抓包、tcpdump、wireshark、流量分析、pcap
+capabilities: [network-capture]
 ---
 
 # 网络流量捕获

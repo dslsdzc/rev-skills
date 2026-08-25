@@ -10,6 +10,7 @@ description: >
   [[re-plugin-dev]] [[re-hypervisor]] [[re-anti-cheat]]、[[re-cpp-abi]]、[[re-swift]]、[[re-zig]]、
   [[re-nim]]、[[re-fp-runtime]]、[[re-variant]]、[[re-mips]]、[[re-arm]]、[[re-riscv]]。
   触发词：静态分析、看这个程序的逻辑、反编译、逆向这个二进制、binary analysis。
+capabilities: [decompilation, debugging, memory-dump, elf-parser, pe-parser, macho-parser]
 ---
 
 # 软件逆向核心

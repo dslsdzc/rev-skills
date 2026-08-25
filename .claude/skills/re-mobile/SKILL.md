@@ -6,6 +6,7 @@ description: >
   子技能：[[re-apk]] [[re-ios]] [[re-frida]] [[re-frida-script-author]] [[re-mobile-pack]] [[re-hybrid-app]]
   [[re-android-native]] [[re-ios-jb]] [[re-flutter]] [[re-harmonyos]]。
   触发词：移动App、APK、ipa、Android逆向、iOS逆向、frida、mobile app analysis。
+capabilities: [dex-parser, jni-analysis, frida-instrumentation, mobile-forensics]
 ---
 
 # 移动应用分析

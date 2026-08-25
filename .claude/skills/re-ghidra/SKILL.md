@@ -3,6 +3,7 @@ name: re-ghidra
 description: >
   Ghidra 工作流：导入→自动分析→反编译→脚本化。
   触发词：Ghidra、反编译、headless
+capabilities: [decompilation, debugging]
 ---
 
 # Ghidra 逆向工作流

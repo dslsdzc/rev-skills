@@ -1,6 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { parseFrontmatter, checkSkillDir, collectSkills, SKILL_PREFIX } from '../validate.mjs';
 
 // Windows 下 URL.pathname 产出 /D:/... 形式，不能直接当本地路径；用 fileURLToPath 统一转换
@@ -51,4 +54,31 @@ test('gateway-skill 豁免工具准备检查', () => {
 test('collectSkills 收集全部技能目录名', () => {
   const names = collectSkills(FIX);
   assert.deepEqual([...names].sort(), ['bad-name', 'broken-link', 'gateway-skill', 'good-skill', 'no-tools']);
+});
+
+test('parseFrontmatter 解析 capabilities list', () => {
+  const md = `---\nname: re-abc\ndescription: 测试。\ncapabilities: [elf-parser, unpack]\n---\n\n# 标题\n\n正文`;
+  const { capabilities } = parseFrontmatter(md);
+  assert.deepEqual(capabilities, ['elf-parser', 'unpack']);
+});
+
+test('capabilities 合法通过、未知标签与非法写法报错', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'cap-'));
+  const caps = new Set(['elf-parser', 'unpack', 'tracing']);
+  const body = `---\nname: cap-test\ndescription: 测试。\ncapabilities: %CAPS%\n---\n\n# 标题\n\n## 工具准备\n\n正文`;
+  try {
+    // 合法 list 通过
+    writeFileSync(join(dir, 'SKILL.md'), body.replace('%CAPS%', '[elf-parser, unpack]'));
+    assert.deepEqual(checkSkillDir(dir, { knownCapabilities: caps }).errors, []);
+    // 未知标签报错
+    writeFileSync(join(dir, 'SKILL.md'), body.replace('%CAPS%', '[elf-parser, nope-cap]'));
+    const { errors } = checkSkillDir(dir, { knownCapabilities: caps });
+    assert.ok(errors.some(e => e.includes("unknown capability 'nope-cap'")));
+    // 非法写法（非 list）报错
+    writeFileSync(join(dir, 'SKILL.md'), body.replace('%CAPS%', 'elf-parser'));
+    const { errors: e2 } = checkSkillDir(dir, { knownCapabilities: caps });
+    assert.ok(e2.some(e => e.includes('non-empty list')));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

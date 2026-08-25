@@ -3,6 +3,7 @@ name: re-ida
 description: >
   IDA 工作流：导入→FLIRT→Hex-Rays→idapython。
   触发词：IDA、Hex-Rays、idapython
+capabilities: [decompilation, debugging]
 ---
 
 # IDA 逆向工作流

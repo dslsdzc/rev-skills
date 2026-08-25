@@ -5,6 +5,7 @@ description: >
   协议逆向网关。编排：捕获 → 加密识别 → 密钥 → 解密 → 状态机重建。
   子技能：[[re-netcap]] [[re-crypto-id]] [[re-crypto-keys]] [[re-crypto-decrypt]] [[re-proto-rev]] [[re-ics]] [[re-iot-proto]] [[re-whitebox]] [[re-tls]]。
   触发词：协议逆向、抓包、流量分析、解密流量、C2协议、自定义协议、protocol analysis。
+capabilities: [network-capture, protocol-recovery, crypto-identification, crypto-decryption, key-extraction, tls-analysis]
 ---
 
 # 协议逆向

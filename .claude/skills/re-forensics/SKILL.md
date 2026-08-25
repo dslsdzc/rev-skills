@@ -5,6 +5,7 @@ description: >
   内存取证/威胁情报网关。编排：转储来源 → 内存取证 → 线索提取 → 情报关联。
   子技能：[[re-mem-forensics]] [[re-disk-forensics]] [[re-ti]]、[[re-attribution]]、[[re-hunting]]、[[re-mobile-forensics]]。
   触发词：内存取证、memdump分析、威胁情报、样本背景、VirusTotal、MISP、forensics、threat intelligence。
+capabilities: [memory-forensics, threat-intel, mobile-forensics]
 ---
 
 # 内存取证与威胁情报

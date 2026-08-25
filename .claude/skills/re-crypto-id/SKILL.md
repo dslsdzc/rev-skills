@@ -3,6 +3,7 @@ name: re-crypto-id
 description: >
   加密算法识别：常量表指纹、自定义加密模式。
   触发词：加密识别、AES、XOR、算法指纹、custom encryption
+capabilities: [crypto-identification]
 ---
 
 # 加密算法识别

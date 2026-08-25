@@ -3,6 +3,7 @@ name: re-frida
 description: >
   Frida 动态插桩（桌面+移动统一）。
   触发词：frida、hook、插桩、绕过、spawn
+capabilities: [frida-instrumentation]
 ---
 
 # Frida 动态插桩

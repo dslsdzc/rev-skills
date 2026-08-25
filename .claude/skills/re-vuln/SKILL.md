@@ -7,6 +7,7 @@ description: >
   子技能：[[re-fuzzing]] [[re-crash-triage]] [[re-exploit]]。
   触发词：漏洞挖掘、挖洞、fuzz、模糊测试、AFL、libFuzzer、崩溃分析、
   crash、vulnerability hunting、fuzzing。
+capabilities: [fuzzing, symbolic-execution, constraint-solving]
 ---
 
 # 漏洞挖掘（覆盖率引导 fuzzing / 崩溃定位）

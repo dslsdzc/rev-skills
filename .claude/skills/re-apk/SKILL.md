@@ -3,6 +3,7 @@ name: re-apk
 description: >
   APK 静态分析：jadx/apktool、manifest、smali、加固识别。
   触发词：apk、android逆向、jadx、smali、dex
+capabilities: [dex-parser]
 ---
 
 # APK 静态分析

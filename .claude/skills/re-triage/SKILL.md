@@ -3,6 +3,7 @@ name: re-triage
 description: >
   文件初步勘察：file/哈希(sha256/md5)/熵/strings/架构识别。
   触发词：先看看这文件、triage、初勘、这是什么文件、hash
+capabilities: [triage]
 ---
 
 # 文件初步勘察（triage）

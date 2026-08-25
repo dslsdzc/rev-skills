@@ -5,6 +5,7 @@ description: >
   托管代码逆向网关。编排：识别运行时 → 反编译 → 去混淆 → 恶意场景转 [[re-malware]]。
   子技能：[[re-dotnet]] [[re-java]] [[re-script-deob]] [[re-wasm]] [[re-ai-model]] [[re-blockchain]] [[re-python]]、[[re-browser-ext]]、[[re-electron]]、[[re-javacard]]。
   触发词：.NET、dnSpy、ILSpy、Java、jar、字节码、PowerShell混淆、VBA宏、JS去混淆、托管代码、managed code。
+capabilities: [bytecode-parser, deobfuscation]
 ---
 
 # 托管代码逆向（.NET / Java / 脚本）

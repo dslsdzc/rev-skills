@@ -5,6 +5,7 @@ description: >
   反分析对抗网关。编排：壳识别 → 简单壳脱壳 → 强壳脱壳 → 反混淆。
   子技能：[[re-packer-id]] [[re-unpack-simple]] [[re-unpack-advanced]] [[re-deobfuscate]] [[re-evasion]]。
   触发词：脱壳、查壳、加壳识别、壳、UPX、VMProtect、Themida、反调试、反混淆、花指令、unpack、anti-analysis。
+capabilities: [unpack, deobfuscation, evasion-analysis]
 ---
 
 # 反分析对抗（壳识别 / 脱壳 / 反混淆）

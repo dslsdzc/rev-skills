@@ -3,6 +3,7 @@ name: re-format-elf
 description: >
   ELF 格式解析：ehdr/phdr/shdr、GOT/PLT、init_array、符号恢复。
   触发词：ELF、解析so、dynamic section
+capabilities: [elf-parser]
 ---
 
 # ELF 格式解析

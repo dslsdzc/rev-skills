@@ -3,6 +3,7 @@ name: re-tls
 description: >
   TLS/加密流量深度：指纹、密钥导出、TLS 1.3。
   触发词：TLS、SSL、ClientHello、指纹、SSLKEYLOG、证书分析
+capabilities: [tls-analysis, crypto-identification]
 ---
 
 # TLS/加密流量深度分析
