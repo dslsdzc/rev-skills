@@ -94,11 +94,12 @@ description: >
 ## 常见坑与陷阱
 
 - **GC 版本差异（refc/orc）**：现象——找不到引用计数调用；原因——orc 无显式 inc/dec（ARC 语义）且 release 下 GC 符号内联；对策——先按 Nim 版本与 GC 模式确认再分析，debug/refc 构建符号更全
-- **NimString 布局随 GC/版本变化**：现象——按 `len/reserved/data` 手写解析器读 2.x 产物全错；原因——2.x orc 默认是 `NimStringV2{len, p}`（payload 带 cap），`len/reserved/data` 内联是 refc 的 NimStringDesc（1.x 默认）；对策——先确认产物 GC 模式（见 [[layout]] 判别表）再选布局
+- **NimString 布局随 GC/版本变化**：现象——按 `len/reserved/data` 手写解析器读 2.x 产物全错；原因——2.x orc 默认是 `NimStringV2{len, p}`（payload 带 cap），`len/reserved/data` 内联是 refc 的 NimStringDesc（1.x 默认）；对策——先确认产物 GC 模式（见 [[layout]] 判别表）再选布局：debug 构建看 GC 符号（refc 有 `nimGCunref`，orc 有 `nimIncRefCyclic`），release 构建看分配函数命名与 cap 字段是否出现
 - **导出符号被 strip**：现象——无 NimMain/NimString 符号；原因——strip 处理；对策——按特征字符串/运行时行为识别（步骤 6 兜底）
 - **C 混合编译**：现象——Nim/C 符号混杂；原因——`{.compile:}` 混合；对策——按符号来源分组，Nim 侧进本技能路径
 - **字符串比较点误判**：现象——关键校验被当普通比较；原因——eqStrings 包装；对策——追踪 Nim 字符串函数调用点定位比较逻辑
 - **异常实现代际误判**：现象——按老思路找 nimSetjmp 找不到；原因——2.2+ Linux amd64 默认 goto 式异常（无 setjmp）；对策——无 nimSetjmp 时沿 `raiseExceptionEx` 与异常表定位 catch，别当"无异常处理"
 - **release 内联导致符号稀疏**：现象——debug 能看到的 nimGC_*/eqStrings 在 release 里消失；原因——-d:release 内联；对策——release 产物按行为特征（分配/释放边界、字符串函数调用模式）分析，符号表只是线索不是依据
+- **字符串内容在堆上，栈上只有句柄**：现象——在栈上按内容搜索字符串找不到；原因——v2 布局的字符数据在独立 payload 堆块里，栈上只有 `len + p` 两个字段；对策——动态/转储场景先按 cap 前缀特征定位 payload 块，再回找引用它的句柄（[[examples]] 内存定位示例）
 - **32 位产物结构尺寸减半**：现象——64 位布局表套 32 位产物偏移全错；原因——NI 在 32 位平台是 4 字节（NimStringV2 为 8 字节而非 16，NimStrPayload cap 为 4 字节）；对策——解析前先确认产物位数，按 4/8 字节 NI 选结构尺寸
 - **非 PIE 老构建入口即固定地址**：现象——`readelf -h` 的 e_entry 是绝对地址（如 0x401xxx），在内存里直接对得上；原因——非 PIE 构建（老默认）；对策——入口链定位用符号（NimMain 三连）不依赖 PIE 与否，但换算地址时按 e_type 区分
