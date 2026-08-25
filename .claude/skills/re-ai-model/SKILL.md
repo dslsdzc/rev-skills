@@ -149,7 +149,8 @@ description: >
 - [[re-ioc]]：模型指纹（sha256/张量 hash/水印模式）进 IOC；[[re-triage]]：模型文件初勘入口与哈希存档
 - [[re-script-deob]]：PyTorch 推理/训练脚本还原（state_dict 无结构时的补全路径）
 - 引用 [[platform-tips]] 静态优先（大型样本）与沙箱最高原则分支
-- 模型攻击侧（提取/指纹水印/成员推断）→ [[re-ai-attack]]
+- [[re-ai-attack]]：**文件级证据 → 行为级验证**（单向数据流）——本技能产出的文件侧结论（结构 / 权重 / 文件级 fingerprint）作为 re-ai-attack 行为一致性验证的输入。示例：拿到 suspect.pt → 本技能提取结构+权重生成 fingerprint → 转 re-ai-attack 做行为一致性验证（API 侧比对）
+- 只有 API（无文件）的评估直接进 [[re-ai-attack]]，不经本技能
 
 ## 常见坑与陷阱
 

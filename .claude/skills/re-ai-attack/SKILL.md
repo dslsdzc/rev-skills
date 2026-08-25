@@ -126,7 +126,7 @@ guard: {"require_authorization": true, "forbidden": ["unauthorized_api_testing",
 
 ## 跨域联合
 
-- [[re-ai-model]]：格式/权重侧（提取物分析衔接）
+- [[re-ai-model]]：**消费文件级证据**（文件级证据 → 行为级验证单向流）——有模型文件时先经 re-ai-model 提取结构/权重/文件级 fingerprint，再在本技能做行为一致性验证；仅 API（无文件）时无文件侧输入，直接黑盒评估
 - [[re-python]]：Python 工具链基础
 - [[re-feedback]]：攻击案例经验沉淀（脱敏后）
 - [[analysis-contract]]：评估结论交付格式
