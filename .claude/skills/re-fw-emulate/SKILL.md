@@ -35,7 +35,7 @@ description: >
 
 ### binfmt_misc —— 直接执行交叉程序
 
-- Linux: `apt install binfmt-support`（Debian/Ubuntu；Fedora 用 systemd binfmt 配置）；注册: `update-binfmts --enable qemu-arm`（或 /etc/binfmt.d/ 配置文件）
+- Linux: `apt install binfmt-support qemu-user-static`（Debian/Ubuntu 装 qemu-user-static 即自动注册各架构 binfmt 条目；Fedora 用 systemd binfmt 配置）；手动注册: `update-binfmts --enable qemu-arm`（或 /etc/binfmt.d/ 配置文件）
 - macOS/Windows: 不支持，用 `qemu-<arch>` 显式调用
 - 验证: `ls /proc/sys/fs/binfmt_misc/` 可见 qemu-arm 条目；之后可直接执行 `./rootfs_out/usr/sbin/httpd`
 
@@ -63,7 +63,10 @@ description: >
    # 大端 MIPS: qemu-mips -L rootfs_out ...
    # 小端 MIPS: qemu-mipsel -L rootfs_out ...
    ```
-   缺库报错 → 交叉 `ldd` / `readelf -d` 看依赖，从 rootfs 补库；Web 服务类程序可加 `-E` 传环境变量。跑不起来但静态可分析 → 回 [[re-fw-rootfs]] / [[re-binary-core]]，不在仿真上死磕。
+   缺库报错 → 交叉 `ldd` / `readelf -d` 看依赖，从 rootfs 补库；Web 服务类程序可加 `-E` 传环境变量。
+   - `-strace` 记录客户程序系统调用（等效仿真内 strace——排查 mmap/ioctl 崩溃点直接用它）
+   - `-0 <argv0>` 伪造 argv[0]（程序按调用名分支时用）；`-cpu <型号>` 指定 CPU（如 `qemu-arm -cpu cortex-a9`）
+   - 跑不起来但静态可分析 → 回 [[re-fw-rootfs]] / [[re-binary-core]]，不在仿真上死磕。
 
 2. **全系统仿真**：
    ```sh
@@ -75,6 +78,12 @@ description: >
      -append "console=ttyS0 rdinit=/sbin/init"
    ```
    把 rootfs 制作成磁盘镜像（ext2 挂 root）或 initramfs（cpio 打包 rootfs_out）；firmadyne 的脚本就是自动化这套流程。
+   rootfs 已是磁盘镜像时直接挂盘：
+   ```sh
+   qemu-system-arm -M vexpress-a9 -kernel vmlinuz -drive file=rootfs.ext2,format=raw \
+     -nographic -append "console=ttyAMA0 root=/dev/mmcblk0 rdinit=/sbin/init"
+   ```
+   root 设备名按平台磁盘控制器定（vexpress=mmcblk0、malta 的 IDE=/dev/sda 等，以 `-M` 平台文档为准）。
 
 3. **外设缺失用 stub/回环**：
    - 用户态：程序 mmap 固定地址（GPIO/UART 寄存器）崩溃 → `strace` 定位访问点，`LD_PRELOAD` 提供 stub 库返回假寄存器值
@@ -109,3 +118,4 @@ description: >
 - **无网络设备 → 初始化卡死**：现象——程序在网卡初始化处挂起不退出；原因——全系统仿真没配网卡，ioctl 无返回；对策——启动加 `-device e1000` 等虚拟网卡，或先 `-net none` 观察是否跳过（步骤 5）
 - **时间戳/时钟函数陷阱**：现象——程序读时间怪异（1970/倒退），行为与真实设备不同；原因——QEMU 虚拟时钟与墙钟不同步；对策——`-rtc base=utc` 固定，或 stub 掉 clock_gettime 相关调用
 - **网络未隔离就仿真**：现象——固件真实回连外网（C2/升级服务器）；原因——跳过网络隔离；对策——全系统仿真默认 `-net none` / 用户态 NAT（步骤 5），回连分析前按 [[platform-tips]] 隔离
+- 命令族速查与操作序列见 [[commands]]；工具特有坑与版本差异见 [[gotchas]]

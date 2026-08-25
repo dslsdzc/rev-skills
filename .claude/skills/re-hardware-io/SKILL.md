@@ -53,6 +53,14 @@ description: >
 - 验证: 串口连接后发送 `help` 显示命令清单
 - 用它对未知板自动枚举 UART/JTAG 引脚（步骤 1/2 的得力工具）
 
+### 硬件选购指引（常见方案与电平）
+
+- USB-UART 适配器: CH340 / CP2102 / FTDI 三种芯片方案均可，选支持 3.3V TTL 电平的型号（带 3.3V/5V 跳线更通用）——3.3V 板上插 5V TTL 会烧接口（见坑 3）
+- 调试器: ST-Link v2（STM32 系，SWD/JTAG 都支持）、J-Link（通用，授权收费）、CMSIS-DAP/DAPLink（开源固件方案）——按目标芯片厂牌选
+- SPI flash 编程器: ch341a（最便宜的 SOIC8 方案）+ 夹子/测试座；多协议需求用 RT809H 类编程器
+- 逻辑分析仪: 采样率按信号速率选——UART 115200 与低速 SPI 用 8 通道 24MHz 级别够用；高速 SPI（数十 MHz）需要 100MHz+ 采样（经验值：采样率至少为信号速率的 4 倍）
+- 电平转换: 1.8V/2.5V 板子与 3.3V 工具混接时用 TXS0108 类双向电平转换模块
+
 ## 操作步骤
 
 按顺序执行，每步记下结果。
@@ -76,6 +84,7 @@ description: >
    ```
    - 确认接口类型（JTAG 4/5 线 vs SWD 2 线）与电平（1.8V 板子需电平适配器）
    - 连上后 `halt` 暂停、读寄存器、dump flash（`flash read_bank 0 dump.bin`）
+   - 一行命令模式（脚本化/无交互）: `openocd -f interface/stlink.cfg -f target/stm32f1x.cfg -c "init; halt; flash read_bank 0 dump.bin; exit"`
 4. **flash 芯片读取（flashrom/编程器）**：
    ```sh
    # 板载 SPI flash（linux_spi 需内核 spidev 支持）：
@@ -105,3 +114,4 @@ description: >
 - **5V/3.3V 电平误接烧板**：现象——接线后板子发热/冒烟/永久损坏；原因——电平不匹配（3.3V 板上接 5V TTL）、供电接错、VCC/GND 反接；对策——先万用表测电平与 GND 再接线；3.3V 系统用 3.3V 适配器；绝不带电插拔
 - **先看启动日志再动手**：现象——盲目拆焊 flash / 连 JTAG 导致损坏或数据丢失；原因——跳过低成本观察直接上硬件手段；对策——先 UART 抓启动日志了解系统（步骤 2/5），再决定是否硬件读取——这是 [[platform-tips]] 先给最轻可行方案在硬件域的执行
 - **Intel DCI 调试工具链兼容性坑**：现象——Intel System Studio 2019（System Debugger）在 Win10/11 安装/运行失败，DCI 线缆连不上 CPU；原因——该软件基于 Win7 开发且带环境检测与 License 校验：Win11 提示缺 Win7 安全补丁、公开 License 文件在 Windows 版无效；对策——安装用兼容模式；运行加 `--noprereq` 跳过环境检查；License 校验核心在 `issa.dll` 导出函数中（三个校验函数），patch 后替换即可；DCI 配置按平台选型（如 KBL=Kaby Lake、SPT=200 系主板、DBC=Debug Class 线缆），CLI 调试用 DAL 目录的 `PythonConsole.cmd`（Python 2.7 环境，`itp.cores`/`itp.halt()` 等命令）；ME 端需 UTOK 解锁才响应调试命令（见 [[re-fw-extract]]）
+- 命令族速查与操作序列见 [[commands]]；工具特有坑与版本差异见 [[gotchas]]
