@@ -53,9 +53,13 @@ description: >
 
 2. **断点 / 单步 / 寄存器**：
    - 符号断点: `bp kernel32!CreateFileW`；地址断点: `bp 0x401000`；`bl` 列表、`bd`/`be` 禁用/启用、`bc *` 清空
+   - 未加载模块的符号用 `bu`（unresolved，模块加载后自动绑定）——目标 DLL 按需加载时 `bu` 是正解
+   - 命令断点: `bp 地址 "r rax; k; gc"`——命中时打印现场后自动继续，日志式观察不打断流程
    - 单步: `g` 继续、`p` 步过、`t` 步入、`gu` 执行到当前函数返回
    - 寄存器: `r` 全部、`r rax` 查看、`r eax=0` 修改（绕过校验常用）
    - 内存/反汇编: `u 0x401000` 反汇编、`dd`/`db` 读内存、`dps rsp` 看栈内容
+   - 搜索: `s -d 0x0 L?10000000 0xdeadbeef`（值）、`s -a 0x0 L?10000000 "text"`（ASCII 串）——找硬编码常量/密钥用
+   - 符号搜索: `x 模块!*关键字*`（如 `x kernel32!*Virtual*`）——不确定精确符号名时模糊匹配
 
 3. **异常分析 `!analyze -v`**：
    - 目标崩溃停下后: `!analyze -v` → 读 `EXCEPTION_CODE`、`FAULTING_IP`、`STACK_TEXT`、`PROCESS_NAME`
@@ -86,6 +90,11 @@ description: >
    - 断点前移/后移: `!tt br` 在某寄存器值变化处停；`!tt bm` 在内存访问处停
    - 查询 API: `dx @$cursession.TTD.Calls("模块!函数")` 统计调用次数/参数（如 `...Calls("ntdll!mem*")`）
    - TTD 限制: 需管理员运行、用户态专用、轨迹文件很大（数 GB）、回放只读不能写内存（见 [[gotchas]]）
+
+7. **伪寄存器与脚本化（简单自动化）**：
+   - 伪寄存器: `r $t0 = 0` 起临时变量；`$$ > <文件>` 把命令输出重定向到文件（如 `$$ > c:\log.txt`）
+   - 条件执行: `.if (rax==0) { ... } .else { ... }`——配合 `gc` 做断点内逻辑
+   - `!runaway` 看线程 CPU 时间（找忙等/死循环线程）；`!locks` 查锁状态（挂起排查）
 
 ## 跨域联合
 
