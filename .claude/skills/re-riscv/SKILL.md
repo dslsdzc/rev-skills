@@ -36,7 +36,7 @@ description: >
 
 ### binutils 交叉工具链 —— RISC-V 反汇编/符号表（objdump）
 
-- Debian/Ubuntu: `apt install binutils-riscv64-unknown-elf`（提供 `riscv64-unknown-elf-objdump`，裸机；Ubuntu 在 universe）；用户态目标: `apt install gcc-riscv64-linux-gnu`（提供 `riscv64-linux-gnu-objdump`）
+- Debian/Ubuntu: `apt install binutils-riscv64-linux-gnu`（提供 `riscv64-linux-gnu-objdump`；编译链加 `gcc-riscv64-linux-gnu`，gcc 依赖带入 binutils 包）
 - Fedora: `dnf install binutils-riscv64-linux-gnu gcc-riscv64-linux-gnu`（cross-binutils / cross-gcc 源包，提供 `riscv64-linux-gnu-objdump`；官方仓库无 riscv64-unknown-elf 裸机工具链，裸机反汇编用 riscv64-linux-gnu-objdump，RVC 支持一致）
 - Arch: `pacman -S riscv64-elf-binutils riscv64-elf-gcc`（裸机，提供 `riscv64-unknown-elf-objdump`）或 `pacman -S riscv64-linux-gnu-binutils riscv64-linux-gnu-gcc`（用户态）
 - macOS: `brew install riscv64-elf-binutils riscv64-elf-gcc`（homebrew-core，提供 `riscv64-unknown-elf-objdump`）；Windows/WSL: WSL 内 Linux 版
