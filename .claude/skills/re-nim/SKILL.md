@@ -48,6 +48,7 @@ description: >
    - Nim 特征：`NimMain`（入口链）、GC 符号（refc 的 `nimGC_*` / orc 的 `nimIncRefCyclic` 等）、`NimStringV2`/`NimStringDesc` 结构类型
    - 注意：release 构建下 GC 符号常被内联/消除（见坑 1），靠 `NimMain` 与字符串函数兜底
    - 入口链：C `main` → `NimMain` → `NimMainInner` → `NimMainModule`（模块初始化）→ 业务 main
+   - 模块初始化顺序按依赖拓扑（import 关系）：`NimMainModule` 内的初始化段先跑被依赖模块——在初始化段断点/下钻时按调用序对照 import 链
 
 2. **字符串与序列结构（先判 GC 模式）**：
    - **orc/arc**（2.x 默认 orc）：`NimStringV2 = {len: int, p: ptr NimStrPayload}`；`NimStrPayload = {cap: int, data: 内联字符数组}`——字符串是"len + 堆上 payload 指针"，cap 高位带字面量标记位（见 [[layout]]）
@@ -96,6 +97,7 @@ description: >
 - [[re-binary-core]] 网关：本技能归属（选择树「Nim 产物」分支）
 - [[analysis-contract]]：符号表按数据契约传递
 - [[re-cpp-abi]]：C 混合侧与无 RTTI 判别参考
+- [[re-triage]]：初勘兜底（strip 产物按特征串识别）
 
 ## 常见坑与陷阱
 
