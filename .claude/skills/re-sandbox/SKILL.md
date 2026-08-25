@@ -24,6 +24,7 @@ description: >
 - macOS/Windows: 不支持（用 Docker 或 VM 替代）
 - WSL: Linux 包直接可用
 - 验证: `firejail --version`；`firejail --list` 能看到活动沙箱
+- 注意: firejail 是用户态隔离（namespace/seccomp 组合），不是安全边界——不防内核漏洞利用与提权，高威胁样本仍用 VM（见坑 3）；常用参数 `--private`（临时 home，退出即弃）、`--net=none`（断网）、`--dns=<ip>`（DNS 指向）
 
 ### docker —— 容器隔离（中级）
 
@@ -103,8 +104,9 @@ description: >
    VBoxManage snapshot <vm> restore clean
    # Docker
    docker rm -f <container>
-   # firejail
-   firejail --clean   # 或直接退出 firejail 进程，临时目录自动清理
+   # firejail——没有 --clean 选项（0.9.80 实测报 invalid option），按名/PID 关停：
+   firejail --shutdown=<name|pid>   # 沙箱名/pid 用 `firejail --list` 查
+   # 或直接退出 firejail 进程，--private 临时目录退出自动清理
    ```
    恢复后验证: `VBoxManage snapshot <vm> list` 确认回到 clean；沙箱内 `ps aux` 无残留进程。不恢复快照 = 环境污染（见坑 1）。
 
@@ -114,6 +116,7 @@ description: >
 - [[re-anti-analysis]]：脱壳产物的动态验证必须在沙箱内复跑（判定壳是否脱干净）
 - [[re-protocol]]：C2 流量捕获依赖本技能的 INetSim / fake DNS 网络隔离环境
 - [[re-binary-core]]：其动态环节（[[re-tracing]] / [[re-gdb]] / [[re-x64dbg]] / [[re-memdump]]）引用本技能作为运行前置
+- [[re-evasion]]：样本检测沙箱/VM 环境（逃逸与反沙箱）时的对抗面——检测点定位与绕过按该域应对
 
 ## 常见坑与陷阱
 
@@ -125,4 +128,5 @@ description: >
 - **环境命名与资源阈值检测**：现象——样本在 `sample.exe`/`malware` 目录下不触发恶意行为，改名或调资源后行为差异巨大；原因——检测分析文件名/路径、CPU 核数/内存/磁盘容量阈值、鼠标键盘交互缺失（ATT&CK T1497.001）；对策——样本命名规范化（避免 sample/sandbox/恶意 字样）、沙箱资源充足（≥2 核、≥2GB 内存、正常磁盘容量），配合交互模拟（鼠标移动）与 [[re-behavior]] 的延迟观察
 - **沙箱隔离≠分析环境伪装**：现象——样本在隔离环境内安全跑通，但仍因时间/硬件/输入类环境指纹检测改变行为；原因——隔离≠伪装：时间/硬件/输入检测是环境指纹，完整 VM 也会被检测；对策——把"隔离"与"环境伪装"分开处理，按指纹类别逐个定位检测点（时间/硬件/输入）再针对性应对（[[re-anti-analysis]] 域），参考 [[platform-tips]] 沙箱分支
 - **简单交互模拟被统计检测识破**：现象——模拟了鼠标移动/输入事件，样本仍判定"非人类"不触发载荷；原因——Rhadamanthys 等新样本对交互做统计级校验：30ms 采样 1500 次光标/前景窗口/时间戳，要求光标移动 ≥30 次且 ≥2 个不同前景窗口（其一非桌面进程），再用光标轨迹欧氏距离判别"非人类"移动模式，观测期长达 45s+；对策——按人类行为分布模拟（随机间隔、非线性轨迹、真实窗口切换）而非固定像素移动，对照样本采样参数（光标/前台窗口/时间戳）逐个满足，拉长观察窗口（CAPE/VMRay 已内置该级交互模拟）
+- **firejail 清理选项被讹传（--clean 不存在）**：现象——按旧文档执行 `firejail --clean` 报 `invalid --clean command line option`；原因——官方 man 页（0.9.72 起）与 0.9.80 实测均无该选项，教程间互相转抄讹传；对策——沙箱清单 `firejail --list` 查 name/pid，用 `firejail --shutdown=<name|pid>` 关停；临时目录靠 `--private` 退出自动清理
 - **样本借道白名单进程执行（brokered execution）**：现象——沙箱里样本自身进程行为几乎干净，恶意动作全发生在 rundll32/mshta/PowerShell/WMI 等进程里；原因——样本通过 IPC（ALPC/RPC/COM/命名管道）或 LOLBin 把敏感动作"外包"给已放行的进程——监控只盯样本进程就漏掉真实行为；对策——按"样本派生的整条进程链"观察（父→子树，Sysmon 1 进程创建关联），procmon/sysdig 过滤按根进程而非单进程，内核侧（ETW/bpftrace）补用户态监控盲区
