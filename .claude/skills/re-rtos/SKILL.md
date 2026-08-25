@@ -54,9 +54,9 @@ description: RTOS 结构分析：FreeRTOS/ThreadX/Zephyr/RT-Thread/VxWorks/QNX/I
    - 确认字节序与架构后再导入 Ghidra，避免整个分析白做
 
 2. **RTOS 识别：启动代码链 + 特征串/符号搜索**：
-   - 启动链形态：reset handler → 时钟/外设/内存初始化 → 创建任务（`xTaskCreate` / `osThreadNew` / `tx_thread_create` / `k_thread_create` / `rt_thread_create` / VxWorks `taskSpawn`（≤6.x）或 `taskCreate`（VxWorks 7）/ QNX `ThreadCreate` / INTEGRITY ARINC 653 APEX `CREATE_PROCESS`）→ 调度器启动（`vTaskStartScheduler` / `osKernelStart` / `tx_kernel_enter` / `rt_system_scheduler_start` / VxWorks `kernelInit` / QNX 启动脚本拉起系统进程 / INTEGRITY `START` 进入运行态）。调度器启动调用点之前的代码全是初始化，不属于任何任务
+   - 启动链形态：reset handler → 时钟/外设/内存初始化 → 创建任务（`xTaskCreate` / `osThreadNew` / `tx_thread_create` / `k_thread_create` / `rt_thread_create` / VxWorks `taskSpawn`（6.x 及更早常用；7 中仍存在，内部实现为 taskCreate+taskActivate）或 `taskCreate`（7 起，创建挂起任务需显式 taskActivate）/ QNX `ThreadCreate` / INTEGRITY ARINC 653 APEX `CREATE_PROCESS`）→ 调度器启动（`vTaskStartScheduler` / `osKernelStart` / `tx_kernel_enter` / `rt_system_scheduler_start` / VxWorks `kernelInit` / QNX 启动脚本拉起系统进程 / INTEGRITY `START` 进入运行态）。调度器启动调用点之前的代码全是初始化，不属于任何任务
    - 特征串：strings 搜内核名（"FreeRTOS"）、任务名（"Idle" 等）、版本/断言串；ELF 未 strip 时直接搜符号（`nm` / Ghidra Symbol Table：`pxCurrentTCB`、`_tx_thread_created_list`、`_kernel`、`rt_thread_ready_priority_group`）
-   - 商业 RTOS 特征串：VxWorks 任务名（"tIdle" 空闲任务、"tRootTask" 根任务）与版本串；QNX 内核/镜像名（"procnto"、"imagefs"）与系统进程名（资源管理器惯用命名 `io-*`/`devb-*`/`devc-*`）；INTEGRITY 分区名/进程名与 ARINC 653 APEX 服务名
+   - 商业 RTOS 特征串：VxWorks 任务名（"tIdle" 空闲任务（VxWorks 6.x+）、"tRootTask" 根任务）与版本串；QNX 内核/镜像名（"procnto"、"imagefs"）与系统进程名（资源管理器惯用命名 `io-*`/`devb-*`/`devc-*`）；INTEGRITY 分区名/进程名与 ARINC 653 APEX 服务名
    - ThreadX 无版本串可搜，靠调度入口 `tx_kernel_enter` + TX_THREAD 魔数 ID（步骤 3）确认
    - 不确定内核时：找 3-4 个任务创建调用点与调度入口的调用形态，对照各内核公开结构逐个排除
 
@@ -66,7 +66,7 @@ description: RTOS 结构分析：FreeRTOS/ThreadX/Zephyr/RT-Thread/VxWorks/QNX/I
    - **Zephyr**：`_kernel` 全局结构（新版本为 struct _cpu，老版本为 struct _kernel）——current（当前线程指针）、ready_q（就绪队列：优先级位图 + 按优先级索引的队列数组）、timeout_q（超时队列）、idle 线程指针；另有 slist 全局线程链链着所有 k_thread；k_thread 关键字段——base.prio（优先级）、stack_info.start/size（栈区）、name（线程名）
    - **RT-Thread**：rt_thread_ready_priority_group（优先级位图）+ rt_thread_priority_table[RT_THREAD_PRIORITY_MAX]（按优先级索引的链表数组）；rt_thread 结构关键字段——name、priority、stack_addr/stack_size、entry（入口函数）
    - **VxWorks**：WIND_TCB 关键字段——td_name（任务名，字符串指针指向字符串池，非内联数组）、td_sp（保存的栈指针）、td_priority（优先级 0-255，0 最高）、td_status、td_options、td_entry（入口函数）、td_pStackBase/pStackLimit/pStackEnd（栈底/有效栈界/实际栈界）、td_stackSize/td_stackHigh（栈尺寸/历史最高用量）。注意版本差异：VxWorks 7 起 WIND_TCB 为不透明类型，taskLib.h 只提供 VX_WIND_TCB_SIZE 大小宏，字段偏移随版本/SMP 配置变化。定位方法：任务名串在字符串池里（搜 "tIdle"/"tRootTask"），交叉引用回指向它的 TCB；或从上下文切换代码（保存寄存器组到栈、写 td_sp、按 td_priority 挑选任务）反推字段偏移，再沿任务链表回静态区
-   - **QNX**：procnto（微内核 + 进程管理器一体）管理线程控制块——线程是调度最小单位，进程只是地址空间容器；线程关键属性——tid（进程内线程号）、优先级（256 级，0 为 idle）、线程名（6.3.2+ 支持）、栈与 TLS 区（含 tid/pid/栈基/errno）。定位方法：QNX 固件是 IFS 镜像（startup 头魔数 0x00ff7eeb + "imagefs" 签名），用 dumpifs 解出各系统进程 ELF 再逐个分析（procnto 即内核本体）；应用侧从 `ThreadCreate`/`MsgSend` 等内核调用点定位线程，线程名串交叉引用回线程控制块；动态环境可用 /proc/<pid>/ctl 的 DCMD_PROC_TIDSTATUS 读线程状态做侧信道
+   - **QNX**：procnto（微内核 + 进程管理器一体）管理线程控制块——线程是调度最小单位，进程只是地址空间容器；线程关键属性——tid（进程内线程号）、优先级（256 级，0 为 idle）、线程名（6.3.2+ 支持）、栈与 TLS 区（含 tid/pid/栈基/errno）（内部布局无官方公开定义，属性经系统调用参数与 /proc 侧信道观察）。定位方法：QNX 固件是 IFS 镜像（startup 头魔数 0x00ff7eeb + "imagefs" 签名），用 dumpifs 解出各系统进程 ELF 再逐个分析（procnto 即内核本体）；应用侧从 `ThreadCreate`/`MsgSend` 等内核调用点定位线程，线程名串交叉引用回线程控制块；动态环境可用 /proc/<pid>/ctl 的 DCMD_PROC_TIDSTATUS 读线程状态做侧信道
    - **INTEGRITY**：分区（partition）是空间+时间隔离单元——空间上每分区独立内存区（MMU 强制），时间上按模块调度表（module schedule）循环分配执行窗口（一轮 = major frame）；分区内任务为 ARINC 653 进程，进程控制块属性含入口、栈尺寸、基优先级、周期/期限。定位方法：全静态配置——启动时一次性分配，无动态内存/无动态任务创建，对象地址固定，boot table 定义资源归属；分区/进程名串在固件里可读，交叉引用回配置表；ARINC 653 APEX 服务名（CREATE_PROCESS/SET_PRIORITY/GET_TIME 等）调用点即内核服务入口
    - 产出任务清单：逐个 TCB 读出任务名/优先级/栈区间/入口地址，每任务一行
 
