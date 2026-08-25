@@ -21,7 +21,7 @@
 ## 工具坑（按工具）
 
 - **gqrx 包名（Debian）**：包名是 `gqrx-sdr` 不是 `gqrx`（`apt install gqrx` 找不到包）；Arch/Fedora 才是 `gqrx`
-- **rtl_433 包名平台差异**：Debian `rtl-433`、Fedora `rtl-433`、macOS `rtl_433`（下划线）——跨平台脚本里注意包名不统一；Arch 仓库无包（AUR/源码）
+- **rtl_433 包名平台差异**：Debian `rtl-433`、Fedora `rtl-433`、macOS `rtl_433`（下划线）、Arch `rtl_433`——跨平台脚本里注意包名不统一
 - **URH 版本节奏**：`pip install urh` 装的是 PyPI 最新版，更新节奏慢于主仓库——新硬件/新调制支持查 URH 仓库 release；GUI 与命令行接口以安装版本帮助为准
 - **inspectrum 只读分析**：inspectrum 不能解调/导出位流——它是可视化确认工具，位流工作仍走 URH/GNU Radio
 - **rtl_power CSV 解析**：输出按 `date,time,Hz_start,Hz_step,samples,power1,power2,...` 排列——写脚本解析时按行尾功率列处理，别错位

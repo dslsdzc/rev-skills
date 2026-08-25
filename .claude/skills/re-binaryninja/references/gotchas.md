@@ -9,7 +9,7 @@
 
 ## 个人版限制
 
-- **无 headless 自动化**：`binaryninja.headless` 与 `binaryninja-headless` CLI 是商业版能力，个人版导入即报错——个人版用 GUI 内 `File > Python` 面板跑脚本
+- **无 headless 自动化**：headless 是商业版能力（无 `binaryninja-headless` CLI——正路是 `install_api.py` 注册后脚本 `binaryninja.load()`，headless license 用官方独立下载包），个人版用 GUI 内 `File > Python` 面板跑脚本
 - **自动化频次/规模限制**：个人版对脚本自动化（批量跑、无头操作）有使用限制，license 条款约束个人用途——批量任务先评估是否超限，超限用 [[re-ghidra]] analyzeHeadless（免费）替代
 - **商业版功能裁剪**：部分插件要求商业版；`Options > About` 确认 license 类型，别在个人版上排查商业功能故障
 

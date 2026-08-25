@@ -35,7 +35,7 @@ description: >
 - 安装: Binary Ninja 安装目录下运行 `python install_api.py`（把 API 注册进 Python 环境；PyPI 无 binaryninja 包，`pip install binaryninja` 会失败）
 - 安装脚本会检测/提示匹配的 Python 版本——版本不匹配时脚本报错或注册失败，按提示换 Python 版本
 - 验证: `python3 -c "import binaryninja; print(binaryninja.core_version())"` 输出与软件版本一致的版本号
-- 无头 CLI（商业版）: `binaryninja-headless --help` 有输出；脚本化入口 `python -c "from binaryninja import headless; ..."`
+- 无头批处理（商业版）: 没有 `binaryninja-headless` 可执行文件——正路是 `install_api.py` 注册后直接写脚本 `binaryninja.load()`（见 [[commands]] 序列 2）；headless license 走官方独立下载包（无 GUI，仅 headless license 可下载）
 
 ## 操作步骤
 
@@ -73,11 +73,11 @@ description: >
    - 导出反编译文本: `str(f.high_level_il)` 直接拿 HLIL 伪代码字符串——批量导出函数逻辑的最快方式
    - 插件: `File > Manage Plugins` 浏览社区插件；插件目录按平台：Windows `%APPDATA%\Binary Ninja\plugins`、Linux `~/.binaryninja/plugins`、macOS `~/Library/Application Support/Binary Ninja/plugins`（macOS 非 `~/.binaryninja`，放错不会被加载）
    - 自写脚本先 `File > Python` 面板试跑（能看到 `print` 输出与异常），稳定后再转插件或无头脚本——调试脚本比跑完看结果快得多
-   - 无头模式: 商业版可用 headless（`binaryninja.headless.main()` 或 CLI `binaryninja-headless`，参数以 `--help` 为准——脚本路径 + 样本路径）；个人版受限时用 GUI 内 `File > Python` 面板执行同样代码
+   - 无头模式: 商业版可用 headless——没有 `binaryninja-headless` CLI，正路是 `install_api.py` 注册后写脚本（`binaryninja.load()` + `update_analysis_and_wait()`，即上文代码结构）；headless license 用官方独立下载包；个人版受限时用 GUI 内 `File > Python` 面板执行同样代码
    - 无头脚本出错不会弹窗——异常直接打到 stderr/日志文件，排错看输出尾部与 `bv.log_info` 痕迹
 
 5. **字符串/引用定位链**：
-   - `Strings` 视图（S）找提示串 → 双击进反汇编 → 右键 `Show References`（或 `xrefs` 面板）→ 跳到引用函数 → MLIL 阅读
+   - `Strings` 视图找提示串 → 双击进反汇编 → 右键 `Show References`（或 `xrefs` 面板）→ 跳到引用函数 → MLIL 阅读
    - 字符串多时按引用数/长度排序（点列头）优先处理被多处引用的串——通常是错误提示/格式串等关键节点
    - 与 [[re-ida]] 的 Alt+T→x→F5、[[re-radare2]] 的 izz→axt→pdf 同思路；批量标注用 `bv.get_strings()` + `f.get_callers()` 脚本化（见 [[commands]] 序列 2）
 

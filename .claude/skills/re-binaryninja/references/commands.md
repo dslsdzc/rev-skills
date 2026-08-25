@@ -18,8 +18,6 @@ Binary Ninja 双入口：GUI（快捷键 + 面板）与 Python API（`File > Pyt
 | 有符号/无符号 | - | 整型显示切换 |
 | 十六进制/十进制 | 0 | 整型显示进制切换 |
 | 注释 | 右键 Comment | 添加注释（无固定默认快捷键，右键菜单可达） |
-| 字符串视图 | S | 列出二进制全部字符串 |
-| 函数面板 | F | 函数列表（底部面板） |
 | 反编译单函数 | 双击函数 | 默认 HLIL 视图 |
 | 跳转 | g | 地址/符号跳转 |
 | 返回 | Esc | 返回上一个位置 |
@@ -34,14 +32,14 @@ Binary Ninja 双入口：GUI（快捷键 + 面板）与 Python API（`File > Pyt
 - 注释: `f.set_comment(addr, "text")`；`f.get_comment(addr)`
 - 读写内存: `bv.read(addr, n)` / `bv.write(addr, data)`（补丁/解密循环用）；`bv.get_length()` 文件大小
 - 日志: `bv.log_info("...")` / `print()`（GUI 控制台）
-- 无头: `binaryninja.headless.main()`；CLI `binaryninja-headless`（商业版）
+- 无头: 无 `binaryninja-headless` CLI——`install_api.py` 注册后脚本内 `binaryninja.load(path)` + `update_analysis_and_wait()` 直接跑；headless license 用官方独立下载包（`download_headless.py`）
 
 ## 常用操作序列（组合套路）
 
 ### 1. 定位校验逻辑（字符串 → 引用 → MLIL）
 
 ```
-Strings 视图（S）找提示串 → 双击进反汇编 → 右键 Show References
+Strings 视图找提示串 → 双击进反汇编 → 右键 Show References
 → 跳到引用函数 → 双击进反编译视图 → i 切 MLIL 阅读数据流
 → n 重命名关键函数/变量 → 结论写注释
 ```
