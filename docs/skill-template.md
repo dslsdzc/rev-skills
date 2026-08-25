@@ -11,7 +11,7 @@ SKILL.md 章节（顺序固定）：
    - **入口判定（Decision Gate）**——目标形态判定树（供自动调度分流）：目标出现先判形态再选技能，如 Android 域：APK→lib/*.so 存在？→ re-android-native / re-apk；单独 so→JNI 符号？→ re-android-native / re-binary-core；加固→re-anti-analysis；crypto→re-android-crypto。多输入形态技能（so/APK/固件/流量）必加，单形态技能可省略
 4. `## 何时使用 / 何时不用` —— 明确边界，防误触发
 5. `## 工具准备` —— 必含：每个工具给出 apt / dnf / pacman / brew / pip / cargo / choco 安装命令 + 验证命令 + OS 分支（Linux/macOS/Windows/WSL 替代方案）；引用 [[platform-tips]] 相关分支
-6. `## 操作步骤` —— 可执行、具体，沿用 porting-minecraft-mod 的硬性执行风格（不省略、不"类似处理"）。**四层内容分离**（复杂技能必循，样板 re-ai-attack）：
+6. `## 操作步骤` —— 可执行、具体，沿用 porting-minecraft-mod 的硬性执行风格（不省略、不"类似处理"）。**知识/操作分离**：机制原理（知识层）保留在核心流程，易变参数（槽位索引/offset/运行时实现细节，随 SDK/运行时版本变化）不写进核心流程——集中到 `references/probes.md` 类探针文件（运行时探测与校验为准，样板 re-android-native 的 RegisterNatives 槽位）。**四层内容分离**（复杂技能必循，样板 re-ai-attack）：
    - **Method Overview**：每步开头一句话「目标/方法本质」（如「通过 API 查询重建近似模型——蒸馏」）
    - **Operational Checklist**：步骤编号子列表（可勾选执行），只含动作与产出
    - **Failure Modes**：坑与失败模式（SKILL.md 坑节 + references/gotchas.md）

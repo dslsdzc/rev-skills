@@ -98,26 +98,8 @@ description: >
 3. **注册方式（静态 JNI_OnLoad / 动态 RegisterNatives）**：
    - 静态注册：函数名 `Java_包名_类名_方法名`（下划线转义），直接出现在导出表（步骤 2 可看到）
    - 动态注册：`JNI_OnLoad` 里调 `RegisterNatives(env, clazz, methods, count)`，`methods` 是 `JNINativeMethod{name, signature, fnPtr}` 数组——**函数地址不在导出表**（见坑 2），反编译定位 `JNI_OnLoad` 后沿 RegisterNatives 第三参数数组逐项还原
-   - frida 观察运行时注册（spawn 目标 App）：
-     ```js
-     // hook JNI_OnLoad 后 hook JNIEnv 函数表里的 RegisterNatives
-     var RegisterNatives = null;
-     var JNI_OnLoad = Module.findExportByName(null, "JNI_OnLoad");
-     Interceptor.attach(JNI_OnLoad, { onEnter: function() {
-       // JNIEnv* 在 x0（arm64），函数表在 env[0]，RegisterNatives 是表内第 215 个槽（0 基，AOSP jni.h
-       // JNINativeInterface 声明序：Get*ArrayRegion 族 199-206、Set*ArrayRegion 族 207-214、GetJavaVM=219 可锚点校验）
-       var env = this.context.x0;
-       var table = env.readPointer();
-       RegisterNatives = table.add(215 * 8).readPointer();
-       Interceptor.attach(RegisterNatives, { onEnter: function(a) {
-         var cls = a[1], methods = a[2], n = a[3].toInt32();
-         for (var i = 0; i < n; i++) {
-           var m = methods.add(i * 24);   // JNINativeMethod: name + signature + fnPtr
-           console.log(m.readPointer().readCString(), m.add(8).readPointer().readCString(),
-                       m.add(16).readPointer());
-         }
-       }});
-     }});
+   - 机制要点（知识层）：`JNIEnv*` 指向 `JNINativeInterface` 函数表（见坑 1），`RegisterNatives` 是表中一个槽——**槽号是易变参数**（随 jni.h 声明序/NDK/ART 版本变化），不在核心流程硬编码
+   - frida 观察运行时注册（spawn 目标 App）：脚本模板与槽位探测策略（锚点定位 / runtime 校验 / ABI 分支）见 [[probes]]——易变数值一律以运行时探测为准
      ```
    - 还原产物：`Java 方法名 → 签名 → native 函数地址` 对照表
 
