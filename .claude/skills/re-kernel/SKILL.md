@@ -62,6 +62,7 @@ description: >
 3. **设备对象 / 符号链接**：
    - `IoCreateDevice` 参数: DeviceName（`\Device\MyDriver`）；`IoCreateSymbolicLink` 参数: SymbolicLinkName（`\DosDevices\MyDriver` → 用户态 `\\.\MyDriver`）
    - 由符号链接名字推断用户态入口点；没有符号链接时用户态可用 `DeviceIoControl` 直接打 `\\.\` 名（或无符号名时只能内部引用）
+   - 动态核对: `!drvobj <驱动名>` 看设备对象链、`!devobj <设备>` 看设备名与 AttachedDevice——与静态字符串对照，确认设备名没有在运行期被改
    - 多层设备栈（filter 驱动）：`IoAttachDevice`/`IoAttachDeviceToDeviceStack` 挂到既有设备上——看到这两个 API 即为拦截型驱动（文件/键盘过滤等）
 
 4. **服务注册与加载入口**：
