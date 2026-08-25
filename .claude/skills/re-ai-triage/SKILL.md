@@ -47,7 +47,7 @@ capabilities: [triage]
 ## 操作步骤
 
 1. **输入形态识别**：
-   - 用户给了路径/文件 → 先 `file <path>`（onnx：`data format: protobuf`；safetensors：`JSON metadata` 头；pt/pth：`pickle` 或 zip 容器；tflite：`tflite` 标识）→ 转 [[re-ai-model]]
+   - 用户给了路径/文件 → 先 `file <path>`（onnx：`file` 常报 `data`——以 `xxd` 首字节 protobuf 头（`08 08`）+ `strings` producer 名辅助识别；safetensors：`JSON metadata` 头；pt/pth：`pickle` 或 zip 容器；tflite：`tflite` 标识）→ 转 [[re-ai-model]]
    - 用户只有 API 端点/查询能力 → 转 [[re-ai-attack]]
    - 两者都有 → 按任务分类器先文件后行为
 2. **目标归属确认**：文件/API 的持有方与授权（自有 / 授权测试 / CTF·研究）——行为层评估前必须确认（[[re-ai-attack]] guard 前置；授权上下文见 triage 第 0 步 `RE_AUTH`）

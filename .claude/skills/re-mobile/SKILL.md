@@ -5,6 +5,7 @@ description: >
   移动应用分析网关。编排：APK 静态 → iOS → 动态 Frida → 原生库。
   子技能：[[re-apk]] [[re-ios]] [[re-frida]] [[re-frida-script-author]] [[re-mobile-pack]] [[re-hybrid-app]]
   [[re-android-native]] [[re-android-crypto]] [[re-ios-jb]] [[re-flutter]] [[re-harmonyos]]。
+- 加密体系审计（Keystore / Cipher / crypto hook）→ [[re-android-crypto]]
   触发词：移动App、APK、ipa、Android逆向、iOS逆向、frida、mobile app analysis。
 capabilities: [dex-parser, jni-analysis, frida-instrumentation, mobile-forensics]
 ---

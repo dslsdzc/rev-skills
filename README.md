@@ -65,11 +65,11 @@ npx skills add dslsdzc/rev-skills -l       # 先列出技能，不安装
 入口 → 12 大类网关 → 108 原子技能，详见 `.claude/skills/` 与 `docs/skill-template.md`。快速索引：
 
 - **re-analyze**：入口（探测 → 偏好 → 识别 → 编排）
-- **re-binary-core**：re-triage、re-format-pe/elf/macho、re-imports、re-ghidra、re-ida、re-radare2、re-gdb、re-x64dbg、re-lldb、re-tracing、re-memdump、re-windbg、re-binaryninja、re-emulation、re-shellcode、re-kernel、re-ebpf、re-game、re-console、re-go、re-rust、re-plugin-dev、re-hypervisor、re-anti-cheat、re-cpp-abi、re-swift、re-zig、re-nim、re-fp-runtime、re-variant、re-mips、re-arm、re-riscv
+- **re-binary-core**：re-address-space（地址换算）、re-triage、re-format-pe/elf/macho、re-imports、re-ghidra、re-ida、re-radare2、re-gdb、re-x64dbg、re-lldb、re-tracing、re-memdump、re-windbg、re-binaryninja、re-emulation、re-shellcode、re-kernel、re-ebpf、re-game、re-console、re-go、re-rust、re-plugin-dev、re-hypervisor、re-anti-cheat、re-cpp-abi、re-swift、re-zig、re-nim、re-fp-runtime、re-variant、re-mips、re-arm、re-riscv
 - **re-malware**：re-sandbox、re-behavior、re-ioc、re-ransomware、re-loader、re-fileless、re-doc-malware
 - **re-firmware**：re-fw-extract、re-fw-rootfs、re-fw-emulate、re-hardware-io、re-automotive、re-uefi、re-rtos、re-tee
 - **re-protocol**：re-netcap、re-proto-rev、re-crypto-id、re-crypto-keys、re-crypto-decrypt、re-ics、re-iot-proto、re-whitebox、re-tls
-- **re-mobile**：re-apk、re-ios、re-frida、re-frida-script-author、re-mobile-pack、re-hybrid-app、re-android-native、re-ios-jb、re-flutter、re-harmonyos
+- **re-mobile**：re-apk、re-ios、re-frida、re-frida-script-author、re-mobile-pack、re-hybrid-app、re-android-native、re-android-crypto（加密审计）、re-ios-jb、re-flutter、re-harmonyos
 - **re-anti-analysis**：re-packer-id、re-unpack-simple、re-unpack-advanced、re-deobfuscate、re-evasion
 - **re-cracking**：re-license、re-patching、re-keygen、re-drm
 - **re-vuln**：re-fuzzing、re-crash-triage、re-exploit

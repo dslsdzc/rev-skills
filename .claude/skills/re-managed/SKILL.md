@@ -30,7 +30,7 @@ capabilities: [bytecode-parser, deobfuscation]
 - **.ps1 / .docm / .xlsm / .js / .jse / .hta（脚本或宏）** → [[re-script-deob]]（逐层解码，动态执行默认沙箱）
 - **Python 打包样本（.exe 含 PyInstaller/PyArmor 特征 / .pyc / python 打包）** → [[re-python]]（pyinstxtractor 解包、PyArmor-Unpacker、pyc 反编译；纯脚本混淆转 [[re-script-deob]]）
 - **.wasm / WebAssembly 模块（网页/Node 侧载荷）** → [[re-wasm]]（WABT 解析 section、wasm-decompile 反编译、DevTools/wasmtime 动态）
-- **ONNX / safetensors / PyTorch 模型文件** → [[re-ai-model]]（格式识别、权重提取、水印/窃取判定；未知 pkl 默认隔离）
+- **AI 模型相关** → [[re-ai-triage]] 分流：模型文件（.onnx/.safetensors/.pt）→ [[re-ai-model]]（格式识别、权重提取、文件级水印；未知 pkl 默认隔离）；仅 API → [[re-ai-attack]]（行为层评估，guard 授权前置）
 - **EVM 合约字节码（.bin / hex）** → [[re-blockchain]]（ABI 恢复、panoramix 反编译、漏洞分析）
 - **浏览器扩展（crx/xpi/zip 扩展文件）** → [[re-browser-ext]]（权限审计/恶意行为/混淆还原）
 - **Electron 打包应用（resources/app.asar）** → [[re-electron]]（asar 解包、V8 字节码边界、CDP 动态调试）
@@ -44,7 +44,7 @@ capabilities: [bytecode-parser, deobfuscation]
 - 恶意脚本/宏：[[re-malware]] → [[re-sandbox]]（动态）→ [[re-script-deob]]（静态还原载荷）
 - 底座 [[re-binary-core]]：初勘（[[re-triage]]）、混合程序原生部分（格式解析 / [[re-ghidra]] 反编译）、混淆深层还原（[[re-deobfuscate]]）
 - 本网关被 [[re-analyze]] 的 triage「.NET/Java/脚本样本」路径调用
-- "代码在数据里"分支：AI 模型（[[re-ai-model]]，内嵌代码转 [[re-binary-core]]）、EVM 合约字节码（[[re-blockchain]]，漏洞侧衔接 [[re-vuln]]）
+- "代码在数据里"分支：AI 模型（[[re-ai-triage]] → [[re-ai-model]] 文件层 / [[re-ai-attack]] 行为层；内嵌代码转 [[re-binary-core]]）、EVM 合约字节码（[[re-blockchain]]，漏洞侧衔接 [[re-vuln]]）
 
 ## 常见坑与陷阱
 

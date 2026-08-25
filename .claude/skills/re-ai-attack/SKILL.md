@@ -57,6 +57,7 @@ guard: {"require_authorization": true, "forbidden": ["unauthorized_api_testing",
 - 用：鲁棒性基线评估（上线前/防御验证前测一遍干净与扰动准确率）
 - 不用：模型文件格式解析与权重提取（转 [[re-ai-model]]）；模型训练/微调（非逆向）；部署加固（防御侧不在本技能）
 - 不用：无授权目标（红线：仅授权评估场景；授权边界见 [[gotchas]]）
+- **RE_AUTH 前置（guard 联动）**：本技能 guard.require_authorization=true——执行前确认授权上下文（triage 第 0 步 `RE_AUTH`）：owned / ctf / research 可执行；unknown 先询问目标归属（所有权 / 测试授权 / 研究环境），未说明只做静态评估不进入动态步骤
 - 不用：提示注入/提示泄露评估（LLM 侧攻击面）与 API 服务本身的注入/越权测试（应用侧漏洞不在本技能）
 
 ## 工具准备
