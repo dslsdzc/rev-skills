@@ -77,6 +77,7 @@ description: >
    - 数据外泄：fetch/XHR/`navigator.sendBeacon`、图片像素外传（`new Image().src`）、`chrome.storage` 收集后批量上传（[[re-netcap]] 衔接）
    - 注入面：content_scripts 匹配站点、动态注入（MV3 `chrome.scripting.executeScript`；MV2 `tabs.executeScript`）、`web_accessible_resources` 开放页面供第三方站点调用
    - 键盘记录：content script 监听 keydown/input 并外传——搜索 `addEventListener('keydown'` 与 `value` 读取
+   - 触发时机：`chrome.runtime.onInstalled` / `onStartup`（安装/启动即跑）、`chrome.alarms` / `setInterval`（定时任务）、`chrome.runtime.onMessage`（消息驱动）——按触发点还原调用链，别只看顶层代码
    - 后台脚本是核心：MV3 的 service worker / MV2 的 background page；MV3 service worker 空闲约 30 秒被终止、事件唤醒——状态在 `chrome.storage` 或 IndexedDB 落地，别在全局变量里找持久状态
 
 4. **混淆还原**：
@@ -93,6 +94,7 @@ description: >
 6. **动态验证**（沙箱）：
    - 加载到浏览器（工具准备），配好代理/抓包（[[re-netcap]]），触发功能看网络与存储变化
    - 分上下文分析：background / content script / 扩展页面 三套隔离上下文，API 调用点按上下文定位（坑 4）
+   - 扩展页面/弹窗可直接开 DevTools（`chrome-extension://<id>/` 页面 F12）——配合断点看 service worker 内全局状态与网络调用
    - 行为记录与 [[re-ioc]] 指标提取（C2 域名、命令格式）衔接
 
 ## 跨域联合
