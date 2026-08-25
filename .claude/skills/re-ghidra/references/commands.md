@@ -31,7 +31,7 @@
 | 导入 | `File > Import File` | 选样本后 `Analyze`，等左下角进度完成 |
 | 跳转 | `G` | Go To 地址/符号 |
 | 交叉引用 | `R` | 光标在函数/变量上按 R 开 References |
-| 反编译 | `Ctrl+E` | 打开 Decompiler 窗口 |
+| 反编译 | `Ctrl+E`（默认，随版本/keymap 可能不同） | 打开 Decompiler 窗口，以 Help > Key Bindings 为准 |
 | 函数图 | `F` | Function Graph（分支/循环结构） |
 | 重命名 | `L` | 函数/变量重命名（Listing 与 Decompiler 中均可用） |
 | 设置类型 | `y` | Set Data Type（如 `char *`、`DWORD`） |
@@ -39,7 +39,7 @@
 | 强制反汇编 | `C` | 选中字节标为 code（混淆段手动展开） |
 | 建函数 | `右键 > Create Function` | 修复函数边界 |
 | 撤销 | `Ctrl+Z` | 标注/改名可回滚 |
-| 导出 | `File > Export Program` | 格式选 C/C++ 导出反编译树 |
+| 导出 | `File > Export Program` | 格式选 C/C++ 导出**反编译结果**（非原始源码——变量名/类型推断可能错误，只作阅读辅助，关键逻辑对照反汇编验证） |
 
 ## 脚本 API 族（GhidraScript，Jython 2.7 语法）
 

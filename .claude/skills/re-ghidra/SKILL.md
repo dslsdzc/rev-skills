@@ -53,7 +53,7 @@ description: >
    - `File > Import File` → 选择样本 → `Analyze`（等左下角进度完成）
    - 跳转: `Go To`（G）输入地址；入口点已在 Program Trees 标记 `entry`
    - 交叉引用: 光标在函数/变量上按 `R`（References 窗口），或右键 > References > Show References To
-   - 反编译: 在 Listing 中按 `Ctrl+E`（Decompiler 窗口）或右键 > Decompile Function，反编译视图可 copy
+   - 反编译: 在 Listing 中按 `Ctrl+E`（Decompiler 窗口，默认快捷键可能随版本/keymap 不同，以 Help > Key Bindings 为准）或右键 > Decompile Function，反编译视图可 copy
    - 函数图: 函数上按 `F`（Function Graph）看分支/循环结构，与 Decompiler 同步导航
    - 下划线地址差异: Listing 显示 VA（含 ImageBase），脚本中常用 `getAddressFactory().getDefaultAddressSpace().getAddress("0x401000")`
 
@@ -84,11 +84,13 @@ description: >
        b = getByte(addr.add(i)) ^ 0x55
        setByte(addr.add(i), b)
    ```
+   - **改字节前先副本**：`setByte` 直接写当前 Program（保存后即改原始文件）——分析恶意样本必须先复制 Program（`File > Save As` 另存副本）或对临时副本操作，禁止直接 patch 原始样本，否则破坏证据链
    无头批量: `analyzeHeadless ... -postScript MyScript.java -scriptPath <dir>`
 
 5. **导出反编译 C**：
    - `File > Export Program` → 格式选 `C/C++`，导出整个反编译树
    - 或 Decompiler 窗口逐函数 `Copy` 到笔记
+   - **导出的是反编译结果，不是原始源码恢复**：变量名/类型推断可能错误（重命名后才会改善），不代表原始实现——只作阅读辅助，关键逻辑必须对照反汇编/Listing 验证
    - 导出后核对: C 里无符号函数名保留注释（函数地址），对照原 Listing
 
 ## 函数分析上下文清单
