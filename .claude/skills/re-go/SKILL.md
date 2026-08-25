@@ -45,10 +45,10 @@ description: Go 二进制逆向：符号保留、字符串表、goroutine。触�
 
 ### garble —— Go 混淆识别（恶意样本常见，无独立工具）
 
-- garble 是 Go 官方团队维护的混淆器（构建期变换，非运行时壳）——Go 恶意样本越来越常见，需先识别再分析
-- **识别特征**：①字符串/节表含 `garble` 标识或 `garble` 版本串 ②`-dwarf=false` 构建无 DWARF（`readelf -S` 无 `.debug_*`）③函数名 hash 化（`main.main` → 短 hash 名，pclntab 保留但名字不可读）④`-literals` 构建字符串乱码
-- **常见构建标志**：`garble -dwarf=false -literals build`（去调试 + 字符串混淆；另有 `-tiny` 去生成名/内联信息）
-- 分析要点见步骤 3（hash 函数名 / runtime string decrypt / interface wrapper）
+- garble 是社区维护的第三方 Go 混淆器（构建期变换，非运行时壳；作者 mvdan，非 Go 官方项目）——Go 恶意样本越来越常见，需先识别再分析
+- **识别特征**：①字符串/节表偶见 `garble` 标识（默认剥离构建信息，非必然残留）②garble 构建默认无 DWARF（`readelf -S` 无 `.debug_*`）③函数名 hash 化（`main.main` → 短 hash 名，pclntab 保留但名字不可读）④`-literals` 构建字符串乱码
+- **常见构建标志**：`garble -literals build`（字符串混淆；去调试为默认行为无需标志；另有 `-tiny` 移除位置信息/剥离 panic 打印与符号名，体积约 -15%）
+- 分析要点见步骤 3（hash 函数名 / 字符串惰性解密 / interface 方法名保留）
 
 ### bloaty（体积分析，可选）
 
@@ -88,7 +88,7 @@ description: Go 二进制逆向：符号保留、字符串表、goroutine。触�
    - Go 默认保留符号（除非 `-ldflags "-s -w"`）：`nm sample | grep ' main\.'` 列出用户代码函数
    - Ghidra 导入后函数树按包分组；注意 ELF 入口点 `_rt0_amd64_linux` 只是平台桩，真正用户入口是 `main.main`（由 `runtime.main` 调用），`main.init` 是初始化逻辑
    - 反编译 `main.main` 读主逻辑，从 `main.` 命名函数沿调用链展开；符号全保留时无需猜名
-   - **garble 混淆样本**（恶意 Go 样本常见，见工具准备）：pclntab 仍可解析但函数名 hash 化——GoReSym 列出 hash 名，结构/调用链仍可用；`-literals` 字符串在 init 中解密，运行后内存取明文或静态还原解密循环；interface wrapper 使调用链多一层间接，沿 wrapper 到真实实现
+   - **garble 混淆样本**（恶意 Go 样本常见，见工具准备）：pclntab 仍可解析但函数名 hash 化——GoReSym 列出 hash 名，结构/调用链仍可用；`-literals` 字符串在使用点经顶层解码函数**惰性解密**（仅被触达的字符串才解码）——触发使用后内存取明文，或静态还原解码函数（GoStringUngarbler 可自动化）；**interface 方法名（导出）garble 不混淆**（为保 itab 分派），接口调用可直接按方法名定位实现，被 hash 的是未导出方法名
 
 4. **字符串表**：
    ```sh
@@ -106,7 +106,7 @@ description: Go 二进制逆向：符号保留、字符串表、goroutine。触�
    - 动态（沙箱内）: dlv 对 Go 最友好——`go install github.com/go-delve/delve/cmd/dlv@latest`，`dlv attach <pid>` 后 `goroutines` 列出所有 goroutine、`goroutine <n> stack` 看栈；[[re-tracing]] 的 strace 观察并发系统调用
 
 6. **运行时结构要点（pclntab / goroutine 栈 / buildinfo）**：
-   - pclntab 头（1.20+ 布局）：magic(4) + pad1 + pad2 + minLC + ptrSize + nfunc(8) + nfiles(8) + 保留(8) + funcnameOffset(8) + cuOffset(8) + filetabOffset(8) + pctabOffset(8) + pclnOffset(8)；funcnameOffset 指向函数名字符串池，pctab 是 PC→行号表——1.18/1.19 与 1.20+ 的 pcHeader 同为 72 字节（debug/gosym ver118/ver120 同一解析分支；1.20 差异是 textStart 字段改保留 + 符号名加冒号）；真正更短的头在 ≤1.17（ver116 无 textStart 字段）；1.18 的 Go118PCLnTabMagic 变更了 functab 偏移（func 数据入口从地址改偏移），工具按 magic 分派
+   - pclntab 头（1.20+ 布局）：magic(4) + pad1 + pad2 + minLC + ptrSize + nfunc(8) + nfiles(8) + 保留(8) + funcnameOffset(8) + cuOffset(8) + filetabOffset(8) + pctabOffset(8) + pclnOffset(8)；funcnameOffset 指向函数名字符串池，pctab 是 PC→行号表——1.18/1.19 与 1.20+ 的 pcHeader 同为 72 字节（debug/gosym ver118/ver120 同一解析分支；textStart 经 relocation 写入真实地址、Go 1.26 起恒为 0（不再存储）；1.20 起符号名加冒号 `go.`→`go:`）；真正更短的头在 ≤1.17（ver116 无 textStart 字段）；1.18 的 Go118PCLnTabMagic 变更了 functab 偏移（func 数据入口从地址改偏移），工具按 magic 分派
    - goroutine 栈：g 结构（runtime 私有）首字段 `stack{lo, hi}` 即栈区间，`stackguard0` 是栈增长检查阈值——每个函数序言的 `runtime.morestack` 检查的是它（噪声来源），`sched.gobuf` 保存挂起时的 sp/pc；dlv 的 `goroutines`/`goroutine <n> stack` 输出即来自这些字段，挂起点在 `runtime.gopark` 恢复
    - buildinfo 手工解析：`.go.buildinfo` 内嵌 `\xff Go buildinf:`（14 字节）+ ptrSize(1) + 字节序标记(1)，16 字节对齐；`go version -m` 失效时按此魔数提取版本与 module 信息（与 go tool 同源，解码失败才是真没有）
    - 平台差异：Windows Go 产物是 PE 但节名与符号体系相同（`.gopclntab`/`.go.buildinfo` 都在），nm/GoReSym/redress 在 Linux 上可直接分析 PE Go 样本；入口桩符号随平台（Linux `_rt0_amd64_linux`、Windows `_rt0_amd64_windows`、macOS `_rt0_amd64_darwin`），都只是跳到 runtime.main
