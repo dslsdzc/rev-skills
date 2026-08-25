@@ -16,6 +16,7 @@ description: >
 - 不用：普通 App 层（走 [[re-mobile]]）；Windows 内核/驱动（走 [[re-kernel]]，TEE 侧是 Linux/ARM 域）
 - 不用：纯固件提取解包（先走 [[re-fw-extract]]，本技能在其后分析 TEE 组件）
 - 不用：目标只是普通加密数据（走 [[re-crypto-*]] 系列，无 TEE 组件时不必进本技能）
+- 不用：仅需判定「设备是否用了 TEE」（无镜像、无调用面可分析）——特征级证据即可，不进深度流程
 - 不用：EL2 hypervisor/虚拟化域（走 [[re-hypervisor]]，TEE 是 EL1/EL3 域）
 - 注意：**secure world 内动态调试通常不可行**（见坑 3）——默认静态分析 + 主机侧观察；主机侧动态执行按 [[platform-tips]] 最高原则在沙箱内进行
 
@@ -72,6 +73,7 @@ description: >
 3. **TA 分析（入口 / 命令分发 / secure storage）**：
    - 入口链：`TA_CreateEntryPoint`（初始化）→ `TA_OpenSessionEntryPoint`（会话建立）→ `TA_InvokeCommandEntryPoint`（命令分发，按 cmd_id switch）——**命令分发表就是 TA 的对外接口目录**，逐分支标注命令号与行为
    - 参数模型：invoke 携带参数类型描述与最多 4 个 `TEE_Param`（value 标量对 / memref 内存引用两类）；memref 指向共享内存，是输入输出主通道——每个命令分支标注参数类型与结构
+   - 会话生命周期：OpenSession/CloseSession 与命令调用的配对是还原对象（谁建会话、什么时机、带什么初始参数）——会话建立参数常含初始化密钥材料
    - 命令号枚举：switch 分支逐一编号（含非法命令/默认分支）；与主机侧调用面（步骤 4）对照，确认哪些命令真实可达、哪些是内部使用——可达命令是接口面/攻击面主体，标注优先级
    - **secure storage 对象操作**：定位 `TEE_*` 存储 API 调用点（对象创建/打开/读/写/定位/删除类），还原对象 ID（常由 UUID + 对象名/索引派生）与数据流；secure storage 密文最终落盘于普通世界文件系统（经 tee-supplicant）或硬件存储（RPMB 类，硬件侧见 [[re-hw-chip]]）——找到密文文件的解密路径即找到对象数据
    - 落盘形态：REE 文件系统侧通常为索引文件 + 数据块文件组合（对象目录映射）——按索引找对象、按块定位密文，再还原对象内容
@@ -83,6 +85,7 @@ description: >
    - **夹逼法**：主机侧读 ioctl 参数（UUID、命令号、参数布局、共享内存内容）→ TA 侧分发表（步骤 3）对号入座——两侧都标注后，TA 输入输出格式即可闭合；一侧缺失时从另一侧反推（见坑 2）
    - 动态观察（沙箱内）：frida hook client 库调用与 ioctl 参数（[[re-frida]]），记录会话打开、命令调用序列与缓冲区内容
    - 日志侧：`dmesg` 中 tee 驱动与 OP-TEE 初始化日志（驱动版本、中断号、supplicant 状态）辅助指纹与版本判定
+   - 补充观察：tee-supplicant 进程行为（落盘/外设访问）——secure storage 数据流的 REE 侧落点
    - 产物：主机侧调用序列 + TA 接口对照表（UUID/命令号/参数布局一一对应）
 
 5. **厂商差异处理（自定义 TEE，泛化）**：
