@@ -26,6 +26,7 @@ description: >
   - Windows: `choco install temurin21`（或 Oracle JDK 21）
 - 启动: `./ghidraRun`（GUI）/ `./support/analyzeHeadless`（无头）
 - 验证: `java -version`（须 21+）；`./support/analyzeHeadless -help` 正常输出
+- 版本: 12.x 为当前主线（12.0 起 2025 年底，2026-08 最新 12.1.3）；运行官方 release 只需 JDK 21，从源码构建 Ghidra 自身需 JDK 25 + Gradle 9.1+；11.x → 12.x 有破坏性脚本 API 变更，写脚本先查目标版本 javadoc，细节见 [[gotchas]]
 
 ### ghidra-bridge（Python 远程控制）
 
@@ -41,12 +42,19 @@ description: >
      -import ./sample.bin -deleteProject -log /tmp/ghidra.log
    ```
    只建工程不交互时加 `-overwrite`；批处理多个样本循环调用。日志看 `-log`，分析完成标志: 无异常且工程可重新导入。
+   - `-process` 模式（对已导入工程内文件重跑脚本/分析，与 `-import` 二选一）:
+     ```sh
+     $GHIDRA/support/analyzeHeadless /tmp/proj sample_proj \
+       -process -postScript MyScript.java -scriptPath /tmp/scripts
+     ```
+   - 只做符号/字符串/单函数反编译时加 `-noanalysis`（跳过自动分析，秒级完成）；只读复查加 `-readOnly`；全套参数族见 [[commands]]
 
 2. **GUI：导航/交叉引用/反编译**：
    - `File > Import File` → 选择样本 → `Analyze`（等左下角进度完成）
    - 跳转: `Go To`（G）输入地址；入口点已在 Program Trees 标记 `entry`
    - 交叉引用: 光标在函数/变量上按 `R`（References 窗口），或右键 > References > Show References To
    - 反编译: 在 Listing 中按 `Ctrl+E`（Decompiler 窗口）或右键 > Decompile Function，反编译视图可 copy
+   - 函数图: 函数上按 `F`（Function Graph）看分支/循环结构，与 Decompiler 同步导航
    - 下划线地址差异: Listing 显示 VA（含 ImageBase），脚本中常用 `getAddressFactory().getDefaultAddressSpace().getAddress("0x401000")`
 
 3. **重命名+类型传播标记**：
@@ -113,3 +121,4 @@ description: >
 
 - **脚本 API 跨版本不兼容**：现象——headless 脚本编译失败（skipping 且报 `getPermissions()`/`getExecute()` 类方法不存在）；原因——Ghidra 版本间 MemoryBlock 等 API 变更（12.x 为 `isExecute()`，不同版本方法名不同）；对策——写脚本前先查当前版本 javadoc（小验证脚本），编译失败先怀疑 API 差异而非业务逻辑
 - **全量分析太慢就 -noanalysis**：只做符号表/字符串/单函数反编译时，`analyzeHeadless -noanalysis` 导入后脚本可直接用——符号（含 JNI 导出）与字符串扫描不依赖 auto-analysis，秒级完成
+- 命令速查（headless 参数族 / GUI 快捷键族 / 脚本 API 族）见 [[commands]]；版本差异、无头批处理与脚本 API 的更多坑见 [[gotchas]]
