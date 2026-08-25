@@ -57,6 +57,7 @@ description: >
 - Debian/Ubuntu: `apt install rtl-433`；Fedora: `dnf install rtl-433`；macOS: `brew install rtl_433`（下划线）；Arch: 仓库无包（AUR 或源码编译）
 - 验证: `rtl_433 -h` 列出支持设备列表（如 0: 通用协议族、1: 温湿度计……）
 - 用途: 433/868MHz 气象站/温湿度/车库门等常见遥控协议一键解码
+- 持续输出: `rtl_433 -F json -f 433.9M` 按 JSON 持续打印解码结果——长时间监测/采集多个设备信号时配合日志重定向
 
 ## 操作步骤
 
