@@ -67,6 +67,12 @@ description: >
 
 2. **沙箱报告解读（Any.run / hybrid-analysis）**：
    - 查询: 在 Any.run/hybrid-analysis 搜同一 hash，找公开报告；提交新样本执行须在 [[re-sandbox]] 隔离环境内（网络隔离 INetSim/fake DNS，见 [[platform-tips]] 最高原则）
+   - hybrid-analysis API（key 在个人 profile 的 API key 页生成，请求头 `api-key`）：
+     ```sh
+     curl -s -H "api-key: $HA_API_KEY" \
+       "https://hybrid-analysis.com/api/v2/search/hash?hash=<sha256>" | jq '{sha256s, verdicts: [.reports[].verdict]}'
+     ```
+   - Any.run 有 API（api.any.run，key 在 profile 生成），端点与鉴权以官方文档为准；未配置 key 时网页查询同样可用
    - 解读三块:
      - **行为**: 启动的进程树（有无注入/镂空）、持久化动作（Run 键/计划任务/服务）、文件操作（写哪、删哪）
      - **网络**: 回连域名/IP/端口、DNS 解析、请求 URL（对照 [[re-behavior]] 的捕获）
@@ -76,21 +82,25 @@ description: >
 3. **家族/团伙关联（VT graph、tag）**：
    ```sh
    curl -s --request GET \
-     --url "https://www.virustotal.com/api/v3/files/<sha256>/graph" \
+     --url "https://www.virustotal.com/api/v3/files/<sha256>/graphs" \
      -H "x-apikey: $VT_API_KEY" | jq '.data[].type' | sort -u
    ```
+   - 端点注意：关联图端点是 `/graphs`（复数）——`/graph` 是 API v2 时代的路径，v3 返回 404
    - VT hash 页的关联: 同 C2 域名/同签名/同互斥体命中的其他样本、`popular_threat_category`（如 "trojan.agent"）与 family 标签
    - tags 与 graph 把样本归到家族——写进报告时标注依据（哪些厂商归的、关联靠什么属性）
    - 家族名以多厂商一致为准，单厂商命名只做参考
 
 4. **MISP 事件关联（如有实例）**：
    ```sh
-   # 查询事件的属性（hash/域名/IP）
-   curl -s "https://<misp>/events/restSearch" \
+   # 查询事件的属性（hash/域名/IP）——POST + JSON body
+   curl -s --request POST "https://<misp>/events/restSearch" \
      -H "Authorization: <MISP_API_KEY>" \
      -H "Accept: application/json" \
-     --data-urlencode '{"returnFormat":"json","value":["<sha256>"]}' | jq '.response[0].Event[0].Event | {info, date, orgc}'
+     -H "Content-Type: application/json" \
+     --data-binary '{"returnFormat":"json","value":"<sha256>"}' | jq '.response[]?.Event | {info, date, orgc}'
    ```
+   - body 必须原样 JSON（`--data-urlencode` 会把它 URL 编码，MISP 解析不到 value）；`value` 传字符串
+   - 响应形如 `{"response": [{"Event": {...}}]}`——jq 用 `.response[]?.Event` 展开；不同 MISP 版本响应结构有差异（见 [[gotchas]]）
    - 命中说明组织内已标记过该样本/基础设施——引用事件编号（event ID）作为内部证据
    - 没实例就跳过，此步不阻塞结论
 
@@ -115,3 +125,4 @@ description: >
 - **沙箱报告不可全信（反沙箱样本）**：现象——沙箱报告显示"无恶意行为/进程退出"，但实际环境检测到回连；原因——样本检测到沙箱特征（VM 硬件、调试器、网络环境）后休眠/走正常分支，报告是假的阴性；对策——结合 [[re-behavior]] 真实环境结果与 [[re-mem-forensics]] 内存残留交叉验证；反沙箱样本靠静态深挖（[[re-binary-core]]）与内存线索
 - **API 配额/限速**：现象——VT 免费 key 请求返回 403/429，或者批量查询中途被限；原因——免费 key 有日配额与分钟限速，批量脚本不打间隔必触发；对策——脚本循环内 sleep（如 15 秒）、用 `/search` 批量聚合、配额耗尽换网页查询或等重置；jq 只取需要的字段减少请求次数
 - **哈希误报需多重确认**：现象——某个厂商把良性文件标成恶意（hash 误报），或哈希命中但样本内容不匹配（改名/拼接的旧哈希）；原因——单厂商签名粒度粗、VT 聚合统计不加权，原始 hash 与文件内容没有强绑定验证；对策——"恶意"判定看多厂商一致 + 家族标签 + 行为证据，不认单厂商；查询前先对本地文件重算 sha256 与查询值核对（防错 hash 查询）
+- 端点速查与操作序列见 [[commands]]；API 版本与数据质量坑见 [[gotchas]]
