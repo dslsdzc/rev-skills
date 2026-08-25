@@ -71,6 +71,8 @@ description: Rust 二进制逆向：符号、monomorphization、所有权模式�
    ```
    - 特征符号: `_ZN4core9panicking...E`（panic 基建）、`_ZN3std2rt...E`（std 运行时）、`__rust_alloc`/`__rust_dealloc`（替代 malloc/free 的分配器）
    - std 程序入口是 `main`；no_std（嵌入式）用 `_start`
+   - `.comment` 节指纹：`readelf -p .comment sample` 直接给出 `rustc version <版本> (<commit>)` 与链接器版本（实测 1.95 产物含 `rustc version 1.95.0 (59807616e 2026-04-14)` 与 `Linker: LLD 22.1.2`）——版本指纹先看这里，比猜 panic 风格快
+   - panic 文案泄漏源码路径：`strings sample | grep 'panicked at'` 后的路径形如 `/rustc/<commit>/library/std/src/...`，`<commit>` 即精确工具链版本；业务代码路径同样在文案里
 
 2. **符号解译（demangle）**：
    ```sh
@@ -80,6 +82,7 @@ description: Rust 二进制逆向：符号、monomorphization、所有权模式�
    ```
    - v0 新式（`_RNv`）只有 rustfilt/Ghidra 11+ 能解，c++filt 原样吐出（坑 5）
    - Ghidra 11+ 导入后自动 demangle：函数树直接可读；符号保留确认: 无输出 → 坑 1
+   - v0 默认化后产物仍是混合命名：实测 1.95 产物 v0 符号占绝大多数（455 个 vs legacy 30 个），但 `main` 与部分 std 内部符号（含 `.llvm.` 后缀实例）仍是 legacy `_ZN`——识别与批量 demangle 时两种前缀都要覆盖
 
 3. **monomorphization 识别**：
    ```sh
@@ -115,3 +118,5 @@ description: Rust 二进制逆向：符号、monomorphization、所有权模式�
 - **panic 路径与正常路径交织**：现象——反编译里每个下标/`unwrap`/断言都带分支与 panic 调用，可读性被淹没；原因——Rust 在越界索引、`unwrap()`、`assert!` 处插入 `panic_bounds_check`/`core::panicking::panic` 检查（release 也保留索引检查），加上 `unreachable!` 死路径；对策——识别并跳过 `core::panicking::`/`std::panicking::`/`panic_impl` 相关调用与异常分支；panic 文案在 strings 里可见，可反向辅助定位调用点
 - **async/await 状态机展开**：现象——一个 async fn 变成结构体 + 巨大 `match` 状态循环，函数名带 `{{closure}}`/`{{opaque}}`，找不到线性流程；原因——async fn 编译为 Future 状态机，每个 await 点是一个状态与保存点，poll 内按状态转移；对策——按状态号（0..N）追踪转移逻辑，重点读 poll 方法；识别 `core::future`/`std::future::poll_with_tls_context` 调用；tokio 程序找 `tokio::runtime` 符号与 `block_on` 定位入口
 - **v0 新式命名 c++filt 解不了**：现象——`c++filt`/`nm -C` 对 `_RNv...` 原样输出，符号仍是乱码；原因——v0 mangling 自 1.37 起可选（`-C symbol-mangling-version=v0`），2025 年底起成为默认（此前 2019-2025 年间绝大多数二进制仍是 legacy `_ZN`，`nm -C` 可解）；对策——统一用 rustfilt（Debian/Ubuntu 官方包 `apt install rustfilt`，其余 `cargo install rustfilt`）批处理 `nm sample | rustfilt`；Ghidra 11+ 内置 demangler 直接自动解
+- **panic 策略决定产物形态（unwind vs abort）**：现象——部分产物找不到 `rust_begin_unwind` 符号、`.eh_frame` 很小或缺失，反编译里 `core::panicking` 调用点直接是终止路径，行为分析时程序整体退出；原因——`-C panic=abort`（常见于嵌入式/体积敏感/安全硬化构建）去掉 unwind 表与恢复路径，默认 `panic=unwind` 才保留；对策——用 `readelf -S` 看 `.eh_frame` 存在性 + `nm` 找 `rust_begin_unwind`/`rust_panic` 判定策略；abort 产物里不必找 panic 后的恢复逻辑，panic 即终止；panic 文案（`panicked at`）两种策略都在
+- **no_std 产物无 std 运行时符号**：现象——找不到 `_ZN3std2rt...E`、`__rust_alloc` 也时有时无；原因——no_std（嵌入式/内核）不链接 std，仅 core + 自定义分配器；对策——识别改看 core 特征（`_ZN4core...`）+ `.comment` 版本指纹；入口是 `_start` 而非 `main`，分配器符号（`__rust_alloc` 或自定义 `malloc`）按需确认；这类固件常配 [[re-emulation]] 做无环境模拟
