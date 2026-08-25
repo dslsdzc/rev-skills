@@ -51,9 +51,9 @@ description: >
    file sample                                                              # 字节码产物判别（脚本头）
    ```
    - GHC：`main`（C RTS 入口）+ RTS 运行时符号（`stg_*`/`hs_*`）+ 业务符号 `Main_main_closure`/`Main_main_info`（`模块_名字_closure/info` 形态）
-   - OCaml 原生：`main` → `caml_main` → `caml_startup_common` → `caml_start_program` → `caml<模块>__entry`；`caml_startup`/`caml_startup_pooled` 是供 C 嵌入调用的等价入口（参数形态不同），勿误当主链；`caml_*` 运行时符号（caml_alloc/caml_apply2/3 等）
-   - **字节码 vs 原生**：`caml_start_program` 在 native 与字节码运行库中都存在，**不可作字节码判据**；字节码产物判别用 `file`（`ocamlrun script executable`）/`xxd` 头（`#!...ocamlrun\n` 脚本头 + `T`/`C` 魔数 + 分节）
-   - 入口链各版本一致：官方 runtime/main.c 始终定义 `caml_main(argv)`（`main → caml_main → caml_startup_common → caml_start_program`，4.14.2 实测地址见 [[examples]]）；字节码运行库同样经 `caml_start_program` 进入
+   - OCaml 原生：`main` → `caml_main` → `caml_startup_common` → `caml_start_program` → `caml<模块>__entry`；`caml_startup`/`caml_startup_pooled` 是供 C 嵌入调用的等价入口（签名同为 void (char_os **argv)，区别在 pooling 标志与异常行为），勿误当主链；`caml_*` 运行时符号（caml_alloc/caml_apply2/3 等）
+   - **字节码 vs 原生**：`caml_start_program` 仅存在于 native 运行库（4.14.2 libasmrun.a 实测），是 native 特征；字节码判据用 `caml_interprete`（仅 libcamlrun.a 有）；字节码产物判别用 `file`（`ocamlrun script executable`）/`xxd` 头（`#!...ocamlrun\n` 脚本头 + `T`/`C` 魔数 + 分节）
+   - 入口链各版本一致：runtime/main.c 定义 `main` 并调用 `caml_main(argv)`（`caml_main` 定义于 startup_byt.c/startup_nat.c；原生链 `main → caml_main → caml_startup_common → caml_start_program`，4.14.2 实测地址见 [[examples]]）；字节码运行库入口为 `caml_main → caml_startup_aux → caml_interprete`
    - 判别速查：GHC = `stg_*` 机械符号群 + `模块_名_closure/info` 对；OCaml 原生 = `caml_*` 群 + `caml<模块>__<名>_<id>`；OCaml 字节码 = `#!ocamlrun` 脚本头
 
 2. **闭包与堆对象**：
@@ -99,7 +99,7 @@ description: >
 
 - **RTS 版本差异**：现象——closure 布局解读失败；原因——GHC/OCaml 版本演进；对策——按目标版本确认布局（本技能字段表基于 9.14/4.14 实测，见 [[layout]]）
 - **thunk 惰性求值误导**：现象——未求值闭包被当已求值数据；原因——惰性求值；对策——区分 thunk 头（info 指向求值代码）与已求值值（info 指向 WHNF 头）；CAF 首引用前都是 thunk
-- **OCaml 字节码非 native**：现象——反编译全是运行时包装；原因——字节码产物；对策——识别 ocamlrun 脚本头/字节码段特征后按字节码结构分析（非常规反编译；`caml_start_program` 两种产物都有，不作判据）
+- **OCaml 字节码非 native**：现象——反编译全是运行时包装；原因——字节码产物；对策——识别 ocamlrun 脚本头/字节码段特征后按字节码结构分析（非常规反编译；`caml_start_program` 仅 native 运行库有，是 native 特征；字节码判据用 `caml_interprete`）
 - **控制流打散导致静态分析失效**：现象——函数体无连续逻辑；原因——函数式编译产物；对策——转数据流分析（步骤 4），不硬追控制流
 - **tagged int 误读**：现象——整数被当指针/指针被当整数；原因——OCaml 值标记位；对策——按最低位区分（1=整数，0=指针），访问前先解标记（int >> 1 取真值）
 - **GHC 模块名带 z 编码**：现象——符号 `GHCziInternalziTopHandler_runMainIO1_info` 难读；原因——`z`+小写转义特殊字符（GHC mangling：`zi`=`.` `zu`=下划线 `zz`=z `zc`=: `zh`=# 等）；对策——按转义规则手工还原模块名（`GHCziInternal` → `GHC.Internal`），还原后与源码模块结构对应

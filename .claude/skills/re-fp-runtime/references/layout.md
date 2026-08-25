@@ -66,14 +66,14 @@ header = (size << 10) | (color << 8) | tag
 
 ```
 main (C 入口，runtime/main.c)
-  └─ caml_main(argv)                ← 各版本 runtime/main.c 均定义 caml_main(argv)
+  └─ caml_main(argv)                ← runtime/main.c 定义 main 并调用 caml_main（caml_main 定义于 startup_byt.c/startup_nat.c）
        └─ caml_startup_common
-            └─ caml_start_program   ← 注意：字节码运行库也有此符号，不作字节码判据
+            └─ caml_start_program   ← 仅 native 运行库（4.14.2 libasmrun.a 实测）；字节码入口 caml_main → caml_startup_aux → caml_interprete（无此符号）
                  └─ caml<模块>__entry（各模块初始化，含全局数据分配）
                       └─ 业务入口（camlHello__entry）
 ```
 
-- 主链是 `caml_main`；`caml_startup`/`caml_startup_pooled` 是供 C 嵌入方调用的等价入口（参数形态不同），勿混淆。4.14.2 实测地址：caml_main=0x26180、caml_startup_common=0x25ec0、caml_startup=0x26150、caml_start_program=0x4a990（反汇编见 [[examples]]）
+- 主链是 `caml_main`；`caml_startup`/`caml_startup_pooled` 是供 C 嵌入方调用的等价入口（签名同为 void (char_os **argv)，区别在 pooling 标志与异常行为），勿混淆。4.14.2 实测地址：caml_main=0x26180、caml_startup_common=0x25ec0、caml_startup=0x26150、caml_start_program=0x4a990（反汇编见 [[examples]]）
 - 模块级函数命名：`caml<模块>__<名字>_<数字id>`（如 `camlHello__add_267`）
 
 ### OCaml 字节码产物结构
@@ -94,7 +94,7 @@ main (C 入口，runtime/main.c)
 
 | 项 | 老版本 | 实测版本（本文档） |
 |---|---|---|
-| OCaml 入口 | `main → caml_main → caml_startup_common → caml_start_program`（各版本一致，runtime/main.c 定义 `caml_main(argv)`） | 同左（4.14.2 实测，地址见 [[examples]]） |
+| OCaml 入口 | `main → caml_main → caml_startup_common → caml_start_program`（各版本一致；runtime/main.c 定义 `main` 并调用 `caml_main`，`caml_main` 定义于 startup_byt.c/startup_nat.c） | 同左（4.14.2 实测，地址见 [[examples]]） |
 | 字节码魔数 | 魔法串在文件尾 TOC（`Caml1999X`+版本号，exec.h 定义） | 前导 `T` + 尾部 `Caml1999X031`（4.14 实测） |
 | GHC 版本 | RTS 符号命名随版本微调 | 9.14.1（stg_ap_*/stg_upd_frame_info 稳定） |
 

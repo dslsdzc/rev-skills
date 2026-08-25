@@ -72,7 +72,7 @@ $ nm hello_ocaml | grep -E 'camlHello__|caml_apply|caml_start|caml_alloc'
 0000000000025ec0 T caml_startup_common     ← 入口链：caml_main → caml_startup_common
 0000000000026150 T caml_startup            ← 等价 C API 入口（caml_startup(argv)）
 0000000000026180 T caml_main               ← 入口链：main → caml_main（4.14.2 实测）
-000000000004a990 T caml_start_program      ← native 也有此符号！不作字节码判据
+000000000004a990 T caml_start_program      ← 仅 native 运行库（libasmrun.a），是 native 特征
 000000000004df68 D camlHello               ← 模块全局数据
 
 $ nm hello_ocaml | grep -wE 'main|_start'
@@ -80,7 +80,7 @@ $ nm hello_ocaml | grep -wE 'main|_start'
 0000000000022540 T _start
 ```
 
-对照要点：`caml_applyN` 是闭包部分应用分派（参数个数驱动）；`caml_main` 存在于 4.14.2（0x26180，反汇编见 `main → call caml_main` → `caml_startup_common`），官方 runtime/main.c 各版本均定义 `caml_main(argv)`；模块 entry 符号 `caml<模块>__entry`。
+对照要点：`caml_applyN` 是闭包部分应用分派（参数个数驱动）；`caml_main` 存在于 4.14.2（0x26180，反汇编见 `main → call caml_main` → `caml_startup_common`），runtime/main.c 定义 `main` 并调用 `caml_main`（`caml_main` 定义于 startup_byt.c/startup_nat.c）；模块 entry 符号 `caml<模块>__entry`。
 
 ## 4. OCaml 字节码产物判别（file + xxd 实测）
 
@@ -133,7 +133,7 @@ block 头(3 字段,tag 0) → (3<<10)|(0<<8)|0 = 0xC00
 
 - 一切从符号锚点出发：GHC `模块_名_closure/info` 对、OCaml `caml<模块>__<名>_<id>`
 - closure 首字段 = info 指针是分派核心；模式匹配/闭包调用都经它跳转
-- 字节码判别用 `file`/头字节，`caml_start_program` 不作判据（native 也有）
+- 字节码判别用 `file`/头字节；`caml_start_program` 仅 native 运行库有，是 native 特征，字节码判据用 `caml_interprete`
 
 ## 使用注意
 
