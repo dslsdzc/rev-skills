@@ -32,6 +32,7 @@ description: >
 - Linux: `apt install gnuradio` / `pacman -S gnuradio`；macOS: `brew install gnuradio`
 - Windows: 官方安装包
 - 验证: `gnuradio-companion --version` 或 `grcc --version`
+- 无头编译: `grcc flow.grc` 把流程图编译成可执行 Python 脚本——批量/重复解调链用文件管理比每次 GUI 拖线快
 
 ### Gqrx（频谱/接收 GUI）
 
@@ -112,4 +113,5 @@ description: >
 - **编码反转漏看**：现象——位流全反；原因——NRZ/Manchester 未识别；对策——试反相与编码模式组合
 - **捕获不完整**：现象——帧被截断；原因——带宽不够/触发时机；对策——加宽带宽、延长采集、按同步字触发
 - **RTL-SDR 镜像频率/带宽限制**：现象——采到的信号在错误频率出现、带宽超 2.4MHz 后解调全乱；原因——直接采样混叠、USB 传输不稳；对策——带宽 ≤2.4M、先 `rtl_test -p` 校准 ppm 后用 `-e` 补偿（详见 [[gotchas]]）
+- **URH 对复杂调制支持弱**：现象——DSSS/OFDM/跳频信号 URH 解不出稳定位流；原因——URH 面向简单调制（ASK/FSK/PSK）设计；对策——频谱扩展类信号改用 GNU Radio 搭完整解调链（解扩/均衡），URH 只做后续位流分析
 - 硬件差异、工具特有坑见 [[gotchas]]；命令速查见 [[commands]]
