@@ -102,6 +102,7 @@ description: >
 - [[re-tracing]]：API 调用跟踪——patch 目标函数（AmsiScanBuffer/EtwEventWrite）的调用序列佐证绕过是否生效
 - [[re-ioc]]：规避特征（内存哈希/命令行模式/lolbin 组合）进 IOC 与 YARA 规则
 - [[re-malware]]：恶意样本的规避层分析（re-malware 行为分析后转本技能深挖规避）
+- [[re-ebpf]]：驻留 bpf hook（fentry/kprobe/tracepoint/cgroup）的识别与反制
 - 引用 [[platform-tips]] 最高原则（默认沙箱）与 Windows 分支
 
 ## 常见坑与陷阱

@@ -104,6 +104,7 @@ description: >
 - [[re-sandbox]]：驱动加载测试环境隔离（VM + 快照，[[platform-tips]] 最高原则）
 - [[re-emulation]]：摘出的驱动关键函数可模拟执行验证
 - [[re-mem-forensics]]：rootkit 取证对照（步骤 8）
+- [[re-ebpf]]：eBPF 程序逆向（BPF-64 指令集、progs/maps、xlated）——非 .ko 形态的内核代码走本技能
 - 反编译工具选型: [[re-ghidra]] / [[re-ida]] / [[re-binaryninja]] 三选一
 
 ## 常见坑与陷阱

@@ -97,6 +97,7 @@ description: >
 - [[re-malware]]：恶意行为观察（回连/持久化/自启动）
 - [[re-cracking]]：监控校验/注册相关的 API 调用参数
 - 与 [[re-imports]] 互补（动态解析 API）；发现反调试时转 [[re-anti-analysis]]
+- [[re-ebpf]]：BPF 观测/跟踪取证还原——strace 覆盖不到的 skb/内核路径由 BPF 观测互补
 
 ## 常见坑与陷阱
 
