@@ -165,7 +165,7 @@
 
 ## 4. 簇任务提示（供后续任务引用）
 
-- T1 批次：正文扩写至 ~130 行基线 + 2 个深度文件；簇按「类型 × 主题相邻」划分（如 re-rtos 与 re-tee 同固件簇；格式类 T1 有 format-macho/go/rust/nim/zig/swift/fp-runtime/rtos/mips 等）
+- T1 批次：正文扩写至 ~130 行基线 + 2 个深度文件；簇按「类型 × 主题相邻」划分（如 re-rtos 与 re-tee 同固件簇；格式类 T1 有 format-macho/nim/zig/swift/fp-runtime/rtos 等）
 - T2 批次：正文适度补强；关键者（29 个）配深度文件，非关键者（20 个）以正文补强为主
 - T3 批次：只补深度文件（尚无者）
 - 文件集命名对齐 frida-scripts.md 惯例；`[[链接]]` 目标 = 文件名去扩展名（validate 既有支持）
