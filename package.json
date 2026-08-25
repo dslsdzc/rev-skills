@@ -1,6 +1,6 @@
 {
   "name": "rev-skills",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "通用逆向工程 AI 技能库：118 个技能 + 多工具安装器（Claude Code/Gemini/Cline/Codex/Cursor/Copilot/Windsurf）",
   "type": "module",
   "bin": { "rev-skills": "bin/install.mjs" },

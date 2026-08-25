@@ -10,7 +10,7 @@
       "name": "rev-skills",
       "source": "./",
       "description": "逆向工程技能库",
-      "version": "0.0.3"
+      "version": "0.0.4"
     }
   ]
 }
