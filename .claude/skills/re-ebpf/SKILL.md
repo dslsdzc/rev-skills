@@ -26,7 +26,7 @@ description: >
 
 - Debian/Ubuntu: `apt install bpftool`（Debian bullseye 起有独立包；Ubuntu 19.10+ 亦可装 `linux-tools-common` + `linux-tools-generic`——前者只是 wrapper，真实二进制在 `linux-tools-$(uname -r)` 内核配套包里）；旧版 Debian（buster 及更早）无独立包，从内核源码编译 `tools/bpf/bpftool` 或克隆 libbpf/bpftool 仓库构建
 - Fedora: `dnf install bpftool`（官方仓库）；Arch: `pacman -S bpftool`
-- Windows: 原生无 eBPF，在 WSL2（Linux 内核）内按发行版安装；macOS: 无内核 eBPF 支持，用 Linux 虚拟机
+- Windows: 无 Linux 内核 eBPF 运行环境（微软 ebpf-for-windows 为独立实现，非 Linux 内核形态），在 WSL2（Linux 内核）内按发行版安装；macOS: 无内核 eBPF 支持，用 Linux 虚拟机
 - 验证: `bpftool version`；查询类命令加 `sudo`（`bpftool prog list`、`bpftool prog dump xlated id N`、`bpftool feature probe`、`bpftool map show/dump id N`、`bpftool net show`、`bpftool btf dump file /sys/kernel/btf/vmlinux`）
 
 ### llvm-objdump —— 静态反汇编 BPF ELF
@@ -110,8 +110,8 @@ description: >
 
 ## 常见坑与陷阱
 
-- **helper 调用号随内核版本漂移**：现象——xlated 里 `call <名>#<号>` 的号与手上内核版本表对不上，或 bpftool 显示 `call unknown#<号>`（kptr_restrict=2 时显示 `bpf_unspec#0`）；原因——helper 号是 bpf_func_id 枚举序号，随内核版本增删漂移，且 bpftool 显示的 name 来自其编译时表（与运行内核可能不同版本）；对策——按版本查表：以运行内核源码 `include/uapi/linux/bpf.h` 的 bpf_func_id 枚举为准（bpftool 版本过旧时尤其要查源码）；`sudo bpftool feature probe` 列出该内核实际支持的 helper（按名，分 prog type）；kallsyms 关联（`/proc/sys/kernel/bpf_jit_kallsyms`=1、kptr_restrict=0）影响名称显示，号始终以内核源码为准
-- **xlated 与源码不对应（verifier 重写）**：现象——xlated 指令数/顺序/常量与 llvm-objdump 结果明显不同；原因——xlated 是 verifier 处理后的形态：上下文访问改写（如 __sk_buff 改为 sk_buff 直接偏移）、map 访问内联（helper 调用替换为直接地址加载）、helper 内联为内核实现函数（如 `__htab_map_lookup_elem`）、常量折叠、不可达代码删除；bpf2bpf 子程序显示为 `call pc+X#<tag>` 相对调用；尾调用目标不在本 prog（藏在 prog_array map 里，xlated 只见 `bpf_tail_call`）；对策——以 xlated 为执行真相，静态反汇编仅作语义参考；用 `linum` 选项把源码行信息贴到 xlated 上对齐；尾调用链沿 prog_array map 的 fd 逐跳展开
+- **helper 调用号随内核版本漂移**：现象——xlated 里 `call <名>#<号>` 的号与手上内核版本表对不上，或 bpftool 显示 `call unknown#<号>`（kptr_restrict=2 时显示 `bpf_unspec#0`）；原因——helper 号是 bpf_func_id 枚举序号，随内核版本增删漂移；名称来源两分：helper 名来自 bpftool 编译时表（与运行内核可能不同版本），`call pc+X#` 子程序名来自运行内核 kallsyms（需 bpf_jit_kallsyms=1、kptr_restrict=0，符号形如 bpf_prog_<tag>_<name>）；对策——按版本查表：以运行内核源码 `include/uapi/linux/bpf.h` 的 bpf_func_id 枚举为准（bpftool 版本过旧时尤其要查源码）；`sudo bpftool feature probe` 列出该内核实际支持的 helper（按名，分 prog type）；kallsyms 关联（`/proc/sys/kernel/bpf_jit_kallsyms`=1、kptr_restrict=0）影响名称显示，号始终以内核源码为准
+- **xlated 与源码不对应（verifier 重写）**：现象——xlated 指令数/顺序/常量与 llvm-objdump 结果明显不同；原因——xlated 是 verifier 处理后的形态：上下文访问改写（如 __sk_buff 改为 sk_buff 直接偏移）、map 访问内联（helper 调用替换为直接地址加载）、helper 内联为内核实现函数（如 `__htab_map_lookup_elem`）、常量折叠、不可达代码删除；bpf2bpf 子程序显示为 `call pc+X#<子程序符号名>` 相对调用；尾调用目标不在本 prog（藏在 prog_array map 里，xlated 只见 `bpf_tail_call`）；对策——以 xlated 为执行真相，静态反汇编仅作语义参考；用 `linum` 选项把源码行信息贴到 xlated 上对齐；尾调用链沿 prog_array map 的 fd 逐跳展开
 - **BTF 缺失类型盲区**：现象——手写字节码/旧工具链产物没有 `.BTF`，map 布局、结构体偏移无从解析，Ghidra 里全是裸地址；原因——BTF 是类型信息的唯一权威来源（CO-RE 重定位也依赖它）；对策——从 xlated 的 ldimm64 目标与 STX/ST 指令的偏移常量反推布局；有 `.BTF` 时用 `bpftool btf dump file prog.o` 导出类型，vmlinux 侧用 `bpftool btf dump file /sys/kernel/btf/vmlinux` 对照结构体
 - **map 与 prog 分离/生命周期**：现象——只 dump prog 不 dump map，行为链条断裂；prog 卸载后未 pin 的 map 即销毁，现场不留证据；原因——map 独立于 prog 存在（可多 prog 共享、可 pin 于 /sys/fs/bpf 持久化）；对策——分析现场先 `bpftool map show` + `prog list` 做全量快照，再逐 map dump；取证前把 pin 目录 /sys/fs/bpf 完整归档
 - **无符号库函数匹配**：现象——剥离符号的加载器/字节码 blob 里，自实现的字符串/哈希/编码逻辑无任何符号可打；原因——BPF 程序无动态链接，所有逻辑内联在 prog 内；对策——按常量模式（字符串、magic 值、表基址）与行为指纹（与 helper 调用序列的组合形态）识别；对照同源加载器源码或常见模式库
