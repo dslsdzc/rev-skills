@@ -52,7 +52,20 @@ description: >
    ```
    三表对照: `-h` 给入口点，`-l` 给运行时内存布局，`-S` 给静态节视图。
 
-2. **.init_array / .fini_array（main 之前执行）**：
+2. **结构速览（ehdr/phdr/shdr 布局）**：ELF 文件 = 头 + 程序头表 + 节区 + 节头表；64 位下 ehdr 64 字节、phdr 56 字节/条、shdr 64 字节/条。ehdr 关键字段与偏移：
+   ```
+   0x00  e_ident[16]  magic(7F 45 4C 46)+class(0x04:1=32位/2=64位)+data(0x05)+OSABI(0x07)
+   0x10  e_type        1=REL 2=EXEC 3=DYN(PIE/so) 4=CORE
+   0x12  e_machine     62=x86-64 3=i386 183=AArch64 243=RISC-V 8=MIPS
+   0x18  e_entry       入口点
+   0x20  e_phoff       程序头表偏移
+   0x28  e_shoff       节头表偏移
+   0x34  e_ehsize      64（32 位为 52）
+   0x38  e_phnum | 0x3A e_shentsize | 0x3C e_shnum | 0x3E e_shstrndx
+   ```
+   三表关系: `readelf -h` 输出的每个字段都能在文件前 64 字节里手工核对（`xxd -l 64`）；程序头描述"哪些文件区段按什么权限/对齐映射到内存"，节头描述"文件里的符号/字符串/代码等命名区段"。字段全表与布局图见 [[layout]]。
+
+3. **.init_array / .fini_array（main 之前执行）**：
    ```sh
    readelf -S sample | grep -i init_array
    readelf -a sample | grep -A5 -i 'init_array'
@@ -60,7 +73,7 @@ description: >
    ```
    `.init_array` 中的函数指针在 main 之前按序执行——初始化/反调试/解密常藏在这里，必须最先查。
 
-3. **GOT/PLT 与动态符号**：
+4. **GOT/PLT 与动态符号**：
    ```sh
    objdump -d -j .plt sample            # PLT 桩（外部函数调用入口）
    readelf -r sample | head -40         # 重定位表（含 GOT 条目）
@@ -68,14 +81,22 @@ description: >
    objdump -T sample | grep UND         # 未定义符号 = 导入
    ```
 
-4. **stripped 二进制符号恢复思路**：
+5. **动态链接结构解析要点**（.so 与动态可执行文件必查）：
+   ```sh
+   readelf -d sample                    # dynamic section: DT_* 标签
+   readelf -s sample | head -20         # .dynsym 动态符号（导入/导出）
+   readelf -r sample | grep -E 'JUMP_SLOT|GLOB_DAT|RELATIVE'
+   ```
+   关联链: `DT_STRTAB`/`DT_SYMTAB` 标签指向 dynstr/dynsym，符号表按 `DT_SYMENT`(24 字节/条) 定长遍历；`DT_GNU_HASH`（新）替代 `DT_HASH`（旧）做符号查找；重定位类型决定 GOT 槽行为——`R_X86_64_JUMP_SLOT`(PLT 跳转)、`GLOB_DAT`(全局变量)、`RELATIVE`(基址相对)。`DT_BIND_NOW`/FLAGS 出现 = 全 RELRO、GOT 只读、无惰性绑定（现代发行版默认）。动态区解析细节见 [[layout]]。
+
+6. **stripped 二进制符号恢复思路**：
    ```sh
    readelf -s sample | wc -l            # 如果只剩 .dynsym（几十个），说明被 strip
    strings -n 6 sample | grep -iE 'error|usage|\.so'   # 错误消息泄露内部函数名
    ```
    恢复流程: 字符串交叉引用（`strings -t x` 取偏移 → 在 Ghidra/radare2 中定位引用）→ 对常见库函数做签名匹配（Ghidra FLIRT / rizin `z` 签名）→ 从 main 入口逆推调用关系。
 
-5. **安全属性检查**：
+7. **安全属性检查**：
    ```sh
    readelf -l sample | grep -E 'GNU_STACK|GNU_RELRO'
    # GNU_STACK 无 E 标志 = 不可执行栈（NX）
@@ -83,6 +104,8 @@ description: >
    readelf -s sample | grep -c __stack_chk_fail   # >0 = 有 Canary
    ```
    RELRO/Canary/NX 情况决定后续动态分析（如 GOT 是否可写）与 [[re-imports]] 的劫持面判断。
+
+8. **手工解析与验证**：readelf 输出异常/头字段被伪造时，用 `xxd` + Python `struct` 按偏移直接解析 ehdr/phdr/shdr（最小可运行示例与字节样例见 [[examples]]），别把解析失败当"损坏文件"丢弃。
 
 ## 跨域联合
 
