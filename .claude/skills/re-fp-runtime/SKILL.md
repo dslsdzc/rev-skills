@@ -54,6 +54,7 @@ description: >
    - OCaml 原生：`main` → `caml_startup` → `caml_start_program` → `caml<模块>__entry`；`caml_*` 运行时符号（caml_alloc/caml_apply2/3 等）
    - **字节码 vs 原生**：`caml_start_program` 在 native 与字节码运行库中都存在，**不可作字节码判据**；字节码产物判别用 `file`（`ocamlrun script executable`）/`xxd` 头（`#!...ocamlrun\n` 脚本头 + `T`/`C` 魔数 + 分节）
    - 老 OCaml（4.x 早期）入口符号为 `caml_main`（实测 4.14.2 ocamlopt 无此符号，入口即 `main → caml_startup`）
+   - 判别速查：GHC = `stg_*` 机械符号群 + `模块_名_closure/info` 对；OCaml 原生 = `caml_*` 群 + `caml<模块>__<名>_<id>`；OCaml 字节码 = `#!ocamlrun` 脚本头
 
 2. **闭包与堆对象**：
    - GHC：thunk（未求值闭包）与已求值值的堆对象布局——closure 首字段即 info table 指针（实测字节验证见 [[examples]]）；CAF 以 thunk 形式静态分配，首次引用才求值（惰性）；`Main_main_closure` 是 CAF，其 info 指向 thunk 求值代码
@@ -72,6 +73,13 @@ description: >
    - 数据流线索：闭包字段初始化点（构造器参数）、模式匹配分支（构造器标签分发）、字符串/常量引用
    - 产出：数据流图（构造器 → 字段 → 使用点）替代控制流图（与 [[analysis-contract]] 数据契约衔接）
    - 模式匹配还原：分支按构造器 tag 分发（OCaml）或 info 表指针比较（GHC）——tag/指针值 → 构造器序号；还原出构造器集合即还原出数据类型
+   - 产出格式（供分析报告与下一环节消费）：
+     ```
+     构造器 C1 (tag 0, 2 字段) ← 分配点 A (caml_alloc2 / info 表)
+       字段0 ← 函数参数/常量（数据来源）
+       字段1 ← 字符串池引用
+     使用点: tag 比较 → 分支 B（业务逻辑）
+     ```
 
 5. **字节码产物（OCaml 特有）**：
    ```sh
