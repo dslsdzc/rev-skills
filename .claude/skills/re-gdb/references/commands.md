@@ -133,7 +133,7 @@ c                             # 后续比较点同样 patch，或一次性静态
 - 断点不命中 ≠ 代码没执行：先查 `info b` 命中次数、`info sharedlibrary` 模块加载、`x/i` 断点处字节是否还是 int3（自修改代码覆盖）
 - gdb 的 `set $reg` 只影响本次运行；要持久化得改二进制并重新哈希对照（[[re-patching]]）
 - Python 脚本里 `gdb.execute("...")` 抛异常会中断脚本，批量跑包 try/except 并打印进度
-- `find` 的地址范围参数是 `start, end`（逗号分隔不含空格），写错会按错误语法报错——范围先 `info proc mappings` 确认
+- `find` 的地址范围参数是 `start, end`（逗号分隔，逗号后可有空格），写错会按错误语法报错——范围先 `info proc mappings` 确认
 
 ## 使用注意
 

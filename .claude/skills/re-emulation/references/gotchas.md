@@ -3,7 +3,7 @@
 ## 版本差异
 
 - **Unicorn 2.x 是当前线**（pip 默认；2.1.4 于 2025-09 发布）：钩子回调签名与 1.x 一致（`(uc, address, size, user_data)` / 内存类 `(uc, access, address, size, value, user_data)`），但 2.0 起 C 库 API/内部行为有调整（如部分 hook 类型、PC 保证语义）——旧教程若按 1.x C API 写 python 绑定的罕见写法会失效，Python 绑定层面基本兼容
-- **Qiling 版本差异**：`ql.save/restore` 是 1.4+ 能力；1.3 及更早没有快照 API；rootfs 组织（`examples/rootfs/`）随版本增删 OS profile——以 clone 的官方仓库当前结构为准
+- **Qiling 版本差异**：快照能力自 1.x 早期即有（1.1 起 `ql.save/restore` 已含 snapshot 参数及 reg/mem/fd 开关）；1.4 起参数扩展（新增 os_context/loader 等开关）；rootfs 组织（`examples/rootfs/`）随版本增删 OS profile——以 clone 的官方仓库当前结构为准
 - **capstone 5.x**：`pip install capstone` 当前 5.0.x；5.x 对部分指令的助记符输出与 4.x 有差异（`capstone.x86` 命名一致），反汇编对照脚本留意
 - **unidbg / Chomper 是独立工具**：unidbg（Java，Android JNI 模拟）与 Chomper（Unicorn 封装，iOS OC 模拟）不依赖 unicorn pip 包版本，走各自仓库 release
 
@@ -23,7 +23,7 @@
 
 ## 架构与平台坑
 
-- **ARM Thumb**：Thumb 代码要 `UC_MODE_THUMB`（或 arm64 混 Thumb 用 `UC_MODE_ARM | UC_MODE_THUMB` 组合），模式错了解码全乱
+- **ARM Thumb**：Thumb 代码要 `UC_MODE_THUMB`（或 AArch32 混 Thumb 用 `UC_MODE_ARM | UC_MODE_THUMB` 组合），模式错了解码全乱
 - **字节序**：armeb/mipsel 用 `UC_MODE_BIG_ENDIAN`/架构对应模式，数据端序与指令端序都要对
 - **寄存器常数随架构**：x86 用 `UC_X86_REG_*`、arm 用 `UC_ARM_REG_*`——混用常数报错或拿到错寄存器
 - **Android .so → unidbg**：Unicorn/Qiling 裸跑缺 JNI 语义跑不动；iOS 加固/签名 so → Chomper（见 SKILL.md 对应坑）
