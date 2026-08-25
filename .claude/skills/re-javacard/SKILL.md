@@ -1,7 +1,7 @@
 ---
 name: re-javacard
 description: >
-  Java Card / SIM 卡 applet 逆向：CAP 文件九组件解析、CAP 字节码（Java 子集）还原、AID 与安装参数、process(APDU) 分派。
+  Java Card / SIM 卡 applet 逆向：CAP 文件组件解析（规范 12 组件）、CAP 字节码（Java 子集）还原、AID 与安装参数、process(APDU) 分派。
   触发词：Java Card、javacard、CAP 文件、SIM 卡、USIM、applet、AID、银行卡、JCVM。
 ---
 
