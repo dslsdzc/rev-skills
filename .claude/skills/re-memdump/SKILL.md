@@ -38,6 +38,12 @@ description: >
 - Linux: `apt install procps psmisc` / `dnf install procps-ng psmisc` / `pacman -S procps-ng psmisc`（多数自带）
 - 验证: `ps aux`、`pkill` 可用
 
+### Windows 转储（procdump / DumpIt，补充分支）
+
+- procdump（Sysinternals 官方下载，或 `choco install sysinternals`）：`procdump -accepteula -ma <pid> out.dmp` 全进程内存转储（含托管堆）——x64dbg/windbg 可加载分析
+- DumpIt（Comae 官网）：整机物理内存转储（.raw），管理员运行——供 [[re-mem-forensics]] 整机取证
+- 验证: `procdump -accepteula -?` 输出 usage；转储产物用 `file` 确认（dmp/raw 头）
+
 ## 操作步骤
 
 1. **默认转储：等 OEP 解密后 `gcore -o out <pid>`**：
@@ -102,13 +108,23 @@ description: >
    - 适用: 进程必须保持运行 / 只取极小特定区段（[[platform-tips]] 特例①/②）
    - `/proc/<pid>/mem` 偏移是**虚拟地址**，不是文件偏移——直接 open+read 从 0 开始读必报错（见坑 3）
 
+6. **Windows 侧转储（分支补齐）**：
+   ```sh
+   procdump -accepteula -ma <pid> out.dmp   # 全进程内存（含堆），windbg/x64dbg 加载
+   # 整机物理内存: DumpIt 管理员运行产出 .raw → [[re-mem-forensics]]
+   ```
+   - procdump 产物是进程级 minidump，与 gcore 同级——不是整机镜像，Volatility 不适用（[[re-mem-forensics]] 只吃整机镜像）
+   - 分析入口：[[re-windbg]]（minidump 加载）/ [[re-x64dbg]]（`minidump` 命令）
+
 ## 跨域联合
 
 - [[re-binary-core]]：工作流第 6 步（内存环节，默认转储优先）
 - [[re-malware]]：恶意样本内存产物提取（脱壳后样本）
 - [[re-mobile]]：App 内存中 DEX/so 提取
 - [[re-anti-analysis]]：脱壳后提取干净镜像的标准动作
-- 与 [[re-gdb]] / [[re-x64dbg]] 互补（attach 失败→转储；需要交互→调试器）
+- [[re-crypto-keys]]：内存中密钥提取的方法论配合（先定位加密上下文再取，见步骤 4）
+- [[re-format-elf]]：core 是 ELF 格式，节区/notes 结构解析可对照
+- 与 [[re-gdb]] / [[re-x64dbg]] / [[re-windbg]] 互补（attach 失败→转储；需要交互→调试器；Windows 进程 dump→windbg）
 
 ## 常见坑与陷阱
 
@@ -119,3 +135,4 @@ description: >
 - **从转储重建进程时 vDSO 不可移植**：现象——重建/复现进程镜像后程序仍跳回原 vDSO 地址，或 `call *%gs:0x10` 间接调用断掉；原因——vDSO 地址记录在进程栈 auxv 的 `AT_SYSINFO`/`AT_SYSINFO_EHDR`，且 glibc 有缓存，修补 auxv 也不一定能重定位；对策——重建镜像时把 vDSO 相关调用视为必然失效（该页直接跳过），分析以其余映射为准
 - **gcore 取证分辨率有限**：现象——core 里查共享库注入/函数指针重定向困难，堆栈信息残缺；原因——传统 core 是内核按段快照，无每进程 profile 与符号重建；对策——普通逆向 gcore 够用；深度取证（定位注入点/hook）改用 ECFS 类内核级转储（core_pattern 挂钩重建 `.symtab`/`.dynsym`）或配合 `/proc/<pid>/maps` 手工重建
 - **看到解密数据 → 立刻保存**：现象——动态调试/转储中刚在内存里见到明文（解密字符串/密钥/第二层代码），切换工具或继续运行后该地址已被覆盖或清空，再也拿不回；原因——解密数据是阶段性的：解壳完成清理、自清除、用后即焚密钥、缓冲区复用都会立刻抹掉（注意与"转储时机过早"相反，这里是晚了就没了）；对策——动态里一确认解密产物立即 `gcore` / 定向提取（见步骤 1/4，默认转储优先），"先保存再继续"；需要再现时回到解密循环调用点重新观察（见 [[re-binary-core]] 分析方法论 R19）
+- **gcore/直读被 ptrace 权限拦**：现象——`gcore` 报 `ptrace: Operation not permitted`，`/proc/<pid>/mem` 打开即失败；原因——`kernel.yama.ptrace_scope=1/2` 限制跨进程族 attach（非 root 且目标不是自己子进程时）；对策——root 运行转储，或临时 `sysctl kernel.yama.ptrace_scope=0`（用后恢复），或经调试器（[[re-gdb]]）以允许身份执行
