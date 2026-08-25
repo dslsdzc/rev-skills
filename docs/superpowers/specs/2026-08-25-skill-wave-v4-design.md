@@ -69,7 +69,7 @@
 - **何时不用**：APDU 协议层与 MIFARE/DESFire 物理层走 re-iot-proto；CAP 获取依赖读卡（re-hardware-io）或固件提取（re-firmware）
 - **工具准备**：CAP 解析（开源解析器或自写 Python 脚本）、Ghidra/IDA 无原生 CAP 支持（脚本化解析）、`javap` 类对照（字节码差异说明）、读卡器（泛化选购指引 + 授权边界）
 - **操作步骤**：CAP 来源（EEPROM dump/固件/资料）→ Directory 组件偏移表驱动解析 → Method 组件方法体还原 → Import/常量池跨组件引用解析 → Applet `process(APDU)` 入口（CLA/INS 分派表）→ 与 APDU 交互对照（联动 re-iot-proto）
-- **坑（≥3）**：组件偏移表错误致全文件错位；Import 外部引用（跨 CAP 依赖）；字节码子集与 JVM 差异（无 invokevirtual 等）；卡片 dump 访问控制；AID/安装参数影响行为分支
+- **坑（≥3）**：组件偏移表错误致全文件错位；Import 外部引用（跨 CAP 依赖）；字节码子集与 JVM 差异（无 invokedynamic/multianewarray/monitor 等）；卡片 dump 访问控制；AID/安装参数影响行为分支
 
 ### 3.6 re-ebpf —— eBPF 程序逆向与对抗分析
 
@@ -114,7 +114,7 @@
 - **终审波**：全库交叉引用去重、计数一致性、死链清零、技术断言复核
 - **最终验证**：`node validate.mjs` 输出 `OK: 118 skills validated`；`npm test` 全绿（22 单测不受影响）
 
-## 8. Errata（2026-08-25 实施期修正）
+## 7. Errata（2026-08-25 实施期修正）
 
 - **§3.5 CAP 组件数**：初稿「九组件（Header/Directory/Import/ConstantPool/Class/Method/Descriptor/Export/Applet）」有误——Oracle Java Card 3.2 VM 规范为 12 组件（tag 1-12），遗漏 StaticField(8)/ReferenceLocation(9)；正文与 re-javacard SKILL.md 已按规范修正，description 改为「规范 12 组件」。
 - **§3.5 字节码断言**：初稿「无 invokevirtual 等」有误——JCVM 四类调用指令齐备（invokevirtual 0x8B/invokespecial 0x8C/invokestatic 0x8D/invokeinterface 0x8E），真实 CAP 实证含 invokevirtual；与 JVM 的差异为无 invokedynamic/multianewarray/monitor 等。正文与 SKILL.md 已修正。
