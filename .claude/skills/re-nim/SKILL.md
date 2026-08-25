@@ -55,6 +55,12 @@ description: >
    - 定位：`rawNewString`（1.x 与 2.x 均为此 importc 名）分配调用点 → 结构布局 → 字符串操作函数（`eqStrings` 等）
    - 分析：字符串比较点是关键逻辑（校验/协议/命令分发）——`eqStrings` 调用点即字符串相等判断
    - 序列（seq）与 string 同构：v2 布局同为 `len + payload 指针`（payload 带 cap），refc 同为 `len/reserved + 内联`——按同一判别表处理
+   - 内存视图（v2 布局，64 位）：
+     ```
+     栈/对象内:  len(int64) | p(ptr) ───────────────┐
+     堆上 payload:  cap(int64, bit62=字面量标记) | data[cap+1] ←┘
+     ```
+     字符串本体只有 16 字节句柄，内容在独立堆块——分析对象结构时按句柄跳转，别在对象里找字符数据
 
 3. **内存中定位字符串（动态/转储场景）**：
    ```python
