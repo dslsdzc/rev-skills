@@ -9,7 +9,7 @@ description: 授权验证逻辑分析：注册校验定位。触发词：注册�
 
 - 用：程序有注册 / 激活流程（输入序列号、注册码、授权文件），需要定位"在哪校验、怎么校验"
 - 用：破解前置——为 [[re-patching]] / [[re-keygen]] 提供校验点地址与校验算法
-- 用：判断授权是在线激活还是离线校验；识别机器码绑定
+- 用：判断授权是在线激活还是离线校验；识别机器码绑定、有效期 / 订阅型授权
 - 不用：目标已定位校验分支、只改字节绕过（直接 [[re-patching]]）
 - 不用：确认无授权机制（无注册 UI / 注册表 / 授权文件读取——诚实告诉用户，见坑 5）
 - 不用：只做协议层分析（在线激活的流量分析走 [[re-protocol]]）
@@ -37,9 +37,10 @@ description: 授权验证逻辑分析：注册校验定位。触发词：注册�
 - Windows/WSL: WSL 内 Linux 版；Windows 本机用 Sysinternals `strings.exe`
 - 验证: `strings --version`
 
-### 动态补充（可选）：strace / ltrace
+### 动态补充（可选）：strace / ltrace / ProcMon
 
 - Linux: `apt install strace ltrace`，验证 `strace --version`；观察注册表（Wine 下）/ 文件 / API 调用（详见 [[re-tracing]]）
+- Windows: Sysinternals Process Monitor（官网下载独立 exe，无包管理器）——注册表 / 文件 / 进程 / 网络全量 trace（[[re-behavior]] 衔接）；注册表操作是授权读取的主路径
 
 ## 操作步骤
 
@@ -51,7 +52,7 @@ description: 授权验证逻辑分析：注册校验定位。触发词：注册�
    strings -el sample.exe | grep -iE 'register|serial|license' | head -20    # UTF-16LE（Windows 常见）
    ```
    - 反编译器里对命中字符串查 xref（Ghidra 右键 Find References / IDA `x` / rizin `axt @ str.*`）——看它被哪个函数引用：**弹窗/输入框附近的引用函数就是候选校验函数**（MessageBox 类"Invalid registration code"、注册对话框、注册表读取 `RegOpenKeyExW` / `RegQueryValueExW`、`GetVolumeInformationW` 机器码读取）
-   - API 侧：导入表搜 `MessageBox` / `Reg*` / `GetVolumeInformation`，反编译引用函数；Linux 目标用 ltrace 观察 `strcmp` / 文件读取调用（[[re-tracing]]）
+   - API 侧：导入表搜 `MessageBox` / `Reg*` / `GetVolumeInformation` / `GetSystemTimeAsFileTime`，反编译引用函数；Linux 目标用 ltrace 观察 `strcmp` / 文件读取调用（[[re-tracing]]）
    - 记下每个候选函数的地址与文件名（可能多个校验函数，见坑 3）
 
 2. **调用图与校验分支（成功 / 失败跳转）**：
@@ -77,6 +78,22 @@ description: 授权验证逻辑分析：注册校验定位。触发词：注册�
    - 确认序列号生成 / 校验输入含机器码：反编译看校验函数是否先读机器码再参与运算
    - 绑定确认后：**注册机生成逻辑必须含输入**（用户名 / 机器码参数化，见 [[re-keygen]] 坑 2）；报告里注明"此授权绑定机器码"
 
+6. **授权模型识别（处置路线决定）**：
+   - **节点锁定**（机器绑定）：序列号 = f(机器码) → 可逆则 [[re-keygen]] 路线
+   - **有效期 / 订阅型**：校验到期时间 → 时间型校验分支（步骤 7）；到期提示字符串（"expired"/"trial"）xref 定位
+   - **功能开关型**（freemium）：校验点散在各功能入口，注册标志多个 → 全量清单必须完整（坑 3）
+   - **浮动授权**（许可证服务器）：本地无完整校验 → 转 [[re-protocol]] 分析许可证协议
+   - 模型判定依据：授权文件 / 注册表项内容（含到期日期字段 = 订阅型；含机器码哈希 = 节点锁定）
+
+7. **时间型校验（有效期）**：
+   - 时间读取 API：Windows `GetSystemTimeAsFileTime` / `GetLocalTime`，Linux `time()` / `gettimeofday`——xref 到比较逻辑（`> 到期时间`）
+   - 反篡改：程序可能记录"上次运行时间"并检测时钟回拨（当前时间 < 上次记录 → 报错）——改动系统时间前先定位该检测点
+   - 产物：到期时间存储位置（注册表 / 文件）、比较函数地址——补丁或绕过目标
+
+8. **证据核对（收尾）**：
+   - 全量校验点清单（地址 / 分支 / 标志 / 证据级别）入档 [[analysis-contract]]；结论按证据分级标注（动态确认 vs 静态推断，见 [[decision-tree]]）
+   - 交付：校验点清单 + 算法文档 → [[re-cracking]] 网关统一验证
+
 ## 跨域联合
 
 - [[re-cracking]]：本网关是 re-cracking 工作流第 2 步（授权定位），产物（校验点清单 + 算法）供第 4 / 5 步
@@ -86,6 +103,7 @@ description: 授权验证逻辑分析：注册校验定位。触发词：注册�
 - [[re-protocol]]：在线激活 → 抓包分析激活协议（netcap → crypto-id → crypto-keys → crypto-decrypt → proto-rev）
 - [[re-binary-core]]：反编译工作台（[[re-ghidra]] / [[re-ida]] / [[re-radare2]]）
 - 动态：[[re-gdb]] / [[re-x64dbg]] / [[re-lldb]]（断点看分支返回值）、[[re-tracing]]（strace / ltrace 看注册表 / 文件 / API 调用）、[[re-memdump]]（内存中的注册标志 / 校验结果）
+- [[re-behavior]]：Windows 侧 ProcMon 注册表 / 文件行为 trace 衔接
 - [[re-sandbox]]：动态定位与验证沙箱（[[platform-tips]] 最高原则）
 - [[re-ioc]]：注册相关字符串 / 校验指纹可作 YARA 特征
 
@@ -96,3 +114,5 @@ description: 授权验证逻辑分析：注册校验定位。触发词：注册�
 - **校验可能多次（启动 + 功能点）**：现象——启动校验绕过成功，用核心功能时又弹注册；原因——校验点不止一个（启动、功能点、定时器、版本升级检查）；对策——步骤 2 遍历校验函数全部 xref / 注册标志的全部消费点，做全量校验点清单（这是 [[re-cracking]] 网关坑 2 的根源）
 - **算法不可逆还硬还原**：现象——校验含 SHA / MD5 / RSA 验签，序列号生成逻辑无法正推；原因——单向函数；对策——诚实报告不可逆，转 [[re-patching]]（跳过验签 / 改分支），不要伪造"还原成功"
 - **伪校验误导**：现象——改了判定分支程序照常退出 / 无效果；原因——改动点不是真正的授权判定（假分支 / 蜜罐校验，真判定在别处）；对策——动态断点确认每个分支真实影响注册标志与程序行为，再进补丁阶段
+- **时间型校验漏判**：现象——改完所有序列号校验仍提示过期；原因——另有到期时间校验（订阅 / 试用）独立于序列号校验；对策——步骤 7 查时间 API xref 与到期存储位置，纳入全量清单
+- 更多决策分支与边界（授权模型判定树 / 证据分级 / 时间篡改反例）见 [[decision-tree]] 与 [[gotchas]]
