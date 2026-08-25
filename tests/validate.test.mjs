@@ -62,6 +62,27 @@ test('parseFrontmatter 解析 capabilities list', () => {
   assert.deepEqual(capabilities, ['elf-parser', 'unpack']);
 });
 
+test('guard 合法 JSON 通过、结构非法报错', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'guard-test-'));
+  const name = dir.split(/[\\/]/).pop();
+  const body = `---\nname: ${name}\ndescription: 测试。\nguard: %GUARD%\n---\n\n# 标题\n\n## 工具准备\n\n正文`;
+  try {
+    // 合法
+    writeFileSync(join(dir, 'SKILL.md'), body.replace('%GUARD%', '{"require_authorization": true, "forbidden": ["unauthorized_api_testing"]}'));
+    assert.deepEqual(checkSkillDir(dir, {}).errors, []);
+    // 非 JSON
+    writeFileSync(join(dir, 'SKILL.md'), body.replace('%GUARD%', 'require_authorization: true'));
+    const { errors } = checkSkillDir(dir, {});
+    assert.ok(errors.some(e => e.includes('guard must be')));
+    // 结构缺字段
+    writeFileSync(join(dir, 'SKILL.md'), body.replace('%GUARD%', '{"require_authorization": "yes"}'));
+    const { errors: e2 } = checkSkillDir(dir, {});
+    assert.ok(e2.some(e => e.includes('guard must be')));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('capabilities 合法通过、未知标签与非法写法报错', () => {
   const dir = mkdtempSync(join(tmpdir(), 'cap-test-'));
   const name = dir.split(/[\\/]/).pop();

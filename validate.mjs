@@ -22,7 +22,12 @@ export function parseFrontmatter(md) {
     const m2 = fm.capabilities.match(/^\[\s*([a-z0-9-]+(?:\s*,\s*[a-z0-9-]+)*)\s*\]$/);
     fm.capabilities = m2 ? m2[1].split(',').map(s => s.trim()) : null; // null = 非法写法
   }
-  return { name: fm.name, description: fm.description, type: fm.type, capabilities: fm.capabilities, body: m[2] };
+  // guard: {"require_authorization": true, "forbidden": ["tag1", "tag2"]} — 机器可读安全前置声明（JSON 格式）
+  if (fm.guard !== undefined) {
+    try { fm.guard = JSON.parse(fm.guard); }
+    catch { fm.guard = null; } // null = 非法 JSON
+  }
+  return { name: fm.name, description: fm.description, type: fm.type, capabilities: fm.capabilities, guard: fm.guard, body: m[2] };
 }
 
 // 从能力注册表（re-analyze/references/capabilities.md）解析合法标签清单
@@ -88,6 +93,14 @@ export function checkSkillDir(dir, opts = {}) {
       for (const c of fm.capabilities) {
         if (!caps.has(c)) errors.push(`${name}: unknown capability '${c}' (see re-analyze/references/capabilities.md)`);
       }
+    }
+  }
+  // guard 校验：有字段时必须是 {"require_authorization": bool, "forbidden": [tags]} 结构
+  if (fm.guard !== undefined) {
+    if (fm.guard === null || typeof fm.guard !== 'object' || Array.isArray(fm.guard)
+        || typeof fm.guard.require_authorization !== 'boolean'
+        || !Array.isArray(fm.guard.forbidden) || fm.guard.forbidden.some(t => typeof t !== 'string' || !t)) {
+      errors.push(`${name}: guard must be {"require_authorization": bool, "forbidden": [tags]}`);
     }
   }
   const known = new Set(opts.knownSkills ?? []);
