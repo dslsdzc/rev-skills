@@ -10,18 +10,26 @@ description: >
 
 ## 何时使用 / 何时不用
 
-- 用：Nim 产物（NimMain / GC 符号、NimString 结构特征）
-- 不用：C 产物（走 [[re-binary-core]] 通用）
+- 用：Nim 产物（`NimMain` / GC 符号、NimString 结构特征），需要还原字符串逻辑、异常路径、GC/所有权关系
+- 用：Nim/C 混合产物中区分 Nim 侧代码（按符号来源分组后 Nim 侧进本技能路径）
+- 不用：纯 C/C++ 产物（走 [[re-cpp-abi]] / [[re-binary-core]] 通用路径）
+- 不用：只需函数逻辑（直接反编译技能）
 
 ## 工具准备
 
-### readelf / llvm-nm（符号分析）
+### readelf / llvm-nm（符号与节分析）
 
 - 安装与验证见 [[re-cpp-abi]] 工具准备
+- Nim 产物以 ELF 为主（Linux 默认 C 后端）；macOS 用 llvm-nm
 
 ### Ghidra / IDA（反编译底座）
 
-- 安装与验证见 [[re-ghidra]] / [[re-ida]]
+- 安装与验证见 [[re-ghidra]] / [[re-ida]]；Nim 符号（NimMain/NimStringV2 等）导入后直接可读
+
+### nim 编译器（可选，对照编译）
+
+- Linux: `apt install nim` / `dnf install nim` / `pacman -S nim`；macOS: `brew install nim`；Windows: choosenim/官方安装器
+- 验证: `nim -v`；用途: 同版本编译对照产物，验证字符串布局/GC 符号形态（版本差异见 [[layout]]）
 
 ## 操作步骤
 
@@ -30,34 +38,51 @@ description: >
 1. **产物识别**：
    ```sh
    readelf -s sample | grep -iE 'NimMain|nimGC|NimString' | head   # ELF；Mach-O 用 llvm-nm
+   readelf -s sample | grep -iE 'nimIncRef|nimDecRef|rawNewString|eqStrings' | head
    ```
-   - Nim 特征：`NimMain`（入口）、GC 符号（nimGC_*）、`NimString` 结构
-   - 入口：`NimMain` 调用链（运行时初始化 → 模块初始化 → main）
+   - Nim 特征：`NimMain`（入口链）、GC 符号（refc 的 `nimGC_*` / orc 的 `nimIncRefCyclic` 等）、`NimStringV2`/`NimStringDesc` 结构类型
+   - 注意：release 构建下 GC 符号常被内联/消除（见坑 1），靠 `NimMain` 与字符串函数兜底
+   - 入口链：C `main` → `NimMain` → `NimMainInner` → `NimMainModule`（模块初始化）→ 业务 main
 
-2. **字符串与序列结构**：
-   - NimStringV2 布局：`len`（int）+ `reserved`（int）+ `data`（char* 或内联）——按版本确认字段序
-   - 定位：`newString` 分配调用点（Nim 2.0 起为 `newString1`） → 结构布局 → 字符串操作函数（`eqStrings` 等）
-   - 分析：字符串比较点是关键逻辑（校验/协议/命令分发）
+2. **字符串与序列结构（先判 GC 模式）**：
+   - **orc/arc**（2.x 默认 orc）：`NimStringV2 = {len: int, p: ptr NimStrPayload}`；`NimStrPayload = {cap: int, data: 内联字符数组}`——字符串是"len + 堆上 payload 指针"，cap 高位带字面量标记位（见 [[layout]]）
+   - **refc**（旧默认）：`NimStringDesc = {len, reserved, data[]}`——字符内联在结构体里
+   - 定位：`rawNewString`（1.x 与 2.x 均为此 importc 名）分配调用点 → 结构布局 → 字符串操作函数（`eqStrings` 等）
+   - 分析：字符串比较点是关键逻辑（校验/协议/命令分发）——`eqStrings` 调用点即字符串相等判断
 
 3. **异常与 raises 路径**：
-   - Nim 异常：`raise` → 异常对象分配 → 异常表（Nim 有异常表，与 C++ 不同）
-   - 定位：异常处理入口（`nimSetjmp` / 异常表）→ catch 分支
-   - 分析：异常路径揭示输入校验与失败处理
+   - Nim 2.2.x（Linux x86-64 默认）异常走 goto 式异常表，**无 setjmp 符号**；raise 路径经 `raiseExceptionEx`/`raiseExceptionAux`
+   - 老默认（`--exceptions:setjmp`，Nim 2.0 及以前）用 setjmp/longjmp：`nimSetjmp` 符号可见
+   - 定位：`raiseExceptionEx` 调用点 → 异常对象分配与消息 → catch 分支（异常表驱动）
+   - 分析：异常路径揭示输入校验与失败处理，比正常路径更早暴露边界条件
 
-4. **GC 与引用计数**：
-   - refc（旧默认）：引用计数——`nimIncRef` / `nimDecRef` 调用点
-   - orc（新默认）：循环收集——`nimGC_*` 分配/收集
-   - 分析：GC 调用点帮助识别对象生命周期与所有权（配合字符串结构）
+4. **GC 与引用计数（按 GC 模式分叉）**：
+   - refc：引用计数 + 周期收集——`nimGC_*`/`nimGCunref`/`nimIncRef`/`nimDecRef` 调用点
+   - orc/arc：ARC 语义——`nimIncRefCyclic`/`nimDecRefIsLastCyclicDyn` 等；显式 inc/dec 少，释放由编译期插入
+   - 分析：GC 调用点帮助识别对象生命周期与所有权（配合字符串结构）；release 下内联后改用分配/释放边界推断
+
+5. **C 混合编译边界**：
+   - `{.compile:}` / `{.importc:}` 混合时 Nim 与 C 符号并存：Nim 侧符号带模块前缀（`hello__u8` 形态）与运行时（NimMain/NimString），C 侧符号无
+   - 边界处是逻辑入口：Nim 业务逻辑在 NimMain 调用链内侧，C 库调用经导入表
+
+6. **stripped 产物兜底**：
+   ```sh
+   strings -n 6 sample | grep -iE 'NimMain|nimErrorFlag|Exception|\.nim$'   # 源码文件名/错误消息
+   ```
+   - `NimMain` 等被 strip 后按特征字符串/运行时行为识别（[[re-triage]] 初勘兜底）；`.nim` 源码路径字符串是强特征
 
 ## 跨域联合
 
 - [[re-binary-core]] 网关：本技能归属（选择树「Nim 产物」分支）
 - [[analysis-contract]]：符号表按数据契约传递
+- [[re-cpp-abi]]：C 混合侧与无 RTTI 判别参考
 
 ## 常见坑与陷阱
 
-- **GC 版本差异（refc/orc）**：现象——找不到引用计数调用；原因——orc 无显式 inc/dec；对策——按 Nim 版本确认 GC 模式再分析
-- **NimString 布局随版本变化**：现象——data 字段偏移错；原因——版本演进；对策——按目标版本确认（字段序 len/reserved/data）
-- **导出符号被 strip**：现象——无 NimMain/NimString 符号；原因——strip 处理；对策——按特征字符串/运行时行为识别（[[re-triage]] 初勘兜底）
+- **GC 版本差异（refc/orc）**：现象——找不到引用计数调用；原因——orc 无显式 inc/dec（ARC 语义）且 release 下 GC 符号内联；对策——先按 Nim 版本与 GC 模式确认再分析，debug/refc 构建符号更全
+- **NimString 布局随 GC/版本变化**：现象——按 `len/reserved/data` 手写解析器读 2.x 产物全错；原因——2.x orc 默认是 `NimStringV2{len, p}`（payload 带 cap），`len/reserved/data` 内联是 refc 的 NimStringDesc（1.x 默认）；对策——先确认产物 GC 模式（见 [[layout]] 判别表）再选布局
+- **导出符号被 strip**：现象——无 NimMain/NimString 符号；原因——strip 处理；对策——按特征字符串/运行时行为识别（步骤 6 兜底）
 - **C 混合编译**：现象——Nim/C 符号混杂；原因——`{.compile:}` 混合；对策——按符号来源分组，Nim 侧进本技能路径
 - **字符串比较点误判**：现象——关键校验被当普通比较；原因——eqStrings 包装；对策——追踪 Nim 字符串函数调用点定位比较逻辑
+- **异常实现代际误判**：现象——按老思路找 nimSetjmp 找不到；原因——2.2+ Linux amd64 默认 goto 式异常（无 setjmp）；对策——无 nimSetjmp 时沿 `raiseExceptionEx` 与异常表定位 catch，别当"无异常处理"
+- **release 内联导致符号稀疏**：现象——debug 能看到的 nimGC_*/eqStrings 在 release 里消失；原因——-d:release 内联；对策——release 产物按行为特征（分配/释放边界、字符串函数调用模式）分析，符号表只是线索不是依据
