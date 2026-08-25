@@ -44,13 +44,21 @@ description: angr 符号执行：符号化输入、求解。触发词：angr、�
 
 按顺序执行，每步记录结果（地址 / 约束 / 求解脚本 / flag，证据路径见 [[re-triage]]）。**先人工后自动化**：符号化范围越小越稳（见坑 2）。
 
-1. **确定符号化点（输入 / argv / 文件）**：
+1. **输入适配（Input Adapter）：确定符号源（symbol source）**：
    - 反编译定位输入读取点：`read` / `scanf` / `fgets` / `getline` / `main(int argc, char **argv)` 的 argv 使用处（[[re-ghidra]] / [[re-ida]] / [[re-radare2]]）
-   - 决定符号化通道——
-     - 标准输入：`project.factory.full_init_state(stdin=claripy.BVS('in', 32*8))`（N 字节长度定多少？对照读取点逻辑确认长度，见坑 3）
-     - argv：`project.factory.full_init_state(args=["./target", claripy.BVS("arg1", 64*8)])`
-     - 文件：`state.fs.insert('/tmp/in', angr.SimFile('in', content=claripy.BVS('in', 32*8)))` 把符号文件插进模拟文件系统，程序 fopen 后即符号化；按 fd 操作用 `state.posix.fd[0]`（fd 0=stdin；fd 1/2 是 stdout/stderr，勿混），或 `os.open()` 所得 fd——简单场景直接把整个输入区符号化再约束
-   - 记下：符号化的通道 + 字节数 + 读取点的地址（后续 find / hook 用）
+   - 按**符号源类型**选择接入方式（CTF 的 stdin 只是其中一种——真实目标输入可能是网络包/文件映射/JNI 参数/自定义字节码）：
+
+     | 符号源 | 接入方式 |
+     |---|---|
+     | stdin（标准输入） | `project.factory.full_init_state(stdin=claripy.BVS('in', 32*8))` |
+     | argv（命令行参数） | `project.factory.full_init_state(args=["./target", claripy.BVS("arg1", 64*8)])` |
+     | file（文件输入） | `state.fs.insert('/tmp/in', angr.SimFile('in', content=claripy.BVS('in', 32*8)))`——fopen 后即符号化；按 fd 操作用 `state.posix.fd[0]`（fd 0=stdin；fd 1/2 是 stdout/stderr，勿混） |
+     | memory（mmap/堆/全局缓冲区） | 直接符号化目标内存区：`state.memory.store(addr, claripy.BVS('buf', n*8))`——程序从该地址读入即符号化（mmap 文件、解密缓冲、共享内存通用） |
+     | network buffer（网络包/recv） | hook `recv`/`read` 使缓冲符号化：`state.memory.store(buf_addr, BVS('pkt', len*8))` 或 hook 返回符号指针——网络解析器目标通用 |
+     | jni argument（Android native 入参） | 对 `JNIEnv` 方法参数做符号化：从 `GetByteArrayElements`/`GetStringUTFChars` 返回处符号化（配合 [[re-android-native]]/[[re-frida]] 确认入参形态） |
+     | custom VM bytecode（自定义 VM 指令流） | 把字节码缓冲区整体符号化 + 约束操作码范围（0x00-0x0F 类）——VM 逆向的符号执行路径（[[re-deobfuscate]] 联动） |
+
+   - 记下：符号化通道 + 字节数 + 读取点地址（后续 find / hook 用）；N 字节长度对照读取点逻辑确认（见坑 3）
 
 2. **到达目标地址 / 避开地址建模（find / avoid）**：
    - 反编译确认**成功路径地址**（校验通过后打印 flag 的地址）与**失败路径地址**（打印 "wrong" 等处，有多个失败点要列全）
