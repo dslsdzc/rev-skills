@@ -3,7 +3,7 @@
 ## 版本差异
 
 - **Unicorn 2.x 是当前线**（pip 默认；2.1.4 于 2025-09 发布）：钩子回调签名与 1.x 一致（`(uc, address, size, user_data)` / 内存类 `(uc, access, address, size, value, user_data)`），但 2.0 起 C 库 API/内部行为有调整（如部分 hook 类型、PC 保证语义）——旧教程若按 1.x C API 写 python 绑定的罕见写法会失效，Python 绑定层面基本兼容
-- **Qiling 版本差异**：快照能力自 1.x 早期即有（1.1 起 `ql.save/restore` 已含 snapshot 参数及 reg/mem/fd 开关）；1.4 起参数扩展（新增 os_context/loader 等开关）；rootfs 组织（`examples/rootfs/`）随版本增删 OS profile——以 clone 的官方仓库当前结构为准
+- **Qiling 版本差异**：快照能力自 1.x 早期即有（1.1.x 起 `ql.save/restore` 已含 snapshot 参数及 reg/mem/fd 开关）；1.2 起参数扩展（新增 os_context/loader 等开关）；rootfs 组织（`examples/rootfs/`）随版本增删 OS profile——以 clone 的官方仓库当前结构为准
 - **capstone 5.x**：`pip install capstone` 当前 5.0.x；5.x 对部分指令的助记符输出与 4.x 有差异（`capstone.x86` 命名一致），反汇编对照脚本留意
 - **unidbg / Chomper 是独立工具**：unidbg（Java，Android JNI 模拟）与 Chomper（Unicorn 封装，iOS OC 模拟）不依赖 unicorn pip 包版本，走各自仓库 release
 

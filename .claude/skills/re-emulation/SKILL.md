@@ -79,7 +79,7 @@ description: >
    - 脱壳常用: hook_mem_write 在目标区段命中时暂停/计数——拿到解密循环的写时机与明文
 
 4.5. **状态保存/恢复与内存落盘**：
-   - Qiling（1.1+）: `ql.save(snapshot="stage1.qsave")` / `ql.restore(snapshot="stage1.qsave")`——多阶段解密流程分点存档，返回继续模拟
+   - Qiling（1.1.x+）: `ql.save(snapshot="stage1.qsave")` / `ql.restore(snapshot="stage1.qsave")`——多阶段解密流程分点存档，返回继续模拟
    - Unicorn: 快照需手工 `mem_read` 全部相关段 + 寄存器表落盘（`.json` + `.bin`），恢复时 `mem_map` + `mem_write` + `reg_write`；不想全量保存就用 hook 在关键点把目标区段 `mem_read` 出来存文件（脱壳明文落盘即此思路）
    - 落盘产物 sha256 存档（[[re-triage]] 存证思路）
 

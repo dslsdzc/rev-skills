@@ -52,7 +52,7 @@ from qiling import Qiling
 ql = Qiling(["./rootfs/x8664_linux/bin/target", "arg1"], "./rootfs/x8664_linux")
 # 构造: Qiling(argv, rootfs, env=..., verbose=..., console=...)；rootfs 下才是目标可见文件系统
 ql.run()                                  # 或 ql.run(begin, end, timeout, count)
-ql.save(snapshot="stage1.qsave")          # 状态存档（1.1+；reg/mem/fd 等可分别开关）
+ql.save(snapshot="stage1.qsave")          # 状态存档（1.1.x+；reg/mem/fd 等可分别开关）
 ql.restore(snapshot="stage1.qsave")       # 恢复继续
 ql.hook_address(fn, addr)                 # 地址断点（等价 Unicorn 按地址判断的 hook_code）
 ql.hook_code(fn)                          # 每指令
