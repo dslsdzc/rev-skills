@@ -15,7 +15,7 @@
 ### apktool（解包/回编译）
 
 - `apktool d app.apk -o out/` 解包（资源转成可读 XML + smali）
-- `apktool d -r app.apk -o out/` 只出 smali 不解码资源（回编译成功率更高，smali 补丁首选）
+- `apktool d -r app.apk -o out/` 只出 smali 不解码资源（回编译成功率更高，smali 补丁常用形态）
 - `apktool d -s app.apk -o out/` 只出资源不出 smali
 - `apktool b out/ -o patched.apk` 回编译
 - `apktool b out/ --use-aapt2` 强制 aapt2 回编译（资源复杂时比默认 aapt 稳）
