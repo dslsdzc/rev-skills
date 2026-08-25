@@ -31,7 +31,7 @@
 | 分析固件 / IoT 设备 | re-firmware 网关 → 提取(re-fw-extract) → rootfs(re-fw-rootfs) → 仿真(re-fw-emulate) →（UEFI/BIOS 固件 → re-uefi）→（MCU 镜像 → re-fw-extract 内 MCU 节；跑 RTOS → re-rtos）→（ARM 架构 → re-arm；RISC-V → re-riscv）→（TEE/可信应用 → re-tee）→（芯片/PCB 物理层 → re-hw-chip）→（若见通信）re-protocol |
 | 分析网络流量 / 未知协议 | re-protocol 网关 → 捕获(re-netcap) → 解析(re-proto-rev) → 加密(re-crypto-id/keys/decrypt) |
 | 射频 / 无线信号 | re-protocol 网关 → 信号采集与解调(re-sdr) →（协议还原）re-proto-rev / re-iot-proto |
-| 移动 App 分析 | re-mobile 网关 → APK(re-apk) / iOS(re-ios) → 动态(re-frida) →（Flutter → re-flutter；鸿蒙 hap → re-harmonyos；RN/混合 → re-hybrid-app；Frida 脚本生成 → re-frida-script-author）→（若含原生库）re-binary-core |
+| 移动 App 分析 | re-mobile 网关 → APK(re-apk) / iOS(re-ios) → 动态(re-frida) →（Flutter → re-flutter；鸿蒙 hap → re-harmonyos；RN/混合 → re-hybrid-app；Frida 脚本生成 → re-frida-script-author）→（若含原生库）re-binary-core；加密体系审计（Keystore/Cipher）→ re-android-crypto |
 | 一般软件逆向 / 看逻辑 | re-binary-core 网关 → 初勘(re-triage) → 格式(re-format-*) → 反编译(re-ghidra/ida/radare2) → 按需动态 |
 | 游戏逆向 / Unity / Unreal / 主机平台 | re-game（专项，底座 re-binary-core）→（现代主机/复古平台 → re-console） |
 | shellcode / 位置无关载荷 | re-binary-core 网关 → 初勘(re-triage) → 提取/解码循环(re-shellcode) → 模拟执行(re-emulation) |

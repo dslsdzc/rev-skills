@@ -116,15 +116,6 @@ description: >
    - 动态验证：frida `Java.perform` 里直接调用 native 方法（`Java.use("com.x.Cls").method(...)`）观察参数与返回；或用 xhook / PLT hook 思路（[[re-frida]] 的 `Interceptor.attach(Module.findExportByName(...))`）观察 native 内部对外部库（libc / 系统库）的调用链
    - 闭环：Java 触发点 → 参数来源 → native 处理逻辑 → 输出回 Java 层
 
-## Keystore 审计
-
-Android 密钥体系分析——目标密钥来自 AndroidKeyStore 时（硬件背书密钥）`getEncoded()` 不可用，须走审计：
-
-- **遍历**：`KeyStore.getInstance("AndroidKeyStore")` → `aliases()` 枚举全部条目
-- **条目属性**：算法（AES/RSA/EC）、用途（encrypt/decrypt/sign/verify）、来源（`KeyInfo.isInsideSecureHardware`——硬件背书；TEE 与 StrongBox 区分需 `isStrongBoxBacked`，API 28+）
-- **生物绑定**：`setUserAuthenticationRequired` 的密钥在认证失败时不可用（绕过与检测见 [[anti-dynamic-workflow]]）
-- **与 hook 衔接**：加密拦截（[[re-frida]] 的 [[frida-scripts]]）时密钥来自 Keystore → 记录别名与用途，不记录密钥字节
-
 ## 跨域联合
 
 - [[re-mobile]]：本技能是其工作流第 4 步（原生库）的专项子技能——网关识别到含 `.so` 目标后固定调度
@@ -134,6 +125,7 @@ Android 密钥体系分析——目标密钥来自 AndroidKeyStore 时（硬件�
 - [[re-apk]]：Java 侧静态（jadx 找 native 声明与调用点）；加固识别后转脱壳域
 - [[re-deobfuscate]]：OLLVM / 字符串加密的 native 代码还原
 - [[re-mobile-pack]] / [[re-anti-analysis]]：加固 so 壳壳先脱壳再分析（坑 5）
+- [[re-android-crypto]]：加密体系审计（Keystore/Cipher/第三方加密库语义）已独立承接——本技能聚焦 JNI/native 逻辑；.so 内加密库 API 的加密语义转 [[re-android-crypto]]
 - [[re-analyze]]：被 triage「移动 App 分析」路径调用（re-mobile → 原生库 → 本技能）
 - [[platform-tips]]：动态插桩受控环境最高原则
 
