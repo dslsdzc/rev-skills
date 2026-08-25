@@ -31,6 +31,11 @@ description: >
 
 - 各平台同 [[re-python]] 工具准备
 
+### 反编译辅助（侦察用）
+
+- jadx（[[re-apk]]）静态出类/方法清单；Ghidra/IDA（[[re-ghidra]] / [[re-ida]]）native 侧符号与调用点定位
+- 验证: 能按包名列出目标类与方法签名
+
 ### 目标设备/模拟器
 
 - Android 真机/模拟器 + frida-server（版本与主机 frida 一致，安装见 [[re-frida]] 工具准备）；桌面目标直接本机
@@ -45,6 +50,7 @@ description: >
    - 动态基线：原样跑一次抓崩溃与日志（崩溃特征 → 保护机制对照，见 [[anti-dynamic-workflow]]）
    - 产出：目标特征清单——检测点/目标 API 全限定名/输入输出形态/方法 overload 数
    - 不确定的类名/方法名先小脚本枚举（`Java.enumerateLoadedClasses` / `Java.use(...).overloads`），不猜名字
+   - 侦察结论记入 [[analysis-contract]] 契约字段（包名/类名/API 清单），供脚本与报告复用
 
 2. **模板选择**：按特征清单对照 [[frida-scripts]] 模板表：
 
