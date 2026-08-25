@@ -32,14 +32,16 @@ description: >
   - 参考 [[platform-tips]] 中本平台分支的经验
 - **probe 跳过时**：无 OS/ARCH/MEM 需求——`RE_OS`/`RE_ARCH`/`RE_CORES`/`RE_MEM_GB`/`RE_TOOLS` 置 `unknown`，后续步骤/技能用到时按需询问，不阻塞入口
 
-## 第一步：偏好询问
+## 第一步：偏好询问（分级）
 
-按 `references/preferences.md` 顺序询问（一次完成）：
-1. **分析目标**（必答，第一项）——不明确就追问
-2. 反编译器：Ghidra(默认) / IDA / radare2
-3. 深度：快速结论 / 标准分析 / 深度报告
-4. 报告：要 / 不要
-5. 平台确认：自动 / 手动
+按 `references/preferences.md` 分级规则处理（**不默认逐项询问**）：
+- **Level 0 快速入口（默认）**：目标为初步分析或未明确 → 直接采用默认值（目标=初步分析、Ghidra、standard、报告要、平台 auto），进入第二步
+- **Level 1 深度任务**：目标明确属于深度任务（脱壳 / 漏洞 / 协议逆向 / 恶意深度分析 / 破解 / 取证等）或用户主动要求 → 完整询问 5 项：
+  1. **分析目标**（必答，第一项）——不明确就追问
+  2. 反编译器：Ghidra(默认) / IDA / radare2
+  3. 深度：快速结论 / 标准分析 / 深度报告
+  4. 报告：要 / 不要
+  5. 平台确认：自动 / 手动
 
 结果存入会话变量（`RE_GOAL`、`RE_DECOMPILER`、`RE_DEPTH`、`RE_REPORT`、`RE_TARGET_PLATFORM`），本次分析全程有效，被调用技能读取。
 
