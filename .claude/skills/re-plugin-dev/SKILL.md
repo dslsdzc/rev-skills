@@ -22,8 +22,8 @@ description: >
 ### Ghidra —— Java 扩展 / Python 脚本
 
 - Ghidra 安装（JDK 21+，Ghidra 11.3+ 要求）见 [[re-ghidra]] 工具准备
-- GhidraDev Eclipse 插件（官方，GitHub `NationalSecurityAgency/ghidra` 仓库内 GhidraDev 目录）: 需要 Eclipse（Linux `apt install eclipse` / Fedora `dnf install eclipse-platform` / Arch `pacman -S eclipse-java`；macOS `brew install --cask eclipse-java`；Windows 官网 zip 解压）；非必需——纯 Gradle 也能构建扩展
-- Gradle（可选，构建 Java 扩展）: Debian/Ubuntu `apt install gradle` / Fedora `dnf install gradle` / Arch `pacman -S gradle`；macOS `brew install gradle`；Windows `choco install gradle`；验证 `gradle --version`
+- GhidraDev Eclipse 插件（官方，GitHub `NationalSecurityAgency/ghidra` 仓库内 GhidraDev 目录）: 需要 Eclipse（Linux `apt install eclipse` / Fedora `dnf install eclipse-platform` / Arch `pacman -S eclipse-java`；macOS `brew install --cask eclipse-java`；Windows 官网 zip 解压）；非必需——纯 Gradle 也能构建扩展；GhidraDev 版本与 Eclipse 版本有配套表，装不上先在官方 release notes 核对组合
+- Gradle（可选，构建 Java 扩展）: Debian/Ubuntu `apt install gradle` / Fedora `dnf install gradle` / Arch `pacman -S gradle`；macOS `brew install gradle`；Windows `choco install gradle`；验证 `gradle --version`；发行版仓库的 Gradle 可能过旧（构建 Ghidra 扩展失败）——优先用 GhidraDev 工程自带的 gradle wrapper（`./gradlew`）
 - 验证: Ghidra GUI Script Manager 能列出脚本；`File > Install Extensions` 能看到安装的扩展
 
 ### IDA —— idapython 插件
@@ -46,7 +46,8 @@ description: >
    - Python 脚本（最轻）: `@category` 头注释 + 存 GhidraScripts 目录，Script Manager 运行（注意内置 Jython 2.7，见坑 2 与 [[re-ghidra]] 坑）
    - Java 扩展（工程化）: GhidraDev `New > Ghidra Module Project` 选 Extension → 实现 `Plugin` 类（覆写 `init`/`dispose`，在 `init` 里注册菜单动作）→ Gradle `gradle buildExtension` 产出 .zip → 目标机器 `File > Install Extensions` 安装
    - 骨架要点: 动作注册用 `ToolAction`/`AbstractAction` 挂到菜单；无头环境用 `-postScript` 测试（[[re-ghidra]] 步骤 4）；脚本与扩展的边界见 [[re-ghidra]] 坑（脚本 vs 扩展选型）
-   - 验证: 安装后在菜单触发动作；无头 `analyzeHeadless ... -postScript MyPluginTest.java` 跑通输出
+   - 扩展结构: 构建产物 .zip 内含 extension.properties（声明适用的 Ghidra 版本范围）——装到范围外版本会被拒载，分发时注明版本并锁范围
+   - 验证: 安装后在菜单触发动作；无头 `analyzeHeadless ... -postScript MyPluginTest.java` 跑通输出；`gradle buildExtension` 产出 zip 后先查 extension.properties 版本范围再分发
 
 3. **IDA 插件骨架（idapython）**：
    ```python
@@ -101,3 +102,5 @@ description: >
 - **插件签名（IDA 商业版）**：现象——插件放进 plugins 目录但商业版 IDA 不加载（启动日志无该插件，无任何报错）；原因——IDA 商业版对第三方插件做签名验证，未签名插件被拒；对策——确认 IDA 版本（Freeware 不做签名验证），开发期用 Freeware/无头模式测试，正式分发走 Hex-Rays 官方插件签名申请流程；把"签名状态"写进分发文档
 - **维护成本失控**：现象——插件发布三个月后跟不上升级/新样本形态，没人修，反而拖慢分析；原因——插件是长期承诺（API 升级 + 场景变化都要跟进），一次性脚本没有这个成本；对策——步骤 1 先判值不值: 逻辑简单/变化快 → 脚本；稳定且复用高 → 插件；插件内把易变逻辑（模式串/表/阈值）外置配置，减少改码面；每次发布记录版本与对应工具版本
 - **修改型插件直接改库，改坏不可逆**：现象——批量改名/patch 插件跑完，IDB 标注错乱且撤销困难；原因——跳过只读验证、没在副本上跑；对策——先跑只读统计脚本确认预期（[[re-ida]] 坑），修改逻辑先在副本 .i64/.idb 或独立 Ghidra 工程上验证，验收通过再上正式库
+- **Ghidra 扩展版本范围拒载**：现象——扩展装进 Ghidra 无报错但列表里不出现；原因——extension.properties 声明的适用版本范围与当前 Ghidra 不匹配，被安装器拒载；对策——先解压 zip 核对 extension.properties 的版本范围（`ghidra.version` 字段），用 GhidraDev 生成工程时按目标版本建；分发文档写明测试过的 Ghidra 版本
+- **无头/批处理环境不能依赖交互对话框**：现象——`analyzeHeadless` 或 `idat64 -A` 下插件行为异常/卡住；原因——批处理模式没有 UI 事件循环，ask_* 对话框类 API 与菜单触发逻辑不可用；对策——交互参数（路径/阈值/模式串）改从命令行参数或配置文件读取，插件内先判断运行环境（是否 GUI 会话）再决定走哪条分支；无头测试脚本只验证纯计算逻辑
