@@ -35,7 +35,7 @@ description: >
 
 ### Ghidra / IDA（反编译底座）
 
-- 安装与验证见 [[re-ghidra]] / [[re-ida]]；Swift 符号解码结果用于批量重命名
+- 安装与验证见 [[re-ghidra]] / [[re-ida]]；Swift 符号解码结果用于批量重命名（Ghidra 可脚本化：demangle 输出写回 symbol 表，反编译视图即恢复可读函数名）
 
 ## 操作步骤
 
@@ -64,7 +64,7 @@ description: >
       └模块(13字符)   └类型 └类 └方法 └结果 └参数 └函数
    C=类 O=枚举 V=结构体 P=协议；Si=Int SS=String Sq=Optional；y=空元组 ()
    ```
-   编码规则：标识符=十进制长度+ASCII；签名顺序是**结果类型在前、参数在后**，`F` 结尾表示函数；`_To` 后缀=@objc 桥接 thunk；`TE` 后缀=distributed thunk。详细规则与官方示例见 [[layout]]/[[examples]]。
+   编码规则：标识符=十进制长度+ASCII；签名顺序是**结果类型在前、参数在后**，`F` 结尾表示函数；签名可带修饰位（async/throws，解码输出中显式出现）；`_To` 后缀=@objc 桥接 thunk；`TE` 后缀=distributed thunk。详细规则与官方示例见 [[layout]]/[[examples]]。
 
 4. **协议 witness table（动态分派核心）**：
    - witness table 是协议方法的分发表；conformance 记录定位：Mach-O `__swift5_proto` 段 / ELF `swift5_protocol_conformances`（协议描述符在 `__swift5_protos` / `swift5_protocols`），或搜索 `_swift_getWitnessTable` 调用点
@@ -112,4 +112,5 @@ description: >
 - **strip 后反射段仍在但符号名没了**：现象——`__swift5_proto` 段还在、`$s` 符号列表为空；原因——strip 只删符号表，反射元数据（conformance/fieldmd）属数据段；对策——从反射段重建类型/协议关系，不依赖符号名
 - **`_To` 后缀被当普通符号**：现象——`foo.bar.bas(zim:)` 和 `@objc foo.bar.bas(zim:)` 两个符号并存，漏掉后者；原因——`_To` 是 @objc 桥接 thunk；对策——`_To` 与本体成对分析，ObjC 侧调用经 thunk 进 Swift 实现
 - **入口不是 ObjC 的 main 视角**：现象——按 `main` 函数分析发现"入口"只有薄薄一层；原因——Swift 可执行文件入口是 `@main`/顶层代码经运行时初始化（swift_retain 大量出现于启动路径）；对策——从 `main` 反汇编沿运行时调用链找到第一个用户类型的方法调用点再深入，别在初始化包装里打转
+- **Swift 4 老产物无反射段**：现象——没有 `__swift5_*` 段、符号又被 strip，只剩 `_T`/`_T0` 前缀残迹；原因——反射系统 5.0 才引入；对策——按 mangling 前缀（`_TtC` 等）与 `swift_retain`/`swift_release` 运行时调用点识别 Swift 侧代码，从 ObjC 段（__objc_classlist）补类型骨架
 
