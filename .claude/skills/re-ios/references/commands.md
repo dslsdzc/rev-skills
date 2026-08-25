@@ -17,7 +17,7 @@
 
 - `class-dump -H <App.app> -o headers/` 导出 OC 类头文件（方法/属性/协议）
 - `class-dump-swift -H <App.app> -o headers/` Swift + OC 元数据（Swift 目标优先）
-- `class-dump --help` 验证；class-dump 3.4 仅源码（xcodebuild 构建），class-dump-swift 需 Swift toolchain
+- `class-dump --help` 验证；class-dump 3.4 仅源码（xcodebuild 构建），class-dump-swift 源码构建（依赖 LLVM + make，非 Swift 工具链）
 
 ### otool / llvm-otool（Mach-O 结构）
 

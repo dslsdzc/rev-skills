@@ -29,7 +29,7 @@
 
 ## 版本差异
 
-- **class-dump（nygard/class-dump）**：最新 3.4（2022 年后未更新），仅源码；`brew install class-dump` 已不可用。替代 class-dump-swift（mxms0/class-dump-swift）维护活跃，支持 Swift
+- **class-dump（nygard/class-dump）**：最新 3.4（2022 年后未更新），仅源码；`brew install class-dump` 已不可用。替代 class-dump-swift（mxms0/class-dump-swift）长期未更新（2017 年后无提交），用前先评估，支持 Swift
 - **usbmuxd → libusbmuxd（homebrew）**：macOS `brew install usbmuxd` 已失效（公式改名），用 `brew install libusbmuxd`；Linux 上 Debian/Ubuntu 包名仍是 `usbmuxd`（含 iproxy），Arch 为 `libusbmuxd`
 - **frida-ios-dump**：依赖 frida-server 与 usbmuxd 工具链；frida 主版本升级后 `dump.py` 行为可能有差异，先核对 [[re-frida]] 的 frida-server 安装
 - **越狱工具与 iOS 版本**：unc0ver（iOS 14-15 系）、palera1n（checkm8 设备全系）、Dopamine（iOS 15-16 系）——按设备型号与 iOS 版本选择，工具版本不匹配装不上或半越狱

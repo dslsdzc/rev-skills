@@ -48,7 +48,7 @@ description: >
    vol -f dump.raw windows.info    # Windows 镜像信息；Linux/macOS 无 info 插件——直接跑对应平台插件验证（如 linux.pslist / mac.pslist，符号表就位才正常输出）
    ```
    - 按转储来源选平台前缀：Windows 用 `windows.*`、macOS 用 `mac.*`、Linux 用 `linux.*`；volatility3 自动识别 profile（相比 vol2 手选 profile 已简化），但首次运行需下载对应符号文件（见工具准备）
-   - 输入格式：raw 镜像（主格式）、LiME（lime 层自动识别）、Windows crash dump（crash 层）；VMware .vmem / 休眠文件（hiberfil.sys）无内置层——先转成 raw（如 `qemu-img convert`）或专用工具处理，别直接 `-f` 硬跑
+   - 输入格式：raw 镜像（主格式）、LiME（lime 层自动识别）、Windows crash dump（crash 层）；VMware .vmem（vol 内置 vmware 层自动识别，可直接 `-f`）；休眠文件（hiberfil.sys）无内置层——先转 raw 或专用工具处理
    - 进程级转储（[[re-memdump]] 的 gcore 是单进程 ELF core，非整机镜像）Volatility 无法解析——用 gdb/eu-stack 复盘（见 [[re-memdump]] 步骤 3），本技能只处理整机镜像
 
 2. **进程列表**：
@@ -87,7 +87,7 @@ description: >
    - 提取可疑对象：`windows.dumpfiles`（指定文件）或 malfind/pslist `--dump`（`vol -f dump.raw windows.pslist --dump --pid <pid>` 导出进程内存）；每个对象算 sha256 存档
    - 文件对象池扫描：`vol -f dump.raw windows.filescan | grep -i <关键词>` 找已删除/可疑文件对象，命中后 `windows.dumpfiles` 提取（配合 `windows.svcscan`/`windows.amcache` 交叉确认）
    - YARA 规则直扫：`vol -f dump.raw yarascan.YaraScan --yara-file <规则.yar>` 扫内核内存（进程内扫 VAD 用 `windows.vadyarascan.VadYaraScan --yara-file <规则.yar> --pid <pid>`；均需 yara-python）——把 [[re-ioc]] 的规则直接作用于转储
-   - 取证时间线（如需要）：`vol -f dump.raw timeliner -r csv` 生成事件时间线（timeliner 是顶级插件，无 windows. 前缀；`-r csv` 为 CSV 渲染器），供报告与 [[re-ioc]] 引用
+   - 取证时间线（如需要）：`vol -r csv -f dump.raw timeliner` 生成事件时间线（timeliner 是顶级插件，无 windows. 前缀；`-r/--renderer` 是 vol 级选项，位于插件名之前；`-r csv` 为 CSV 渲染器），供报告与 [[re-ioc]] 引用
 
 ## 跨域联合
 
@@ -105,7 +105,7 @@ description: >
 - **dump 不完整（vsyscall 段污染）→ 分析偏差**：现象——malfind 命中大量 0xffffffffff6xxxxx 地址的"注入"，或提取对象全是对齐垃圾；原因——转储时未按 maps 过滤 `[vsyscall]`/`[vdso]`/`[vvar]`（见 [[platform-tips]] Linux 内存转储极端段），垃圾页混入；对策——取 dump 阶段就过滤极端段；分析时按地址区间跳过 0xffffffffff6xxxxx，别把垃圾页当证据
 - **malfind 误报 → 假阳性**：现象——`windows.malfind` 命中大量私有执行页，但 dlllist 无异常模块、提取对象跑不了；原因——加载器/垃圾回收器/JIT 的正常 RWX 页也会被判定"异常"，malfind 只看内存属性不看执行语义；对策——用 dlllist 路径、hollow 检测、提取对象实际反编译（[[re-binary-core]]）三重交叉确认后再定论
 - **只信 pslist 漏掉已终止进程**：现象——pslist 干净但网络/文件行为指向某 PID 已消失；原因——进程已被终止，常规列表不含；对策——补跑 `windows.psscan`（池扫描找残留对象），取证要求尽量全。
-- **取证报告缺时间线**：现象——报告只有结论没有事件先后（"什么时候注入、什么时候外连"）；原因——未生成时间线证据；对策——用 `timeliner -r csv`（顶级插件，无 windows. 前缀）生成 CSV 时间线，进程/网络/凭据事件按时间归档，作为 [[re-ioc]] 报告证据段
+- **取证报告缺时间线**：现象——报告只有结论没有事件先后（"什么时候注入、什么时候外连"）；原因——未生成时间线证据；对策——用 `vol -r csv -f dump.raw timeliner`（顶级插件，无 windows. 前缀；`-r/--renderer` 是 vol 级选项，位于插件名之前）生成 CSV 时间线，进程/网络/凭据事件按时间归档，作为 [[re-ioc]] 报告证据段
 - **内存内函数补丁型绕过 → 常规插件全干净**：现象——malfind/dlllist 全部干净，但样本的 ETW/AMSI 明显被抑制（日志缺失/扫描无响应）；原因——绕过不是注入新代码，而是改写已加载模块的函数头（如 `EtwEventWrite` 前 4 字节 patch 成 `ret 14`、`AmsiScanBuffer` 前 3 字节改成 `return 0`、`send` 开头跳到匿名私有内存），不产生新执行页也不改页权限，malfind 无感；对策——跑内置 `windows.etwpatch`（检测 ETW 补丁技术，vol3 2.28 起自带），或把内存中模块 dump 出来与磁盘原始 DLL 对照函数头字节
 - **睡眠混淆 → 转储里载荷"消失"**：现象——转储中找不到植入体（无注入页、无落地文件），行为分析却确认 C2 植入体在运行；原因——Ekko/Foliage 类睡眠混淆在休眠期把 VAD 权限翻转为 `PAGE_NOACCESS`/`PAGE_READWRITE` 并把内容加密，唤醒瞬间才还原执行；对策——用 vadinfo 找权限翻转/NOACCESS 的区段，按轮转密钥还原休眠中的加密页，或配合 [[re-emulation]] 在唤醒点模拟执行抓取明文
 - **BitLocker FVEK 可从 RAM 恢复（主版本无此插件）**：现象——拿到加密磁盘镜像+内存转储但没有密码，数据提取停滞；原因——系统运行时全卷加密密钥（FVEK）残留在 RAM（未被安全擦除），但主版本 Volatility 3 没有内置插件；对策——用社区 `volatility3-bitlocker` 插件跑 `windows.bitlocker.BitlockerFVEKScan`（`--tags FVEc Cngb`）提取 FVEK，再用 `dislocker -k` 挂载解密；v3 插件对旧内核结构报错时回退 Volatility 2 + breppo/Volatility-BitLocker

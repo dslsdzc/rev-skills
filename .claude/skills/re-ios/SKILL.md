@@ -28,8 +28,8 @@ description: >
 ### class-dump —— OC 头文件导出
 
 - macOS: 官方仓库 nygard/class-dump 最新 release 3.4 仅源码无预编译二进制——源码构建（xcodebuild）使用；`brew install class-dump` 公式已从 homebrew-core 下架（2026 实测 formulae.brew.sh 无此公式），不再可用
-- 替代: class-dump-swift（mxms0/class-dump-swift）同样支持 OC 与 Swift 类/方法导出，源码构建（需 Swift toolchain）——Swift 目标优先用它
-- Linux/Windows: 无官方版；用 class-dump-swift 源码编译（Swift toolchain），或在 macOS 虚拟机 / 远程 macOS 上执行
+- 替代: class-dump-swift（mxms0/class-dump-swift）同样支持 OC 与 Swift 类/方法导出，源码构建（依赖 LLVM + make，非 Swift 工具链）——Swift 目标优先用它
+- Linux/Windows: 无官方版；用 class-dump-swift 源码编译（依赖 LLVM + make，非 Swift 工具链），或在 macOS 虚拟机 / 远程 macOS 上执行
 - 验证: `class-dump --help`（输出 usage 即可）
 
 ### otool —— Mach-O 结构 / 符号查看（Apple 自带）
