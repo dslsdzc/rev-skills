@@ -8,6 +8,7 @@ SKILL.md 章节（顺序固定）：
 2. `# 标题`（中文，如 "脱壳：压缩壳（UPX/ASPack/FSG）"）
 3. `## 任务分类器（intent → 路径）` —— **可选但推荐**：多分支技能（一个技能含多个子任务族）在「何时使用」前加用户目的 → 路径映射表（如 re-ai-attack：怀疑模型被复制→fingerprint / 判断训练数据泄露→membership / 测试 API 可复制性→extraction / 测试鲁棒性→adversarial），路径指向操作步骤编号；单任务技能可省略
    - 多分支技能**建议同时加「输入资产盘点（INPUT INVENTORY）」**：路径命中后确认已有资产（API/模型/数据集/副本/基线），缺资产先索要或说明局限——不同资产组合决定不同路线
+   - **入口判定（Decision Gate）**——目标形态判定树（供自动调度分流）：目标出现先判形态再选技能，如 Android 域：APK→lib/*.so 存在？→ re-android-native / re-apk；单独 so→JNI 符号？→ re-android-native / re-binary-core；加固→re-anti-analysis；crypto→re-android-crypto。多输入形态技能（so/APK/固件/流量）必加，单形态技能可省略
 4. `## 何时使用 / 何时不用` —— 明确边界，防误触发
 5. `## 工具准备` —— 必含：每个工具给出 apt / dnf / pacman / brew / pip / cargo / choco 安装命令 + 验证命令 + OS 分支（Linux/macOS/Windows/WSL 替代方案）；引用 [[platform-tips]] 相关分支
 6. `## 操作步骤` —— 可执行、具体，沿用 porting-minecraft-mod 的硬性执行风格（不省略、不"类似处理"）。**四层内容分离**（复杂技能必循，样板 re-ai-attack）：

@@ -7,6 +7,23 @@ description: >
 
 # Android 原生库（JNI/.so）逆向
 
+## 入口判定（Decision Gate）
+
+目标出现时先判形态，命中即转对应技能（自动调度分流）：
+
+```
+目标
+├── APK
+│    ├── lib/*.so 存在？──是──→ 本技能（re-android-native）
+│    └── 无 so（纯 Java）──→ re-apk
+├── 单独 .so
+│    ├── JNI 符号（Java_* / JNI_OnLoad / RegisterNatives 调用点）──→ 本技能
+│    ├── 加密库 API（SSL_*/EVP_*/crypto_* 等）──→ re-android-crypto（加密语义）
+│    └── 普通 ELF（无 JNI 特征）──→ re-binary-core（re-format-elf）
+├── 加固 so（壳壳/熵高/导入表极小）──→ re-anti-analysis / re-mobile-pack（脱壳后回本技能）
+└── 加密体系审计目标（Keystore/Cipher）──→ re-android-crypto
+```
+
 ## 何时使用 / 何时不用
 
 - 用：APK 里的 `lib/*.so` 原生库——JNI 接口还原、注册方式（静态/动态）、native 逻辑分析
