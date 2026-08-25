@@ -15,6 +15,8 @@ description: >
 
 ## 工具准备
 
+参考 [[platform-tips]]——解包/反编译为静态步骤，免沙箱；动态取明文（[[re-sandbox]]）按最高原则进沙箱。
+
 ### python3（基础运行时，必备）
 
 - Linux: `apt install python3` / `dnf install python3` / `pacman -S python`
@@ -76,6 +78,8 @@ description: >
    - magic 对照（小端 2 字节，常见值；以本机 MAGIC_NUMBER 为准）：
      - `0d33`=3.6、`0d42`=3.7、`0d55`=3.8、`0d61`=3.9、`0d6f`=3.10、`0da7`=3.11、`0dcb`=3.12
      - 3.13+：不写死数值，按本机 MAGIC_NUMBER 换算（`python3 -c "import importlib.util; print(hex(int.from_bytes(importlib.util.MAGIC_NUMBER[:2],'little')))"`）
+   - pyc 头布局（3.7+ 统一 16 字节）：magic(4) + flags(4) + mtime(4) + size(4)，code 对象从偏移 16 开始；flags 低 1 位 = hash-based（PEP 552，mtime/size 无意义）；PyInstaller 解出的 pyc 头 flags/mtime/size 全 0（清零是正常现象，不是损坏）
+   - 版本决定 marshal 格式：3.14 起 marshal 升到 v5，code 对象内部布局与旧版不同——手写 marshal 解析须按 magic 版本分派；pycdc 等工具对 3.13+ 支持滞后，优先用匹配版本 python 的 `dis`/`marshal` 兜底
    - 版本匹配目标则用对应版本 python 或 pycdc 反编译；不匹配先装匹配版本再试
 
 5. **反编译与清理**：
@@ -96,6 +100,8 @@ description: >
 ## 常见坑与陷阱
 
 - **pyc 版本不匹配直接反编译失败**：现象——pycdc 输出乱码或报错；原因——magic 版本与目标不符；对策——先做步骤 4 的 magic 识别，按版本选工具
+- **pyc 头 mtime/size 为 0 不是损坏**：现象——PyInstaller 解出的 pyc 用工具打开报错/空白，怀疑解包失败；原因——PyInstaller 写 PYZ 时清零 mtime/size（marshal 本体不受影响）；对策——按 magic 识别版本后跳过 16 字节头，直接 `marshal.loads` 验证 code 对象，或交给 pycdc
+- **hash-based pyc（PEP 552）**：现象——pyc 头 flags 字段非 0（低 1 位为 1），mtime/size 是哈希或占位；原因——构建方用 hash 校验模式编译；对策——识别只看 magic 与 flags 低 1 位，反编译不受影响（code 对象仍是标准 marshal 流）
 - **PyArmor 版本差异导致解包器失效**：现象——PyArmor-Unpacker 报不支持；原因——PyArmor 版本过新/过旧；对策——按版本换方法，或手动定位 runtime 的加解密逻辑（转 [[re-binary-core]]）
 - **Cython/Nuitka 无 pyc**：现象——找不到 .pyc；原因——编译型产物；对策——直接分析产物（[[re-format-elf]] / [[re-ghidra]]），不找 pyc
 - **假函数干扰定位**：现象——解包后源码充斥无引用包装函数；原因——PyArmor 的 confusion code；对策——先按调用关系过滤（无调用者即候选），再定位核心逻辑
