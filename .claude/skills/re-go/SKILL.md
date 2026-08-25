@@ -71,7 +71,7 @@ description: Go 二进制逆向：符号保留、字符串表、goroutine。触�
    ```
    - 版本决定 pclntab 布局与 GoReSym/redress 的解析方式；无 buildinfo → 坑 5
    - `go version -m` 的 module 路径直接给出项目名/依赖（恶意样本常泄露 C2 框架），先记下来
-   - pclntab magic 直接判版本段：`.gopclntab` 开头 4 字节 `0xfffffff1` = Go ≤1.17 或 1.20+，`0xfffffff0` = 仅 1.18/1.19（头部布局见步骤 6；GoReSym 按这两个值扫描）
+   - pclntab magic 直接判版本段：`.gopclntab` 开头 4 字节 `0xfffffffb` = Go 1.2–1.15、`0xfffffffa` = 1.16–1.17、`0xfffffff0` = 1.18–1.19、`0xfffffff1` = 1.20+（头部布局见步骤 6；GoReSym 等工具按这四个值扫描）
 
 3. **符号表利用**：
    - Go 默认保留符号（除非 `-ldflags "-s -w"`）：`nm sample | grep ' main\.'` 列出用户代码函数
@@ -95,7 +95,7 @@ description: Go 二进制逆向：符号保留、字符串表、goroutine。触�
    - 动态（沙箱内）: dlv 对 Go 最友好——`go install github.com/go-delve/delve/cmd/dlv@latest`，`dlv attach <pid>` 后 `goroutines` 列出所有 goroutine、`goroutine <n> stack` 看栈；[[re-tracing]] 的 strace 观察并发系统调用
 
 6. **运行时结构要点（pclntab / goroutine 栈 / buildinfo）**：
-   - pclntab 头（1.20+ 布局）：magic(4) + pad1 + pad2 + minLC + ptrSize + nfunc(8) + nfiles(8) + 保留(8) + funcnameOffset(8) + cuOffset(8) + filetabOffset(8) + pctabOffset(8) + pclnOffset(8)；funcnameOffset 指向函数名字符串池，pctab 是 PC→行号表——1.18/1.19 的 `0xfffffff0` 版本头部更短（func 数据入口从地址改偏移），工具按 magic 分派
+   - pclntab 头（1.20+ 布局）：magic(4) + pad1 + pad2 + minLC + ptrSize + nfunc(8) + nfiles(8) + 保留(8) + funcnameOffset(8) + cuOffset(8) + filetabOffset(8) + pctabOffset(8) + pclnOffset(8)；funcnameOffset 指向函数名字符串池，pctab 是 PC→行号表——1.18/1.19 与 1.20+ 的 pcHeader 同为 80 字节（debug/gosym ver118/ver120 同一解析分支；1.20 差异是 textStart 字段改保留 + 符号名加冒号）；真正更短的头在 ≤1.17（ver116 无 textStart 字段）；1.18 的 Go118PCLnTabMagic 变更了 functab 偏移（func 数据入口从地址改偏移），工具按 magic 分派
    - goroutine 栈：g 结构（runtime 私有）首字段 `stack{lo, hi}` 即栈区间，`stackguard0` 是栈增长检查阈值——每个函数序言的 `runtime.morestack` 检查的是它（噪声来源），`sched.gobuf` 保存挂起时的 sp/pc；dlv 的 `goroutines`/`goroutine <n> stack` 输出即来自这些字段，挂起点在 `runtime.gopark` 恢复
    - buildinfo 手工解析：`.go.buildinfo` 内嵌 `\xff Go buildinf:`（14 字节）+ ptrSize(1) + 字节序标记(1)，16 字节对齐；`go version -m` 失效时按此魔数提取版本与 module 信息（与 go tool 同源，解码失败才是真没有）
    - 平台差异：Windows Go 产物是 PE 但节名与符号体系相同（`.gopclntab`/`.go.buildinfo` 都在），nm/GoReSym/redress 在 Linux 上可直接分析 PE Go 样本；入口桩符号随平台（Linux `_rt0_amd64_linux`、Windows `_rt0_amd64_windows`、macOS `_rt0_amd64_darwin`），都只是跳到 runtime.main

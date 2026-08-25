@@ -69,7 +69,7 @@ description: .NET CIL 逆向：dnSpy/ILSpy 反编译、de4dot 去混淆、Confus
    print(hex(dd.VirtualAddress), hex(dd.Size))  # 非 0 → 托管程序集
    ```
    注意混合模式程序集（native + 托管都看得到）与自包含单文件（见坑 4）。
-   CLI header 结构速查（实测 .NET 10 产物）：cb=0x48(72)、MajorRuntimeVersion=2、MinorRuntimeVersion=5、MetaData RVA、EntryPoint RVA（0=DLL）、CorFlags（1=ILONLY、2=32BITREQUIRED、0x20000=强名签名）。
+   CLI header 结构速查（实测 .NET 10 产物）：cb=0x48(72)、MajorRuntimeVersion=2、MinorRuntimeVersion=5、MetaData RVA、EntryPoint RVA（0=DLL）、CorFlags（1=ILONLY、2=32BITREQUIRED、0x8=强名签名（COMIMAGE_FLAGS_STRONGNAMESIGNED）、0x20000=32BITPREFERRED）。
    元数据根（MetaData RVA 处）：签名 `BSJB`(0x424A5342) + 版本 1.1 + 保留 + 版本串长 + 版本串（"v4.0.30319"，.NET Framework/.NET Core/.NET 10 产物恒定）+ flags(2) + 流数(2) + 流头（offset + size + 名字，4 字节对齐）。
    流名即内容形态：`#~`（压缩表，Roslyn 默认）/`#-`（未压缩表）、`#Strings`（元数据字符串池）、`#US`（用户字符串：代码里的 C# 字面量）、`#GUID`、`#Blob`（签名/常量 blob）——字符串加密样本的明文不在 `#US` 就是运行时拼的；`#~` 的表内容即 dnSpy/ILSpy 的类型/方法树。
 
