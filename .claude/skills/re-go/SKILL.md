@@ -71,6 +71,7 @@ description: Go 二进制逆向：符号保留、字符串表、goroutine。触�
    ```
    - 版本决定 pclntab 布局与 GoReSym/redress 的解析方式；无 buildinfo → 坑 5
    - `go version -m` 的 module 路径直接给出项目名/依赖（恶意样本常泄露 C2 框架），先记下来
+   - pclntab magic 直接判版本段：`.gopclntab` 开头 4 字节 `0xfffffff1` = Go ≤1.17 或 1.20+，`0xfffffff0` = 仅 1.18/1.19（头部布局见步骤 6；GoReSym 按这两个值扫描）
 
 3. **符号表利用**：
    - Go 默认保留符号（除非 `-ldflags "-s -w"`）：`nm sample | grep ' main\.'` 列出用户代码函数
@@ -92,6 +93,12 @@ description: Go 二进制逆向：符号保留、字符串表、goroutine。触�
    - goroutine 入口函数返回后走 `runtime.goexit`；`runtime.gopark`/`runtime.gosched`/`runtime.schedule` 是调度与挂起点——看到它们不要当作主流程
    - 每个函数序言的 `runtime.morestack` 调用只是栈增长检查，忽略（噪声）
    - 动态（沙箱内）: dlv 对 Go 最友好——`go install github.com/go-delve/delve/cmd/dlv@latest`，`dlv attach <pid>` 后 `goroutines` 列出所有 goroutine、`goroutine <n> stack` 看栈；[[re-tracing]] 的 strace 观察并发系统调用
+
+6. **运行时结构要点（pclntab / goroutine 栈 / buildinfo）**：
+   - pclntab 头（1.20+ 布局）：magic(4) + pad1 + pad2 + minLC + ptrSize + nfunc(8) + nfiles(8) + 保留(8) + funcnameOffset(8) + cuOffset(8) + filetabOffset(8) + pctabOffset(8) + pclnOffset(8)；funcnameOffset 指向函数名字符串池，pctab 是 PC→行号表——1.18/1.19 的 `0xfffffff0` 版本头部更短（func 数据入口从地址改偏移），工具按 magic 分派
+   - goroutine 栈：g 结构（runtime 私有）首字段 `stack{lo, hi}` 即栈区间，`stackguard0` 是栈增长检查阈值——每个函数序言的 `runtime.morestack` 检查的是它（噪声来源），`sched.gobuf` 保存挂起时的 sp/pc；dlv 的 `goroutines`/`goroutine <n> stack` 输出即来自这些字段，挂起点在 `runtime.gopark` 恢复
+   - buildinfo 手工解析：`.go.buildinfo` 内嵌 `\xff Go buildinf:`（14 字节）+ ptrSize(1) + 字节序标记(1)，16 字节对齐；`go version -m` 失效时按此魔数提取版本与 module 信息（与 go tool 同源，解码失败才是真没有）
+   - 平台差异：Windows Go 产物是 PE 但节名与符号体系相同（`.gopclntab`/`.go.buildinfo` 都在），nm/GoReSym/redress 在 Linux 上可直接分析 PE Go 样本；入口桩符号随平台（Linux `_rt0_amd64_linux`、Windows `_rt0_amd64_windows`、macOS `_rt0_amd64_darwin`），都只是跳到 runtime.main
 
 ## 跨域联合
 
@@ -117,4 +124,6 @@ description: Go 二进制逆向：符号保留、字符串表、goroutine。触�
 - **符号可用但签名缺失**：现象——函数名有、参数/类型没有；原因——新版本 Go 产物不带完整符号信息；对策——接受函数名可用、签名靠其他证据（配置反序列化类型/调用点）重建
 - **字符串噪声大**：现象——恢复的字符串混入大量标准库常量；原因——Go 标准库字符串常量；对策——按包级别过滤后再筛业务字符串
 - **源码重建原则**：现象——逐行还原不现实；原因——产物无源码对应；对策——按包重建可读代码、保留逻辑而非逐行一致（逻辑优先）
+- **cgo 混合产物，C 部分无 Go 命名**：现象——`nm` 里混着一批裸名符号（`printf`、`pthread_*`），与 `main.`/`runtime.` 风格不一致；原因——cgo 把 C 代码/静态库直接链接进 Go 二进制，C 符号不参与 Go 命名体系；对策——按命名风格分片：Go 侧（`main.`/包名.）走本技能，C 侧裸名符号走 [[re-binary-core]]（[[re-imports]] 库指纹）；cgo 块通常只做薄封装，主逻辑仍在 Go 侧
+- **Windows PE Go 样本在 Linux 上直接静态分析**：现象——`file` 报 PE、Ghidra 导入后入口不是 `_rt0_amd64_linux`，误以为需要 Windows 环境；原因——Go 产物跨平台结构一致，只是容器格式（PE/Mach-O/ELF）不同；对策——nm/GoReSym/redress 照常用（符号表与 pclntab 与平台无关），入口按平台认（Windows 侧 PE 入口指向 `_rt0_amd64_windows` 桩）；动态侧才需要 Windows/Wine（[[platform-tips]] 分支）
 （来源：reverse-skill field-journal，MIT）
