@@ -2,12 +2,14 @@
 name: re-ai-attack
 type: atomic
 description: >
-  AI 模型攻击与取证：模型提取攻击、指纹/水印检测、成员推断、对抗样本基础。
-  触发词：模型提取、模型窃取、水印检测、模型指纹、成员推断、对抗样本、模型攻击。
+  AI 模型安全评估与取证（行为层）：extraction assessment（API 黑盒提取评估）、
+  fingerprint verification（行为指纹与归属验证）、privacy leakage evaluation（成员推断/隐私泄露评估）、
+  robustness evaluation（对抗鲁棒性评估）。
+  触发词：API模型窃取、黑盒模型复制、模型指纹、成员推断、对抗样本、行为水印、模型安全评估、隐私泄露评估。
 guard: {"require_authorization": true, "forbidden": ["unauthorized_api_testing", "bypass_access_control", "model_theft_against_third_party"]}
 ---
 
-# AI 模型攻击与取证
+# AI 模型安全评估与取证（行为层）
 
 ## CORE RULE：攻击面由可观测性决定，不由攻击名称决定
 
@@ -92,7 +94,7 @@ guard: {"require_authorization": true, "forbidden": ["unauthorized_api_testing",
    - 实现经验（soft label 优先、边界扰动、评估一致性、蒸馏基线、查询日志等）见 [[implementation-notes]]
    - 仅标签时：降级为决策边界采样（输出分布重建受限，见 [[gotchas]] 接口坑）；查询预算内先小批估计（坑 1）
 
-2. **模型指纹/水印检测**（Overview：行为签名比对 + 水印触发检测）：
+2. **模型指纹/水印检测**（Overview：**行为级**水印——模型表现出来是什么：trigger 触发响应 / 查询响应 / 黑盒指纹；文件级水印（权重 pattern/metadata/tensor hash）走 [[re-ai-model]]）：
    - Checklist：
      1. 嵌入检测：输入扰动（特定噪声/触发器）→ 输出特征比对（水印触发行为）
      2. 指纹提取：模型行为签名（代表性输入集输出向量）→ 与疑似副本比对

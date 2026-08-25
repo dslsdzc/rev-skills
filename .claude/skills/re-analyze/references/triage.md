@@ -38,7 +38,7 @@
 | CTF 赛题 | re-ctf 网关 → 题型识别 → re-angr / re-z3 / re-pwn / 反混淆(re-deobfuscate) →（底座）re-binary-core |
 | .NET/Java/脚本样本 | re-managed 网关 → dotnet/java/script-deob →（Electron 应用 → re-electron；Java Card/SIM → re-javacard）→（恶意场景）re-malware |
 | 智能合约 / 合约漏洞 / EVM 字节码 | re-managed 网关 → 合约逆向(re-blockchain) →（漏洞利用）re-vuln |
-| AI 模型 / 权重提取 / 模型水印 | re-managed 网关 → 模型逆向(re-ai-model) →（攻击/指纹/成员推断 → re-ai-attack）→（格式混淆）re-binary-core |
+| AI 模型 / 权重提取 / 模型水印 | re-managed 网关 → **分流**：拿到模型文件（.onnx/.pt/.safetensors 等，文件层解析/权重/文件级水印）→ re-ai-model；怀疑 API 行为层被复制/黑盒指纹/成员推断/对抗评估 → re-ai-attack（行为层）；文件层分析中发现行为层问题 → 转 re-ai-attack →（格式混淆）re-binary-core |
 | macOS 原生应用 | re-binary-core 网关 → 格式(re-format-macho) → 应用逆向(re-macos) |
 | 内存取证/威胁情报 | re-forensics 网关 → mem-forensics → ti →（衔接）re-ioc |
 
