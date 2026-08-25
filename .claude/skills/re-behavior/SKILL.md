@@ -120,17 +120,16 @@ Windows 侧行为采集四件套：ProcMon（全系统文件/注册表/网络/�
 
 ### ETW：内核侧事件采集（logman / wevtutil）
 
-- 定位: Windows 内置事件框架，会话创建与事件解析用系统自带命令（logman / wevtutil / tracerpt），零安装；内核侧采集不受用户态 hook 影响——直通 syscall 的注入（坑 11）只能靠内核侧事件兜底
+- 定位: Windows 内置事件框架，会话创建与事件解析用系统自带命令（logman / wevtutil / tracerpt），零安装；内核侧采集不受用户态 hook 影响——直通 syscall 的注入（坑 8）只能靠内核侧事件兜底
 - 建会话（需管理员）:
 
   ```bat
-  logman create trace bhev -p Microsoft-Windows-Kernel-Process -o bhev.etl -ets
-  logman start bhev -ets
+  logman create trace bhev -p Microsoft-Windows-Kernel-Process 0x10 -o bhev.etl -ets
   logman stop bhev -ets
   logman delete bhev -ets
   ```
 
-  `-p` 指定 provider（名称或 GUID），可带关键字与级别（如 `-p Microsoft-Windows-Sysmon 0xFF 5`）；`logman query -ets` 看活动会话；`logman query providers` 枚举已注册 provider（管道 `findstr` 筛目标）
+  `-p` 指定 provider（名称或 GUID），可带关键字与级别（如 `-p Microsoft-Windows-Sysmon 0xFF 5`）；内核 provider 必须显式给关键字——Kernel-Process 的 0x10 为进程关键字，0x20/0x40 为线程/镜像关键字，缺省可能静默采零事件；`logman query -ets` 看活动会话；`logman query providers` 枚举已注册 provider（管道 `findstr` 筛目标）
 - 常用 provider: Microsoft-Windows-Kernel-Process（进程创建/退出）、Microsoft-Windows-PowerShell（脚本块）、Microsoft-Windows-Sysmon（装有 Sysmon 时直接复用其事件）
 - 事件解析: .etl 转 CSV 用 `tracerpt bhev.etl -o out.csv -of csv`；事件日志用 wevtutil：
 
@@ -147,7 +146,7 @@ Windows 侧行为采集四件套：ProcMon（全系统文件/注册表/网络/�
 
 - 进程树: View → Show Process Tree（Ctrl+T）——父子关系、退出进程灰显保留；与 ProcMon 的 Process Tree 工具互补（PE 看实时、ProcMon 复盘录制）
 - 底窗: Handles（Ctrl+H）看进程打开的句柄（文件/注册表/网络对象），DLLs（Ctrl+D）看已加载模块与映射——查注入 DLL 是否落位、哪个进程握着被删文件；Hide Lower Pane（Ctrl+L）收起
-- Find Handle or DLL（Ctrl+Shift+F）: 按文件/路径/键反查持有进程——找谁在读写某路径
+- Find Handle or DLL（Ctrl+F）: 按文件/路径/键反查持有进程——找谁在读写某路径
 - 签名验证: Options → Verify Image Signatures 开启后进程列表出现 Verified Signer 列；进程属性 Image 页 Verify 按钮单查——快速区分系统合法模块与可疑注入模块（签名缺失/失效即告警，配合步骤 1）
 
 ### 跨 OS 约束
