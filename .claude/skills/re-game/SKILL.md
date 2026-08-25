@@ -178,6 +178,7 @@ description: >
 - [[re-sandbox]]：反作弊游戏分析强制隔离（[[platform-tips]] 最高原则）
 - [[re-mobile]]：移动端游戏（Unity/Unreal 移动版）转 [[re-apk]] / [[re-ios]] / [[re-frida]]
 - [[re-cracking]]：单机游戏授权/激活校验绕过
+- [[re-console]]：现代主机（Switch/PS4/PS5）与复古平台（ROM 头/卡带格式/Cheat 码）游戏逆向
 
 ## 常见坑与陷阱
 

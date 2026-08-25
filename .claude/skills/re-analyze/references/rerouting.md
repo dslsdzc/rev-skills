@@ -27,6 +27,12 @@
 | PDF/Office 宏/钓鱼文档特征 | [[re-doc-malware]] |
 | 补丁/N-day 对比需求（修复前后/变体） | [[re-variant]] |
 | 文件尾附加/图片异常（隐写怀疑） | [[re-stego]] |
+| `.NSO`/`.NPDM` 容器结构（Switch 加密分区） | [[re-console]] |
+| BPF ELF section（`.maps`/`.BTF`/`.rel*`，kprobe/tracepoint 命名节） | [[re-ebpf]] |
+| CAP 文件头（魔数 `DE CA FF ED`，Java Card 12 组件） | [[re-javacard]] |
+| asar 结构（`resources/app.asar` + 内部 files 树，Electron 应用） | [[re-electron]] |
+| VxWorks/QNX 特征串（任务表符号/内核对象命名） | [[re-rtos]] |
+| MMIO 外设区 + Thumb 特征（嵌入式裸机固件） | [[re-arm]] |
 
 ## B 表：卡住信号 → 换路
 

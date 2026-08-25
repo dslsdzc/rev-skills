@@ -8,7 +8,7 @@ description: >
   [[re-lldb]] [[re-tracing]] [[re-memdump]] [[re-windbg]] [[re-binaryninja]]
   [[re-emulation]] [[re-shellcode]] [[re-kernel]] [[re-game]] [[re-go]] [[re-rust]]
   [[re-plugin-dev]] [[re-hypervisor]] [[re-anti-cheat]]、[[re-cpp-abi]]、[[re-swift]]、[[re-zig]]、
-  [[re-nim]]、[[re-fp-runtime]]、[[re-variant]]、[[re-mips]]。
+  [[re-nim]]、[[re-fp-runtime]]、[[re-variant]]、[[re-mips]]、[[re-arm]]、[[re-riscv]]。
   触发词：静态分析、看这个程序的逻辑、反编译、逆向这个二进制、binary analysis。
 ---
 

@@ -97,6 +97,7 @@ description: >
 ## 跨域联合
 
 - [[re-firmware]]：工作流第 4 步固定调用本技能
+- 架构识别与指令级深挖：ARM（向量表/Thumb/MMIO 外设交叉）→ [[re-arm]]；RISC-V（RV32/RV64/ecall）→ [[re-riscv]]（选对 qemu-<arch> 前先对照）
 - 仿真内动态行为观察 → [[re-tracing]] + [[re-gdb]]（默认沙箱内，[[platform-tips]] 最高原则）
 - 固件运行产生通信 → [[re-protocol]]；仿真内 ELF 深挖 → [[re-binary-core]]
 - 仿真不成的程序回退静态 → [[re-fw-rootfs]]
