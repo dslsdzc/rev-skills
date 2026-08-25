@@ -52,6 +52,7 @@ description: >
 - `npm install -g bytenode` 或项目内安装
 - 验证: `npx bytenode --help`（`-c` 编译、`-e/--electron` 编译为 Electron 用、`-ep/--electron-path` 指定 Electron 可执行文件）
 - 用途：用目标版本 Node/Electron 重编译对照样本 `.jsc` 的魔数与可加载性；本身不是反编译工具（见坑 1）
+- Electron 42+ 主进程场景（`electronMain`）无 CLI 对应参数，须用 API 调用形态：`require('bytenode').compileFile({ electronMain: true, filename: 'main.js' })`（与坑 1 的 `electronMain` 模式呼应）
 
 ### @electron/fuses —— 运行能力开关检查/翻转
 
