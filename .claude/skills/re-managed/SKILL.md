@@ -32,6 +32,8 @@ description: >
 - **ONNX / safetensors / PyTorch 模型文件** → [[re-ai-model]]（格式识别、权重提取、水印/窃取判定；未知 pkl 默认隔离）
 - **EVM 合约字节码（.bin / hex）** → [[re-blockchain]]（ABI 恢复、panoramix 反编译、漏洞分析）
 - **浏览器扩展（crx/xpi/zip 扩展文件）** → [[re-browser-ext]]（权限审计/恶意行为/混淆还原）
+- **Electron 打包应用（resources/app.asar）** → [[re-electron]]（asar 解包、V8 字节码边界、CDP 动态调试）
+- **Java Card / SIM（CAP 文件）** → [[re-javacard]]（12 组件解析、process(APDU) 分派还原）
 - **Android DEX** → 不是本网关——转 [[re-mobile]]（[[re-apk]]），其中含 Java 原生逻辑再回 [[re-java]]
 - **仅脚本调用 native 下载的 PE** → 动态侧跟 [[re-malware]]，静态侧回 [[re-binary-core]]
 
