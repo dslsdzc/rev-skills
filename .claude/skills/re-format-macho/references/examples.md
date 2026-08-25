@@ -159,7 +159,7 @@ for _ in range(5):
 00003050: 0027 0300 d00a 0002 0000 0000 0000 0000  .'..............
 ```
 
-解码（lld 生成的 trie，边是 `\0` 结尾字符串、偏移是相对 trie 起点的绝对 uleb128；Apple ld64 的 trie 是单字节边格式，两者都存在于现实样本）：
+解码（dyld 导出 trie 格式：边是 `\0` 结尾字符串，子节点偏移是相对 trie 起点的 uleb128——Apple dyld（MachOAnalyzer.cpp）、lld（ExportTrie.cpp）与 LLVM 解析器三方一致，无第二种边格式）：
 
 ```
 0x00: 00                root 节点 terminalSize=0（非终端）
@@ -177,7 +177,7 @@ for _ in range(5):
                         → __mh_execute_header @ 0x100000000（文件头即符号）
 ```
 
-注意 `d0 0a` 是两字节 uleb128（0xd0 最高位=1 续读）：0x50 | (0x0a<<7) = 0x550。手工解码过一遍即掌握 dyld 导出表格式；解码脚本要处理两种 trie 边格式（字符串边 vs 单字节边）。
+注意 `d0 0a` 是两字节 uleb128（0xd0 最高位=1 续读）：0x50 | (0x0a<<7) = 0x550。手工解码过一遍即掌握 dyld 导出表格式：所有生成端（Apple ld64/lld）都是同一种 `\0` 结尾边 + 相对 trie 起点 uleb128 偏移，解码脚本只需处理这一种。
 
 ## 实现教训（内化）
 

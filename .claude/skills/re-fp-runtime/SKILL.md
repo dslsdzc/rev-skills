@@ -51,9 +51,9 @@ description: >
    file sample                                                              # 字节码产物判别（脚本头）
    ```
    - GHC：`main`（C RTS 入口）+ RTS 运行时符号（`stg_*`/`hs_*`）+ 业务符号 `Main_main_closure`/`Main_main_info`（`模块_名字_closure/info` 形态）
-   - OCaml 原生：`main` → `caml_startup` → `caml_start_program` → `caml<模块>__entry`；`caml_*` 运行时符号（caml_alloc/caml_apply2/3 等）
+   - OCaml 原生：`main` → `caml_main` → `caml_startup_common` → `caml_start_program` → `caml<模块>__entry`；`caml_startup`/`caml_startup_pooled` 是供 C 嵌入调用的等价入口（参数形态不同），勿误当主链；`caml_*` 运行时符号（caml_alloc/caml_apply2/3 等）
    - **字节码 vs 原生**：`caml_start_program` 在 native 与字节码运行库中都存在，**不可作字节码判据**；字节码产物判别用 `file`（`ocamlrun script executable`）/`xxd` 头（`#!...ocamlrun\n` 脚本头 + `T`/`C` 魔数 + 分节）
-   - 老 OCaml（4.x 早期）入口符号为 `caml_main`（实测 4.14.2 ocamlopt 无此符号，入口即 `main → caml_startup`）
+   - 入口链各版本一致：官方 runtime/main.c 始终定义 `caml_main(argv)`（`main → caml_main → caml_startup_common → caml_start_program`，4.14.2 实测地址见 [[examples]]）；字节码运行库同样经 `caml_start_program` 进入
    - 判别速查：GHC = `stg_*` 机械符号群 + `模块_名_closure/info` 对；OCaml 原生 = `caml_*` 群 + `caml<模块>__<名>_<id>`；OCaml 字节码 = `#!ocamlrun` 脚本头
 
 2. **闭包与堆对象**：
@@ -86,7 +86,7 @@ description: >
    head -c 64 sample | xxd          # #!...ocamlrun 脚本头 + 魔数 T/C + 长度
    ocamlobjinfo sample              # 直接解析字节码可执行文件（导入单位/CRC）
    ```
-   - 字节码 exe = 脚本头 + 魔数（`T`=新版 / `C`=旧版）+ 4 字节代码长度（LE）+ 分节（`W` 字符串表 / `C` 代码 / `L` 原始函数表 / `D` 数据 / `P` 重定位 / `B` 回溯 / `S` 段表）
+   - 字节码 exe = 脚本头 + 魔数 `T` + 代码区 + 各分节数据；分节名（CODE/PRIM/DATA/SYMB/CRCS 等 4 字符）与大端长度表在文件尾部 TOC，文件以 `Caml1999X031` 收尾（结构见 [[layout]]，字节样例见 [[examples]]）
    - 字节码反汇编不是常规反编译（指令集为 OCaml bytecode 自定），分析入口用 ocamlobjinfo 的结构视图
 
 ## 跨域联合

@@ -60,29 +60,31 @@ header = (size << 10) | (color << 8) | tag
 
 - 闭包 = 带 tag 的 block，字段 = 环境（捕获变量）+ 代码指针（首字段）
 - 调用：装载参数到寄存器 → `caml_apply2`/`caml_apply3`（按参数个数分派）或直接跳闭包代码
-- 运行时函数符号：`caml_apply1..N`（部分应用）、`caml_alloc*`（分配）、`caml_startup`/`caml_start_program`（入口链）
+- 运行时函数符号：`caml_apply1..N`（部分应用）、`caml_alloc*`（分配）、`caml_main`/`caml_startup_common`/`caml_startup`/`caml_start_program`（入口链）
 
 ### OCaml 入口链（原生，实测 4.14.2）
 
 ```
-main (C 入口)
-  └─ caml_startup
-       └─ caml_start_program      ← 注意：字节码运行库也有此符号，不作字节码判据
-            └─ caml<模块>__entry（各模块初始化，含全局数据分配）
-                 └─ 业务入口（camlHello__entry）
+main (C 入口，runtime/main.c)
+  └─ caml_main(argv)                ← 各版本 runtime/main.c 均定义 caml_main(argv)
+       └─ caml_startup_common
+            └─ caml_start_program   ← 注意：字节码运行库也有此符号，不作字节码判据
+                 └─ caml<模块>__entry（各模块初始化，含全局数据分配）
+                      └─ 业务入口（camlHello__entry）
 ```
 
+- 主链是 `caml_main`；`caml_startup`/`caml_startup_pooled` 是供 C 嵌入方调用的等价入口（参数形态不同），勿混淆。4.14.2 实测地址：caml_main=0x26180、caml_startup_common=0x25ec0、caml_startup=0x26150、caml_start_program=0x4a990（反汇编见 [[examples]]）
 - 模块级函数命名：`caml<模块>__<名字>_<数字id>`（如 `camlHello__add_267`）
-- 老版本入口：`caml_main`（4.x 早期；实测 4.14.2 无此符号）
 
 ### OCaml 字节码产物结构
 
 ```
 可执行文件:
   #!<ocamlrun 路径>\n    脚本头（file 报 "ocamlrun script executable"）
-  T                      魔数（T=新版 / C=旧版）
-  4 字节代码长度 (LE)
-  分节: W 字符串表 / C 代码 / L 原始函数表 / D 数据 / P 重定位 / B 回溯 / S 段表
+  T                      前导魔数（4.x 实测）
+  代码区（无长度字段，长度见尾部 TOC）
+  各分节数据 + 尾部 TOC: 分节名(4 字符)+大端长度逐条列出，末为分节数与 "Caml1999X031"
+  分节: CODE 代码 / PRIM 原语表 / DATA 数据 / SYMB 全局符号 / CRCS CRC 串 / DLLS 动态库
 ```
 
 - 判别：`file sample` 输出 `ocamlrun script executable`；`head -c 32 | xxd` 见 `#!` 头
@@ -92,8 +94,8 @@ main (C 入口)
 
 | 项 | 老版本 | 实测版本（本文档） |
 |---|---|---|
-| OCaml 入口 | `caml_main`（4.x 早期） | `main → caml_startup → caml_start_program`（4.14.2） |
-| 字节码魔数 | `C` | `T`（新版） |
+| OCaml 入口 | `main → caml_main → caml_startup_common → caml_start_program`（各版本一致，runtime/main.c 定义 `caml_main(argv)`） | 同左（4.14.2 实测，地址见 [[examples]]） |
+| 字节码魔数 | 魔法串在文件尾 TOC（`Caml1999X`+版本号，exec.h 定义） | 前导 `T` + 尾部 `Caml1999X031`（4.14 实测） |
 | GHC 版本 | RTS 符号命名随版本微调 | 9.14.1（stg_ap_*/stg_upd_frame_info 稳定） |
 
 - 跨版本稳定的锚点：OCaml tagged int 最低位规则、block 头 tag 低字节、GHC closure 首字段 info 指针

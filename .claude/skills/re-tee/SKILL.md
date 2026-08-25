@@ -12,6 +12,7 @@ description: >
 - 用：TrustZone/OP-TEE 类 TEE 分析——可信应用（Trusted App）逆向、命令分发表还原、secure storage（安全存储/设备密钥）对象与数据流
 - 用：设备密钥/信任根方向——DRM 硬件信任根（[[re-drm]] 的 L1 类）、设备密钥提取与保护机制（授权研究）
 - 用：TEE 接口面——SMC 调用、主机侧 TEE 驱动 ioctl、client 库调用序列还原
+- 用：固件安全评估——评估目标设备 TEE 实现的接口暴露面、存储保护强度与信任根边界
 - 不用：普通 App 层（走 [[re-mobile]]）；Windows 内核/驱动（走 [[re-kernel]]，TEE 侧是 Linux/ARM 域）
 - 不用：纯固件提取解包（先走 [[re-fw-extract]]，本技能在其后分析 TEE 组件）
 - 不用：目标只是普通加密数据（走 [[re-crypto-*]] 系列，无 TEE 组件时不必进本技能）
@@ -71,7 +72,7 @@ description: >
 3. **TA 分析（入口 / 命令分发 / secure storage）**：
    - 入口链：`TA_CreateEntryPoint`（初始化）→ `TA_OpenSessionEntryPoint`（会话建立）→ `TA_InvokeCommandEntryPoint`（命令分发，按 cmd_id switch）——**命令分发表就是 TA 的对外接口目录**，逐分支标注命令号与行为
    - 参数模型：invoke 携带参数类型描述与最多 4 个 `TEE_Param`（value 标量对 / memref 内存引用两类）；memref 指向共享内存，是输入输出主通道——每个命令分支标注参数类型与结构
-   - 命令号枚举：switch 分支逐一编号（含非法命令/默认分支）；与主机侧调用面（步骤 4）对照，确认哪些命令真实可达、哪些是内部使用
+   - 命令号枚举：switch 分支逐一编号（含非法命令/默认分支）；与主机侧调用面（步骤 4）对照，确认哪些命令真实可达、哪些是内部使用——可达命令是接口面/攻击面主体，标注优先级
    - **secure storage 对象操作**：定位 `TEE_*` 存储 API 调用点（对象创建/打开/读/写/定位/删除类），还原对象 ID（常由 UUID + 对象名/索引派生）与数据流；secure storage 密文最终落盘于普通世界文件系统（经 tee-supplicant）或硬件存储（RPMB 类，硬件侧见 [[re-hw-chip]]）——找到密文文件的解密路径即找到对象数据
    - 落盘形态：REE 文件系统侧通常为索引文件 + 数据块文件组合（对象目录映射）——按索引找对象、按块定位密文，再还原对象内容
    - 产物：命令号→行为表 + 参数结构标注 + secure storage 对象清单
@@ -112,4 +113,5 @@ description: >
 - **把签名头/ta_head 当 ELF 头解析**：现象——按 ELF 头解析 .ta 失败（e_ident 对不上）、或把 ta_head 的 UUID 当字符串表；原因——.ta 文件头是签名头（ELF 头在载荷内），ta_head 是 ELF 内部首段结构而非文件头；对策——先按签名头字段（magic/img_size）切出 ELF 载荷再走 [[re-format-elf]]；Ghidra/IDA 导入前先用脚本剥离签名头（步骤 2 产物存档）
 - **自定义 TEE 套用 OP-TEE 细节**：现象——按 OP-TEE 的头结构/命令模型分析自定义 TEE，字段全错位、接口对不上；原因——自定义 TEE 的格式与约定不同（镜像头、SMC 功能号、存储布局各异）；对策——先做 TEE 类型指纹（步骤 5），确认体系后再选分析模板；差异按「字段长度 + 常见值（UUID/版本/尺寸）反推布局」处理（[[re-proto-rev]] 思路），OP-TEE 结构仅作参考
 - **UUID 对不上别硬凑**：现象——主机侧调用的 UUID 在 TA 分发表里找不到；原因——固件包内多个 TA 版本并存、或 TA 镜像版本与系统不匹配（UUID 是接口标识，版本演进会换 UUID）；对策——按固件包内 TA 清单/目录核对版本，逐个候选 TA 匹配 UUID 与命令号
+- **secure storage 密文找不到就当没数据**：现象——REE 文件系统侧找不到 secure storage 密文；原因——存储介质在 RPMB/硬件侧，或落盘路径与默认不同（tee-supplicant 配置）；对策——先确认存储介质与 supplicant 配置（REE FS vs RPMB），RPMB 侧转 [[re-hw-chip]] 思路，不以「找不到」下无数据结论
 - 决策分支（镜像形态/接口面/证据分级）见 [[decision-tree]]；格式与调用约定边界见 [[gotchas]]

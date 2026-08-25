@@ -65,34 +65,36 @@ print(d[off:off+16].hex())
 
 ```
 $ nm hello_ocaml | grep -E 'camlHello__|caml_apply|caml_start|caml_alloc'
-0000000000022ac0 T camlHello__add_267      ← 模块级函数：caml<模块>__<名>_<id>
-000000000004df68 D camlHello               ← 模块全局数据
-0000000000022a50 T caml_apply2             ← 闭包调用分派（2 参数）
 0000000000022a00 T caml_apply3             ← 闭包调用分派（3 参数）
-0000000000026150 T caml_startup            ← 入口链 main → caml_startup
-000000000004a990 T caml_start_program      ← native 也有此符号！不作字节码判据
+0000000000022a50 T caml_apply2             ← 闭包调用分派（2 参数）
+0000000000022ac0 T camlHello__add_267      ← 模块级函数：caml<模块>__<名>_<id>
 00000000000239d0 T camlCamlinternalAtomic__entry   ← 各模块 entry
+0000000000025ec0 T caml_startup_common     ← 入口链：caml_main → caml_startup_common
+0000000000026150 T caml_startup            ← 等价 C API 入口（caml_startup(argv)）
+0000000000026180 T caml_main               ← 入口链：main → caml_main（4.14.2 实测）
+000000000004a990 T caml_start_program      ← native 也有此符号！不作字节码判据
+000000000004df68 D camlHello               ← 模块全局数据
 
 $ nm hello_ocaml | grep -wE 'main|_start'
-00000000000261f0 T main                    ← C 入口
+00000000000261f0 T main                    ← C 入口（call caml_main）
 0000000000022540 T _start
 ```
 
-对照要点：`caml_applyN` 是闭包部分应用分派（参数个数驱动）；无 `caml_main`（4.14.2 实测，老版本才有）；模块 entry 符号 `caml<模块>__entry`。
+对照要点：`caml_applyN` 是闭包部分应用分派（参数个数驱动）；`caml_main` 存在于 4.14.2（0x26180，反汇编见 `main → call caml_main` → `caml_startup_common`），官方 runtime/main.c 各版本均定义 `caml_main(argv)`；模块 entry 符号 `caml<模块>__entry`。
 
 ## 4. OCaml 字节码产物判别（file + xxd 实测）
 
 ```
 $ file hello_bc
-hello_bc: a /home/.../bin/ocamlrun script executable (binary data)
-                                   ↑ file 直接识别脚本头
+hello_bc: a /home/user/.opam/default/bin/ocamlrun script executable (binary data)
+                                   ↑ file 直接识别脚本头（示例路径为脱敏占位）
 
 $ xxd -l 64 hello_bc
-00000000: 2321 2f68 6f6d 652f 4473 6c73 445a 432f  #!/home/DslsDZC/
-00000010: 2e6f 7061 6d2f 636f 712d 382e 3230 2e30  .opam/coq-8.20.0
-00000020: 2f62 696e 2f6f 6361 6d6c 7275 6e0a 5400  /bin/ocamlrun.T.
-00000030: 0000 df02 0000 0000 0000 5700 0000 0100  ..........W.....
-         └ 脚本头 "#!...ocamlrun\n" ┘ └魔数 T┘ └代码长度(0x2df)┘ └W 字符串表分节┘
+00000000: 2321 2f68 6f6d 652f 7573 6572 2f2e 6f70  #!/home/user/.op
+00000010: 616d 2f64 6566 6175 6c74 2f62 696e 2f6f  am/default/bin/o
+00000020: 6361 6d6c 7275 6e0a 5400 0000 df02 0000  camlrun.T.......
+00000030: 0000 0000 5700 0000 0100 0f00 1000 0000  ....W...........
+         └ 脚本头 "#!...ocamlrun\n"（脱敏占位路径）┘ └魔数 T┘ └代码区（分节表在尾部 TOC）┘
 
 $ ocamlobjinfo hello_bc | head -8        # 结构视图（导入单位/CRC）
 File hello_bc
@@ -102,7 +104,7 @@ Imported units:
         ...
 ```
 
-对照要点：字节码 exe 头 = `#!ocamlrun路径\n` + 魔数 `T`（旧版 `C`）+ 代码长度 + 分节（`W` 字符串表等）；`ocamlobjinfo` 可直接解析字节码可执行文件。
+对照要点：字节码 exe 头 = `#!<ocamlrun 路径>\n` + 魔数 `T` + 代码区；分节（CODE/PRIM/DATA/SYMB/CRCS 等）与长度表在文件尾部 TOC（大端，以 `Caml1999X031` 收尾）；`ocamlobjinfo` 可直接解析字节码可执行文件。示例路径为脱敏占位（本机实路径含用户名）。
 
 ## 5. OCaml 对象文件（.cmx）结构（ocamlobjinfo 实测）
 
