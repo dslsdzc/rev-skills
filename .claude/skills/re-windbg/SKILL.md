@@ -42,7 +42,7 @@ description: >
 
 - 录制: `ttd.exe -out C:\traces target.exe`（或 `-attach <pid>` 附加录制；`-monitor <进程名>` 监控启动）
 - 打开: WinDbg `File > Open` 选 `.run` 轨迹文件（或 `Open Trace File`）
-- 验证: `!tt` 能跳到任意位置、`g-` 能往回跑（详见 [[commands]] TTD 节）
+- 验证: `ttd.exe -help` 有输出；录一段后用 WinDbg 打开，`!tt` 能跳到任意位置、`g-` 能往回跑（详见 [[commands]] TTD 节）
 
 ## 操作步骤
 
@@ -88,6 +88,7 @@ description: >
    !tt 7213:36                            # 跳指定位置（事件序号:步数）
    ```
    - 断点前移/后移: `!tt br` 在某寄存器值变化处停；`!tt bm` 在内存访问处停
+   - 首次打开轨迹先 `!tt.index` 建索引（之后打开跳过）；回放中途也可断点 `bp`（在轨迹上工作）
    - 查询 API: `dx @$cursession.TTD.Calls("模块!函数")` 统计调用次数/参数（如 `...Calls("ntdll!mem*")`）
    - TTD 限制: 需管理员运行、用户态专用、轨迹文件很大（数 GB）、回放只读不能写内存（见 [[gotchas]]）
 
