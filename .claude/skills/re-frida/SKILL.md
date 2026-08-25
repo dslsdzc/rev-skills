@@ -133,6 +133,7 @@ capabilities: [frida-instrumentation]
 7. **脚本模板与对抗方法论**：常用脚本骨架见 [[frida-scripts]]（TLS keylog / DEX/SO dump / JNI 注册还原 / 加密拦截 / 检测绕过表）；崩溃迭代法与检测面对照表见 [[anti-dynamic-workflow]]——先基线跑看裸崩，再定点 hook，不预置绕过全家桶。
 
 ## 跨域联合
+- [[re-address-space]]：运行时基址换算（Module.base 与链接地址对齐）
 
 - [[re-mobile]]：工作流第 3 步动态插桩固定调用本技能
 - [[re-apk]] / [[re-ios]]：静态分析后需要运行时行为（解密 / hook / 绕过 / 脱壳执行）时调用本技能

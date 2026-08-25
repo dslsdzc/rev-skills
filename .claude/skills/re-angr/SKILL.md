@@ -96,6 +96,7 @@ description: angr 符号执行：符号化输入、求解。触发词：angr、�
 **验证**：沙箱内（[[re-sandbox]]）用求解出的输入原样跑目标（stdin 重定向 `./target < flag.bin` 或按 argv / 文件通道），必须打印 `flag{...}`；与 [[re-z3]] / 人工还原结果交叉对照（见坑 4）。
 
 ## 跨域联合
+- [[re-address-space]]：mapped_base/rebase 与目标地址对齐
 
 - [[re-ctf]]：本技能是 re-ctf 网关工作流第 3 步的自动化解题路径（逐字节长循环校验题）
 - [[re-binary-core]]：前置工作台——反编译定位输入读取点 / 成功失败分支地址（[[re-ghidra]] / [[re-ida]] / [[re-radare2]]）；[[re-triage]] 初勘决定架构 / 位数 / 壳

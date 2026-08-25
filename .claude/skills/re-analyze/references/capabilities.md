@@ -5,6 +5,7 @@
 ## 标签清单（validate.mjs 校验值必须在此清单内）
 
 - `triage` — 文件初勘（file/哈希/熵/strings/架构识别）
+- `address-translation` — 地址空间换算（PIE/ASLR 基址、RVA/VA、loader offset、跨工具地址对齐）
 - `elf-parser` — ELF 格式解析（头/节/动态链接/符号）
 - `pe-parser` — PE 格式解析（DOS/NT 头/节表/导入导出）
 - `macho-parser` — Mach-O 解析（LC_*/segment/dyld）

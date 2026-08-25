@@ -103,6 +103,7 @@ capabilities: [decompilation, debugging]
 按 [[analysis-contract]] 的「单函数深分析顺序」五步推进（types → constants → vtables → identity → decompilation，不可跳步、禁止先反编译再倒推）。Ghidra 下的对应操作：类型用 Type Manager / Apply Function Signature，虚表用 vtable 分析，符号/常量证据可用 readelf / strings / objdump 导出辅助。
 
 ## 跨域联合
+- [[re-address-space]]：Ghidra 基址与运行时地址换算（load bias）
 
 - [[re-binary-core]]：工作流第 5 步默认反编译器
 - [[re-malware]]：恶意样本深度分析（混淆脚本标注）

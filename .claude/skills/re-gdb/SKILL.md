@@ -114,6 +114,7 @@ description: >
    script.gdb 里可含 `commands ... end`、`define` 自定义命令、`python` 内嵌 Python（gdb 内置 Python 解释器，pwndbg/gef 即基于此）——重复性分析（批量打印调用参数、跑通一条路径）固化成脚本复用；交互式分析结论用 `gdb -q -ex ... -ex quit` 一行式落档。
 
 ## 跨域联合
+- [[re-address-space]]：基址换算（info proc mappings 与链接地址对齐）
 
 - [[re-binary-core]]：工作流第 6 步（Linux 调试器）
 - [[re-anti-analysis]]：脱壳验证（断 OEP）与反调试绕过

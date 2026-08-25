@@ -3,7 +3,7 @@ name: re-binary-core
 type: gateway
 description: >
   软件逆向核心网关（公共底座）。编排：初勘 → 格式解析 → 反编译 → 调试/跟踪 → 内存。
-  子技能：[[re-triage]] [[re-format-pe]] [[re-format-elf]] [[re-format-macho]]
+  子技能：[[re-address-space]] [[re-triage]] [[re-format-pe]] [[re-format-elf]] [[re-format-macho]]
   [[re-imports]] [[re-ghidra]] [[re-ida]] [[re-radare2]] [[re-gdb]] [[re-x64dbg]]
   [[re-lldb]] [[re-tracing]] [[re-memdump]] [[re-windbg]] [[re-binaryninja]]
   [[re-emulation]] [[re-shellcode]] [[re-kernel]] [[re-game]] [[re-go]] [[re-rust]]
