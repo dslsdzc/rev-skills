@@ -35,7 +35,7 @@ description: >
 
 ### hactool —— Switch 容器解析（NSO0/NPDM/NCA）
 
-- 来源与安装: GitHub `SciresM/hactool` releases——1.4.0（支持 NSO0/NPDM 解析与解压，NPDM 可导出 JSON）提供 Windows 包（`hactool-1.4.0-win.zip`）；Linux/macOS 从源码构建（`config.mk.template` 拷为 `config.mk` 后 `make`，依赖 zlib/openssl）
+- 来源与安装: GitHub `SciresM/hactool` releases——1.4.0（2018 年发布的末版，支持 NSO0/NPDM 解析与解压，NPDM 可导出 JSON）提供 Windows 包（`hactool-1.4.0-win.zip`）；Linux/macOS 从源码构建（`config.mk.template` 拷为 `config.mk` 后 `make`，依赖 zlib/openssl）
 - 验证: `hactool --help` 显示完整选项
 - 注：旧教程/文章常见的 hactoolnet（LibHac 项目附带 CLI）仓库已下线——2026-08 核实 GitHub 404（`Thealexbarney/LibHac` 已不存在），引用到 hactoolnet 的资料先验证链接可用性，功能缺口用 hactool + 自写解析脚本（pyelftools）补齐
 - 密钥: `-k keys.txt` 指定 keyset（每行 `key_name = HEX`）；默认读 `$HOME/.switch/prod.keys`（`-d` 时读 dev.keys）。解密 NCA/NAX0 需要对应 keyset，无密钥只能做结构层分析
@@ -81,7 +81,7 @@ description: >
    ```
    - Switch: `NSO0`（NSO 程序）、`META`（NPDM 文件头）、`NCA3`（NCA 容器）、`NAX0`（SD 加密分区）、`PFS0`（NSP 明文包容器）；ExeFS 里 `main`（NSO）与 `main.npdm` 并存
    - PS4/PS5: 明文 ELF 以 `\x7fELF` 开头（ORBIS ELF 带 PT_SCE_* 程序头）；零售 dump 的 eboot.bin 是加密容器（无 ELF 魔数、熵高），加密边界在此——本技能只分析已合法获得的解密/未加密样本
-   - Xbox: `XBEH`（初代 Xbox XBE）、`XEX2`（Xbox 360，24 字节大端头，0x8 指向内嵌 PE 数据、0x14 可选头个数）；Xbox One/Series 为微软系变体容器（XVD/ERA 体系），解析前先按样本实测探测
+   - Xbox: `XBEH`（初代 Xbox XBE）、`XEX2`（Xbox 360，24 字节大端头，0x8 指向内嵌 PE 数据、可选头表）；Xbox One/Series 为微软系变体容器（XVD/ERA 体系），解析前先按样本实测探测
    - 复古: NES `4E 45 53 1A`（"NES\x1A"）；GBA 无魔数（0x0 是 ARM 分支指令，0x4 起 156 字节 Nintendo logo）；GB 无魔数（0x104 起 48 字节 logo 判据 + 0x147 卡带类型）；PSX 光盘是 ISO9660（`CD001` 卷描述符），主程序 SYSTEM.CNF 指向的 EXE 以 `PS-X EXE` 开头；原始 .bin 镜像扇区 2352 字节（非 2048），定位卷描述符时按 2352 换算扇区偏移
    - 存档: GBA `.sav` 无统一魔数（按容量/内容结构识别）；PSX 记忆卡 dump 的 `MC` 签名在 0x0 与 0x1F80
    - 判定不明时先走 [[re-triage]] 常规初勘
@@ -92,7 +92,7 @@ description: >
      hactool -i main.nso                          # 段信息/压缩标志/ModuleId
      hactool --uncompressed=main_u.nso main.nso   # 压缩段解压（flags 压缩位置位时）
      ```
-     NSO0 头要点：0x0 魔数 `NSO0`；0x10/0x20/0x30 三段头（各 0xC 字节：FileOffset/MemoryOffset/Size，依次对应 .text/.rodata/.data）；0x3C BSS 大小；0x40 起 0x20 字节 ModuleId（= ELF 的 build-id 摘要）；0x60/0x64/0x68 三段压缩后大小；0x100 起为段数据（压缩段用 LZ4）
+     NSO0 头要点：0x0 魔数 `NSO0`；0x10/0x20/0x30 三段头（各 0xC 字节：FileOffset/MemoryOffset/Size，依次对应 .text/.rodata/.data）；0x3C BSS 大小；0x40 起 0x20 字节 ModuleId（= ELF 的 build-id 摘要）；0x60/0x64/0x68 三段压缩后大小；0x100 起为段数据（压缩段用 LZ4；22.0.0+ 固件 flags bit7 置位时为 ZBIC/zstd 变体，nxdumptool NsoFlags_UseZbicCompression=BIT(7)）
    - Switch NPDM：
      ```
      hactool -t npdm --json=main.json main.npdm   # 导出权限 JSON
@@ -100,7 +100,7 @@ description: >
      NPDM 要点：0x0 `META` 头（0x80 字节）；0xE 主线程优先级、0xF 主线程核号、0x1C 主线程栈大小（0x1000 对齐）；0x70/0x74 ACI0 偏移/大小、0x78/0x7C ACID 偏移/大小；ACID 区 0x200 处 `ACID` 魔数（前为 RSA-2048 签名与公钥）、ACI0 区 0x0 处 `ACI0` 魔数；ACI0 内含 ProgramId、文件系统/服务访问控制、内核能力（kernel capability）——权限面分析看这里
    - Switch NCA（加密边界）：NCA 头含分区表（section table），正文按分区加密（AES-XTS）；持合法 keyset 时 `hactool -t nca -k keys.txt --exefsdir=exefs/ --romfsdir=romfs/ file.nca` 提取 ExeFS（内含 NSO/NPDM）与 RomFS；NAX0 另需 `--sdseed` 与 `--sdpath` 参数。无 keyset 只做结构层解析，不做解密绕过
    - ORBIS ELF：`readelf -l eboot` 看程序头——PT_SCE_DYNLIBDATA（0x61000000）、PT_SCE_PROCESS_PARAM（0x61000001）、PT_SCE_MODULE_PARAM（0x61000002）、PT_SCE_RELRO（0x61000010）；`readelf -S` 看节表（.comment/.sceNote 等）；导出表在 PT_SCE_DYNLIBDATA 内
-   - XEX2：遍历可选头数组（每项 type/size/data-offset 三项）——执行信息可选头含入口点、导入库可选头含库名与序号；代码段位置由 0x8 的 PE 数据偏移推算；XEX 头部字段大端、内嵌 PE 部分按 PE 规则解析（[[re-format-pe]]）
+   - XEX2：遍历可选头数组（每项 type+data 两项，数据大小由 type 低 8 位 ID&0xFF 决定）——执行信息可选头含入口点、导入库可选头含库名与序号；代码段位置由 0x8 的 PE 数据偏移推算；XEX 头部字段大端、内嵌 PE 部分按 PE 规则解析（[[re-format-pe]]）
    - 每步产物存档：解析出的段文件 + 魔数/偏移/大小记录
 
 3. **代码段提取进通用反编译**：
@@ -128,7 +128,7 @@ description: >
      - GB/GBA：`.sav` 大小由卡带类型决定——GB 看 0x149 字段（0x02=8KB、0x03=32KB 常见）；GBA 常见 SRAM 32KB、Flash 64/128KB、EEPROM 512B 级；无统一魔数，用容量 + 内容特征（校验和、ASCII 文本）识别
      - 分析目的：还原存档校验算法、字段语义（数值/道具/进度位图）
    - Cheat 码分析（方法论，非成品工具）：
-     - 原理：Cheat 码 = 「内存地址 + 值/写模式」编码，如 GB/GBA 系 `AAAAAAAA 0000`（8 位地址 + 4 位值）型、NES 系 6 字符编码（地址/值 + 密钥变换）；先按编码规则解码出地址与值
+     - 原理：Cheat 码 = 「内存地址 + 值/写模式」编码，如 GBA CodeBreaker 型 `AAAAAAAA 0000`（8 位地址 + 4 位值）——GB/GBC 用 GameShark 8 位格式，勿混称；NES 系 6 字符编码（地址/值 + 密钥变换）；先按编码规则解码出地址与值
      - 还原路径：模拟器调试器（mGBA/FCEUX）内存视图/搜索定位游戏内数值（金币、生命）→ 记录地址（GBA: EWRAM 0x02000000 起、IWRAM 0x03000000 起；GB: WRAM 0xC000-0xDFFF）→ 调试器断点找写该地址的代码 → 反编译器中还原该函数与数据流 → 得出「某地址存某值」的语义与所有引用点
      - 产出：地址语义表（地址 → 含义/类型/范围），供校验、反编译标注或行为研究；只做分析，不提供成品 Cheat 工具
    - 沙箱：模拟器内动态验证默认沙箱 + 网络隔离
