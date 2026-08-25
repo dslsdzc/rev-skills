@@ -22,10 +22,20 @@ description: >
 - 安装与验证见 [[re-cpp-abi]] 工具准备
 - 用途: `readelf -S` 查异常表节；`readelf -s`/`llvm-nm` 查符号与可见性（Zig 业务函数多为 LOCAL 符号）
 
+### llvm-objdump / objdump（反汇编）
+
+- 安装与验证见 [[re-cpp-abi]] 工具准备
+- 用途: 定位 panic 调用点、catch/orelse 的错误码比较（`cmpw` + 分支）
+
 ### Ghidra / IDA（反编译底座）
 
 - 安装与验证见 [[re-ghidra]] / [[re-ida]]
 - Zig 产物无类型信息（无 DWARF 时），配合行为分析（见步骤 3/4）
+
+### strings（字符串池/错误名）
+
+- 系统自带；验证: `strings --version`
+- 用途: `@errorName` 错误名字符串、panic 消息、格式串定位
 
 ### zig 编译器（可选，对照编译）
 
@@ -63,19 +73,29 @@ description: >
    - panic 链：`@panic`/断言失败 → panic 函数（打印 + abort）——定位 panic 调用点可找输入校验/不变量；panic 处理函数本身是"打印+退出"，调用点才是业务校验
    - 错误联合（error union）：`!T` 类型，布局按载荷大小分两种（小载荷 8 字节槽、错误码在高位；大载荷错误码在前、载荷按对齐内联——[[layout]] 有实测表）；调用点检查 `orelse`/`catch` 分支（编译为错误码比较 + 分支）
    - 分析：错误路径是逆向重点（校验逻辑、失败分支）——错误码比较点即分支条件，错误名可经 `@errorName` 字符串池还原
+   - 错误名还原：`@errorName(e)` 的字符串在 `__zig_tag_name_*` 符号/字符串池——`strings` 里错误名与代码路径直接对应，是错误语义的第一手线索
 
-4. **comptime 与泛型展开**：
+4. **常量与字符串定位（行为分析入口）**：
+   ```sh
+   strings -n 5 sample | head -30        # 格式串/错误名/panic 消息
+   readelf -S sample | grep -E 'rodata|data'   # 常量区
+   ```
+   - `std.debug.print` 的格式串在只读数据区，交叉引用可回到调用点（错误输出路径）
+   - comptime 求值的常量直接内联为立即数，无常量表——找"魔数"按调用点回溯参数
+
+5. **comptime 与泛型展开**：
    - comptime 计算的常量/内联函数无运行时痕迹；泛型实例化产生重复代码（按调用点参数特化）
    - 还原策略：按行为分析（常量出现处 → 回溯到哪个调用参数），不按源码映射
    - `std.debug.print` 等 std 函数大量内联（Release 模式），`readelf -s` 可能只剩启动与 panic 链
 
-5. **C ABI 边界**：
+6. **C ABI 边界**：
    - `@extern` / `@cImport`：Zig 调用 C 库（导入表清晰可查——`readelf -d` 的 NEEDED 与导入符号）
    - `export fn`：Zig 侧导出给 C/宿主调用（GLOBAL 符号，导出表可见）
    - 混合产物：按符号来源区分（Zig 符号 vs C 符号——链接器分组/节归属），边界处是逻辑入口（Zig 主体逻辑在边界内侧）
    - 调用约定：默认 C ABI（`callconv(.c)` 为默认），x86-64 SysV——反编译时无特殊约定负担
+   - C 库调用点的参数布局直接按 ABI 读（与 [[re-cpp-abi]] 的 C++ thiscall 不同，无隐藏参数/虚表间接层）
 
-6. **stripped/ReleaseFast 兜底**：
+7. **stripped/ReleaseFast 兜底**：
    ```sh
    strings -n 6 sample | grep -iE 'panic|error' | head     # panic 消息/错误名（@errorName 字符串池）
    ```
@@ -85,6 +105,7 @@ description: >
 
 - [[re-binary-core]] 网关：本技能归属（选择树「Zig 产物」分支）
 - [[re-cpp-abi]]：边界区分（无 RTTI/异常 → 非 C++）
+- [[re-imports]]：C 库边界（NEEDED/导入符号）与导出表
 - [[analysis-contract]]：符号表按数据契约传递
 - [[re-triage]]：初勘兜底
 
