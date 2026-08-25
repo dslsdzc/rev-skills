@@ -103,7 +103,7 @@ Windows 侧行为采集四件套：ProcMon（全系统文件/注册表/网络/�
 
 ### ProcMon：过滤 → 标注 → CSV 导出
 
-- 过滤（Filter 对话框，Ctrl+L）: 规则 = 列 + 关系 + 值，多条件叠加；列可选 Process Name / Operation / Path / Result / PID 等；关系支持 is / is not / contains / begins with / ends with / less than / more than（数值列用大小比较）；右键事件可快速生成规则（Add to Include filter / Add process and children to Include filter）
+- 过滤（Filter 对话框，Ctrl+L）: 规则 = 列 + 关系 + 值，多条件叠加；列可选 Process Name / Operation / Path / Result / PID 等；关系支持如 is / is not / contains / does not contain / begins with / ends with / less than / more than / excludes（数值列用大小比较）；右键事件可快速生成规则（Add to Include filter / Add process and children to Include filter）
 - 过滤是非破坏性的: 不匹配事件仍入库只是不显示；勾选 Drop Filtered Events 才真正丢弃（超高频捕获控体积用，不可恢复——需要完整证据链时别勾）
 - 标注: Include 规则把关注事件黄色高亮，Highlight（Ctrl+H）自定义高亮颜色，Exclude 灰显排除——「高亮=重点、灰显=噪音」的分层阅读
 - CSV 导出: File → Save（Ctrl+S）对话框格式选 CSV，范围选 Events displayed using current filter（先过滤再导出，控制体量）；批量转换用命令行 `Procmon64.exe /OpenLog trace.pml /SaveAs out.csv`；原生 PML 保留全部字段与线程栈，可换机复盘
@@ -140,7 +140,7 @@ Windows 侧行为采集四件套：ProcMon（全系统文件/注册表/网络/�
   ```
 
   `/q` 为 XPath 过滤，`/c` 条数上限，`/rd:true` 最新在前，`/f:xml|text` 输出格式
-- 与 re-evasion 互补: 本节是采集侧；绕过侧（patch EtwEventWrite、provider 掩码、事件流中断即禁用证据）见 [[re-evasion]]
+- 与 re-evasion 互补: 本节是采集侧；绕过侧（ETW 禁用与检测）见 [[re-evasion]]
 
 ### Process Explorer：实时进程视图
 
@@ -152,7 +152,7 @@ Windows 侧行为采集四件套：ProcMon（全系统文件/注册表/网络/�
 ### 跨 OS 约束
 
 - 以上工具（ProcMon / API Monitor / Process Explorer / logman-wevtutil）均为 Windows 内置或 Windows-only；Linux/macOS 对应走 [[re-tracing]]（strace/ltrace/dtruss）与「工具准备」的 sysdig / bpftrace
-- 例外注明: ProcMon 有微软官方 Linux 移植（ProcMon-for-Linux，GitHub microsoft 仓库，preview、系统调用级），实验性，正式分析仍以 sysdig/bpftrace 为主
+- 例外注明: ProcMon 有微软官方 Linux 重实现（ProcMon-for-Linux，GitHub microsoft 仓库，preview、系统调用级，eBPF 系），实验性，正式分析仍以 sysdig/bpftrace 为主
 
 ## 跨域联合
 
@@ -173,5 +173,5 @@ Windows 侧行为采集四件套：ProcMon（全系统文件/注册表/网络/�
 - **注入检测看系统侧信号，不只盯 API 序列**：现象——进程树无异常、API 序列未捕获，注入却已发生；原因——注入目标多为受信任系统进程，API 监控被绕过或覆盖不到；对策——配合 Sysmon 事件：8（CreateRemoteThread）、10（ProcessAccess 带 PROCESS_VM_WRITE/PROCESS_VM_OPERATION/PROCESS_CREATE_THREAD）、7（异常路径 ImageLoaded）、25（ProcessTampering，内存镜像与磁盘不一致=空洞化）；空洞化样本用 PE-sieve/Hollows Hunter 扫描（内存 PE 头与磁盘不匹配）
 - **持久化位置超出 Run 键/服务**：现象——Run 键与服务清单干净，登录/启动后样本仍执行；原因——攻击者用 Winlogon Userinit、AppInit_DLLs、IFEO、COM 劫持、服务失败恢复"Run a Program"等位置（Autoruns 扫描 18+ 类 ASEP）；对策——持久化清单补全上述位置（步骤 2），逐项核对路径、签名与创建时间
 - **KernelCallbackTable 注入（回调表重定向）**：现象——进程树正常、常规注入 API 序列（OpenProcess→VirtualAllocEx→WriteProcessMemory→CreateRemoteThread）一条都抓不到，注入却已发生；原因——攻击者克隆 PEB 的 KernelCallbackTable 并把某回调（如 __fnCOPYDATA）重定向到载荷，用窗口消息（WM_COPYDATA）触发，执行借合法进程身份隐藏（ATT&CK T1574.013，Lazarus/FinFisher 在用，有现成 Sigma 检测规则）；对策——API 序列之外补查回调表指针指向与回调函数地址（`dt _PEB KernelCallbackTable`）、Sysmon 10 对目标进程的写入事件，配合 T1574.013 Sigma 规则与内存扫描
-- **直接/间接系统调用注入（直通 syscall）**：现象——Sysmon/procmon 的 API 监控完全看不到注入动作，注入却已发生；原因——DirectSyscalls/IndirectSyscalls 不经 ntdll 用户态导出（或借合法模块做跳板）直发系统调用，绕掉安全产品的用户态 hook；对策——监控降级到内核侧（ETW、Sysmon 25 进程篡改、内核驱动级事件），内存侧用 PE-sieve/Hollows Hunter 扫描内存与磁盘镜像不一致，别只依赖用户态 API 事件
+- **直接/间接系统调用注入（直通 syscall）**：现象——procmon/API Monitor 等用户态 hook 监控不可见；Sysmon 10/25 等内核 ETW 事件仍可捕获，注入却已发生；原因——DirectSyscalls/IndirectSyscalls 不经 ntdll 用户态导出（或借合法模块做跳板）直发系统调用，绕掉安全产品的用户态 hook；对策——监控降级到内核侧（ETW、Sysmon 25 进程篡改、内核驱动级事件），别只依赖用户态 API 事件
 - **Linux 侧注入监控盲区**：现象——Linux 样本 `ps -ef --forest` 进程树正常、sysdig 无异常 execve，恶意代码已在目标进程里跑；原因——Linux 注入不落盘：`process_vm_writev` 无痕写目标内存、攻击者读 `/proc/<pid>/syscall` 拿目标 RSP 后在栈上构造 ROP 调 `dlopen`（DD 面向对象注入 PoC 公开于 2024）、`LD_PRELOAD` 在监控启动前已注入；对策——审计 `/etc/ld.so.preload`（auditd 规则盯其写入），audit 记录 process_vm_writev/process_vm_readv/ptrace 调用，对比磁盘文件与 `/proc/<pid>/maps` 映射来源一致性
