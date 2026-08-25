@@ -57,7 +57,7 @@ description: >
    - ab 格式：魔数 `ANDROID BACKUP` + 版本/标志字节（压缩/加密位）+ 可选 AES-256-CBC 加密参数 + tar（可 deflate 压缩）负载
    - 备份解析：ab 头 → 解包 tar（加密备份需备份密码；无密码标注不可提取）；产物先用 `file backup.ab` 验魔数与大小
    - 产物存放：独立目录 + 命名含设备标识/时间（防多设备混淆）
-   - 解析组合套路：`abe unpack backup.ab backup.tar`（加密加 `-password`）→ `tar tf` 列内容 → sqlite3/plist 分析
+   - 解析组合套路：`abe unpack backup.ab backup.tar`（加密备份密码为末尾位置参数：`abe unpack backup.ab backup.tar <密码>`，或设 `ABE_PASSWD` 环境变量）→ `tar tf` 列内容 → sqlite3/plist 分析
    - 应用沙箱：`run-as`（debuggable）/ root 设备直接读；`allowBackup=false` 的应用备份为空且无警告（见坑 2）
    - run-as 二进制安全拉取：`adb exec-out run-as com.target.app cat files/x.db > x.db`（exec-out 不做终端转义）
    - root 镜像注意：先查分区表（`adb shell ls /dev/block/by-name/` 或 `cat /proc/partitions`）再 dd 目标分区；镜像产物大，先确认磁盘空间
