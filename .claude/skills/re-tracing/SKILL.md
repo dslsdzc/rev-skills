@@ -24,6 +24,7 @@ description: >
 - Arch: `pacman -S strace`
 - WSL: Linux 包直接可用
 - 验证: `strace -V`
+- 常用选项：`-f` 跟子进程、`-o` 写文件、`-e trace=` 过滤、`-s 200` 放大字符串显示（默认 32 字节）、`-x` 非 ASCII 转十六进制、`-y`/`-yy` 把 fd 解析为路径、`-c` 汇总统计、`-p` attach——速查与组合见 [[commands]]
 
 ### ltrace（Linux 库调用）
 
@@ -50,7 +51,12 @@ description: >
    strace -f -o trace.log ./target args
    ```
    `-f` 必须加：跟随 fork/vfork/clone 子进程——不加会漏掉全部子进程行为。
-   `-tt` 加微秒时间戳，`-T` 加每调用耗时（网络等待/慢调用线索）。
+   `-tt` 加微秒时间戳，`-T` 加每调用耗时（网络等待/慢调用线索）；`-s 200` 放大字符串显示（默认 32 字节，路径/参数看不全时必加）。
+   已运行的目标用 attach（看不到 attach 之前的调用）：
+   ```sh
+   sudo strace -f -p <pid> -o attach.log     # attach 需要与目标同权限
+   strace -f -c ./target                      # 退出时打印系统调用计数/耗时汇总（热点定位）
+   ```
 
 2. **过滤（-e trace=...）**：
    ```sh
@@ -66,6 +72,8 @@ description: >
    ltrace -f -o lib.log ./target
    ltrace -e malloc+free ./target        # 只跟踪指定库函数
    ltrace -l /path/libfoo.so ./target    # 跟踪 dlopen 动态加载的库
+   ltrace -f -S ./target                 # 库调用 + 系统调用一起跟踪
+   ltrace -f -c ./target                 # 退出时库调用汇总
    ```
    动态解析的 API（`dlsym` 拿到的函数）不会出现在静态 IAT 里，但会出现在 ltrace 输出中——与 [[re-imports]] 互补。
 
@@ -105,3 +113,4 @@ description: >
 - **输出巨大**：不过滤时大程序日志可达 GB 级拖垮磁盘——先 `-e trace=` 白名单，必要时 `-o` 写文件而非终端
 - **反调试样本检测 trace 环境**：`ptrace` 状态检测/`LD_PRELOAD` 痕迹暴露 strace/ltrace——与 [[re-anti-analysis]] 的反调试绕过组合使用
 - ltrace 默认只跟踪 PLT 层调用——`dlopen` 后加载的库函数要加 `-l` 显式指定
+- 命令族速查与操作序列见 [[commands]]；工具特有坑与版本差异见 [[gotchas]]
