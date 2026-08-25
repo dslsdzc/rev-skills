@@ -36,6 +36,7 @@ description: >
   curl -L https://github.com/hugsy/gef/raw/master/gef.py -o ~/.gdbinit
   ```
 - 验证: 进入 gdb 出现 pwndbg/gef banner
+- 注意: 两者都写 ~/.gdbinit，**不要同时装**（后装的覆盖前装，残留脚本互相干扰）；版本滚动较快，功能差异以各自官方 README 为准（详见 [[gotchas]]）
 
 ### checksec（二进制防护检查）
 
@@ -67,6 +68,17 @@ description: >
    (gdb) info b               # 列出断点
    ```
    带参数动态分析命令: `gdb -q -ex 'b main' -ex 'r' -ex 'x/10i $rip' ./target`
+   - 数据断点: `watch *(int*)0x601000`（写触发）/ `rwatch`（读触发）——查密钥写入时刻/解密落点
+   - 系统调用断点: `catch syscall openat`——理清文件/网络行为，配合 `commands ... end` 自动打印参数后继续
+   - 断点命中自动化（不改执行流，批量验证参数）:
+     ```
+     (gdb) b check
+     (gdb) commands
+       silent
+       printf "arg=%s\n", $rdi
+       continue
+     end
+     ```
 
 3. **查看/修改内存与寄存器**：
    ```
@@ -93,7 +105,13 @@ description: >
    (gdb) gcore out
    ```
    或外部命令: `gcore -o out <pid>`（gdb 包附带，含寄存器/线程 ELF notes）
-   按 [[platform-tips]]「直读 vs 转储」: 默认转储优先；脱壳须等 OEP 解密后再 dump；core 直接 `gdb ./target core` 复盘。
+   按 [[platform-tips]]「直读 vs 转储」: 默认转储优先；脱壳须等 OEP 解密后再 dump；core 直接 `gdb ./target core` 复盘（`bt` 看崩溃栈、`info proc mappings` 看映射）。
+
+6. **脚本化批处理（-x / python）**：
+   ```
+   gdb -q -batch -x script.gdb ./target      # 非交互跑完整脚本
+   ```
+   script.gdb 里可含 `commands ... end`、`define` 自定义命令、`python` 内嵌 Python（gdb 内置 Python 解释器，pwndbg/gef 即基于此）——重复性分析（批量打印调用参数、跑通一条路径）固化成脚本复用；交互式分析结论用 `gdb -q -ex ... -ex quit` 一行式落档。
 
 ## 跨域联合
 
@@ -112,3 +130,4 @@ description: >
 - **时钟对抗分三类**：现象——样本检测到时间异常（计时倍率不对、单步耗时异常、时钟源非预期）后退出或改变行为；原因——时钟对抗分三类：时间倍率检测/单步延迟检测/VM 时间源检测；对策——先判定类别再分别应对：时间倍率类恢复真实时钟或 patch 比较点，单步延迟类用硬件断点减少被测量步数，VM 时间源类按 [[platform-tips]] 沙箱分支的环境指纹思路处理
 - **断点失效 ≠ 代码没执行**：现象——在目标地址下断从不触发，误判该路径没跑、直接跳过关键逻辑；原因——四种机制使"断点没断"≠"代码没执行"：自修改代码（int3 字节被运行时覆盖或校验）、内存重映射（代码换到新映射、旧地址失效）、异常机制（流程经异常处理路径跳转，不走断点指令）、反调试绕过（样本扫描 0xCC/校验代码段字节后改道）；对策——先分四类排查：`x/i` 看断点处是否仍为 int3（自修改）、查 `/proc/<pid>/maps` 比对映射变化（重映射）、在异常上下文里找真实跳转目标（异常机制）、静态先找 0xCC 扫描与段校验点（反调试），再决定换断点位置 / 下内存断点 / patch 检查点（见 [[re-binary-core]] 分析方法论 R17）
 - **单步异常 → 查反调试（陷阱旗 / 异常处理）**：现象——`si` 单步时触发未预期的 SIGTRAP/`#DB`，或单步后样本行为跳变（时间差类见"时钟对抗分三类"坑）；原因——陷阱旗检测（样本读 TF 位 / 利用单步异常自身做文章）与异常处理机制反调试（int3 由样本自身 handler 接管、SEH 链承担流程跳转、异常即控制流）；对策——先排除时间检测，再静态定位 `pushf`/`lahf` 后查 TF 的检查点与 int3 写入点，断 handler 入口看真实流向，patch 检查点或改用硬件断点（见 [[re-binary-core]] 分析方法论 R18）
+- 命令速查（断点/内存/脚本/pwndbg-gef 命令族）见 [[commands]]；工具特有坑与版本差异见 [[gotchas]]
