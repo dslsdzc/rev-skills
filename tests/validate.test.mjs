@@ -63,9 +63,10 @@ test('parseFrontmatter 解析 capabilities list', () => {
 });
 
 test('capabilities 合法通过、未知标签与非法写法报错', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'cap-'));
+  const dir = mkdtempSync(join(tmpdir(), 'cap-test-'));
+  const name = dir.split(/[\\/]/).pop();
   const caps = new Set(['elf-parser', 'unpack', 'tracing']);
-  const body = `---\nname: cap-test\ndescription: 测试。\ncapabilities: %CAPS%\n---\n\n# 标题\n\n## 工具准备\n\n正文`;
+  const body = `---\nname: ${name}\ndescription: 测试。\ncapabilities: %CAPS%\n---\n\n# 标题\n\n## 工具准备\n\n正文`;
   try {
     // 合法 list 通过
     writeFileSync(join(dir, 'SKILL.md'), body.replace('%CAPS%', '[elf-parser, unpack]'));
