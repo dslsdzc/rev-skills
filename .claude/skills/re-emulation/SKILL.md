@@ -22,10 +22,11 @@ description: >
 
 - 安装: `pip install unicorn`（Python 3）
 - 验证: `python3 -c "import unicorn; print(unicorn.__version__)"`
+- 版本: 2.x 为当前线（2.1.4 于 2025-09）；2.x 钩子回调签名与 1.x 一致（`(uc, address, size, user_data)`），pip 默认装 2.x；1.x→2.x 差异见 [[gotchas]]
 
 ### qiling（依赖 unicorn / capstone / pefile，自动装）
 
-- 安装: `pip install qiling`
+- 安装: `pip install qiling`（当前 1.4.x）
 - 验证: `python3 -c "import qiling; print(qiling.__version__)"`（纯 import 验证，零依赖；pip wheel 不含 examples/ 与 rootfs，跑示例需 git clone 官方仓库获取）
 
 ### capstone（反汇编/解码输出用）
@@ -77,6 +78,11 @@ description: >
    - Qiling 等价物: `ql.hook_address(fn, addr)`（地址断点）、`ql.hook_mem_read/write/unmapped`（内存类）
    - 脱壳常用: hook_mem_write 在目标区段命中时暂停/计数——拿到解密循环的写时机与明文
 
+4.5. **状态保存/恢复与内存落盘**：
+   - Qiling（1.4+）: `ql.save(snapshot="stage1.qsave")` / `ql.restore(snapshot="stage1.qsave")`——多阶段解密流程分点存档，返回继续模拟
+   - Unicorn: 快照需手工 `mem_read` 全部相关段 + 寄存器表落盘（`.json` + `.bin`），恢复时 `mem_map` + `mem_write` + `reg_write`；不想全量保存就用 hook 在关键点把目标区段 `mem_read` 出来存文件（脱壳明文落盘即此思路）
+   - 落盘产物 sha256 存档（[[re-triage]] 存证思路）
+
 5. **结合 [[re-anti-analysis]] 的脱壳场景**：
    - 从壳内摘出解密例程（[[re-unpack-simple]] / [[re-unpack-advanced]] 定位）→ Unicorn 加载该例程代码段 + 输入快照 → 执行 → 读输出区域 = 明文数据（字符串/关键段）
    - 或 Qiling 模拟壳程序全流程，hook 到 OEP 处 dump 内存（模拟器内存即快照，转 [[re-memdump]] 思路存档）
@@ -104,3 +110,4 @@ description: >
 - **JNI 回调逐个补的迭代模式**：现象——模拟执行报 `UnsupportedOperationException: 类->方法(签名)`；原因——so 调用了未实现的 Java 回调，这是**正常迭代信号不是死路**；对策——按报错签名逐个实现回调（日志类/配置类/字段读写），一轮一跑，同类项目都有完整回调集可移植；**模拟产出正常结果不等于正确**——环境可能被检测返回诱饵，用真实环境/服务器响应验证
 - **iOS so 黑盒调用用 Chomper**：现象——iOS 加固/混淆 so 算法（签名类）静态还原难，想在 PC 上直接调用拿结果；原因——so 依赖 OC 运行时与特定初始化（Token/上下文）；对策——Chomper（Unicorn 封装，模拟 iOS 环境）黑盒调用流程：frida-trace 先摸清初始化函数与算法调用逻辑 → **dlopen 之后做初始化**（hook dlopen 时机，frida-trace 只能看到调用看不到初始化值）→ 构造入参对象（NSMutableURLRequest 等，用 pyobj2nsobj 把 dict 转 OC 对象）→ 主动调用出结果；先初始化 Token/上下文再调算法函数，参数对象按 frida-trace 打印的完整结构构造；目标访问外部文件（如安全配置 `yw_1222.jpg`）报 ENOENT → 从原始包复制文件到样本同目录，加载模块后调用 `forward_path` 把访问映射到指定路径；实例方法先 `+[Class instance]` 取实例再调用
 - **设备侧函数 HTTP 服务化（r1rpc 模式）**：现象——能力依赖真机环境（DeviceCheck/App Attest、设备状态、SDK 上下文、反篡改校验），抠不出纯算，模拟执行也难；原因——这些函数本质是"设备侧函数"，脱离环境不工作；对策——工程化黑盒：**HTTP 入口/出口 + WebSocket 设备侧通信 + 真机常驻客户端执行**：后端照常发 HTTP 请求，Server 按分组选在线设备，WebSocket 下发任务，真机执行后回传，调用方拿到的仍是标准 HTTP 响应；适用场景：iOS 设备能力、App 内部签名、必须真机/特定 SDK 的能力——比硬抠算法或硬搬后端成本低得多
+- API 速查（Unicorn/Qiling 各族命令与常数）与组合套路见 [[commands]]；版本差异、内存/架构边界见 [[gotchas]]
