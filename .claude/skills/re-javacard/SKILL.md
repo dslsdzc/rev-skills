@@ -92,7 +92,7 @@ description: >
 
 5. **Import / 常量池 / Export 跨组件引用解析**：
    - ConstantPool 条目（每条 4 字节：tag u1 + 引用 3 字节）：1=classref、2=instance fieldref、3=virtual methodref、4=super methodref、5=static fieldref、6=static methodref；引用首字节高位 0x80 区分内部（类内偏移/token）与外部（package_token + class_token + token）
-   - 调用指令与条目类型对应：invokevirtual → tag 3（虚方法），invokespecial/invokestatic → tag 6（静态方法，含构造器与私有方法）
+   - 调用指令与条目类型对应：invokevirtual → tag 3（虚方法），invokespecial 调超类方法 → tag 4（super methodref），invokespecial/invokestatic 调构造器与私有方法 → tag 6（静态方法）
    - Import 组件：外部包 AID 列表，顺序即常量池外部引用的 package_token 编号
    - 字节码中 token 操作数的位置由 ReferenceLocation 组件标注（增量偏移表）；解析脚本据此定位引用点并替换为常量池条目
    - 外部符号名解析：本包导出看 Export 组件；框架包（javacard.framework）按 SDK 的 .exp 导出文件对照——javacard.framework 是 SIM/银行卡 applet 几乎必引的包，其常量（OFFSET_CLA=0、OFFSET_INS=1、OFFSET_P1=2、OFFSET_P2=3、OFFSET_LC=4；SW1/SW2，0x9000=成功）是还原分派逻辑的锚点
@@ -118,7 +118,7 @@ description: >
 ## 常见坑与陷阱
 
 - **组件结构用错（把「九组件」当规范）**：现象——按流传的九组件列举解析，缺 StaticField/ReferenceLocation，字节码引用解不出、静态字段错位；原因——简化列举遗漏了与字节码链接直接相关的两个组件；对策——以规范 12 组件表为准（见操作步骤 2），用 Directory 大小表 + 各组件文件自身 tag/size 双重校验边界
-- **JAR 结构与拼接格式混淆**：现象——按单一偏移表从文件头连续切组件，全部错位；原因——CAP 是 ZIP（组件分文件存储，还可能带 META-INF、APPLET-INF/classes 等文件）；旧格式（2.1 之前）或 ICJ 转换产物才是组件拼接式；对策——先 `unzip -l` 确认结构，组件边界以各组件文件自身的 tag+size 为准
+- **JAR 结构与拼接格式混淆**：现象——按单一偏移表从文件头连续切组件，全部错位；原因——CAP 是 ZIP（组件分文件存储，还可能带 META-INF、APPLET-INF/classes 等文件）；旧格式（2.2 之前）或非标准转换产物才是组件拼接式；对策——先 `unzip -l` 确认结构，组件边界以各组件文件自身的 tag+size 为准
 - **CAP 字节码当 JVM 字节码反汇编**：现象——操作码表对不上、指令长度错位，反汇编全乱；原因——CAP 指令集是独立编号：return=0x7A（JVM 0xB1）、new=0x8F（0xBB）、invokevirtual/invokespecial/invokestatic/invokeinterface=0x8B-0x8E（JVM 0xB6-0xB9，且操作数为 2 字节常量池 token 而非符号引用）、aload_0=0x18；另有 JVM 没有的类型化变体（getfield/putfield 的 *_a/*_b/*_s/*_i 及 *_this/*_w、sadd/ssub/smul 等 short 专用指令、icmp/if_scmp*、iipush/sspush 常量装载）；无 ldc 系（常量走 sconst_*/bipush/sspush/iipush + 常量池 token）、无 multianewarray（仅一维数组）、无 monitorenter/monitorexit（单线程）、无 invokedynamic、无 long/double 运算指令（Classic 2.2.2；3.0.5 起语言子集支持 long）；「无 invokevirtual」是误传——四类调用指令齐备，框架类实例方法（如 APDU.getBuffer）就走 invokevirtual；对策——用 CAP 专用反汇编（caprunner 指令表/自写脚本按上表），与 javap 对照原 .class 时注意同名指令编号不同
 - **Import 外部引用断链**：现象——调用点 token 解不出目标方法名，逻辑断在框架调用处；原因——applet 的依赖在外部包（框架包/其他 CAP），本 CAP 只含引用 token；对策——Import 组件列外部包 AID，外部符号经 Export 组件或 SDK .exp 文件解析；javacard.framework 的方法名与常量按 SDK 导出文件对照
 - **卡片 dump 是密文或片段**：现象——「CAP」魔数不对或组件解不开，内容熵高；原因——dump 被卡 OS 加密（GlobalPlatform 域密钥/安全消息封装），或截断/跨区提取不完整；对策——先用熵与魔数判断明文/加密负载，加密走 [[re-crypto-id]] / [[re-crypto-keys]] 思路；用 Directory 大小表核对组件完整性，从固件提取时同样核对
