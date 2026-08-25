@@ -10,8 +10,10 @@ description: >
 
 ## 何时使用 / 何时不用
 
-- 用：Haskell/OCaml 产物（GHC RTS 符号、OCaml block 头特征）
+- 用：Haskell/OCaml 产物（GHC RTS 符号、OCaml block 头特征），需要还原闭包/堆对象、求值顺序、模式匹配分支
+- 用：OCaml 原生/字节码产物判别与字节码分析（ocamlrun 脚本头特征）
 - 不用：命令式语言产物（各归各技能：C++ → [[re-cpp-abi]]、Go → [[re-go]]、Rust → [[re-rust]]）
+- 不用：只需函数逻辑且控制流完整（函数式产物控制流打散，直接反编译收益低，见步骤 4）
 
 ## 工具准备
 
@@ -22,10 +24,12 @@ description: >
 ### ghc 工具链（Haskell 侧，可选）
 
 - Linux/macOS: GHC 安装包（`apt install ghc` / `brew install ghc` / ghcup）；Windows: ghcup（`winget install ghcup` 或官网安装器）；验证: `ghc --version`
+- 用途: 同版本编译对照产物，验证 closure/info table 形态（GHC 版本差异大）
 
-### ocamlobjinfo（OCaml 侧，可选）
+### ocamlobjinfo / ocamlopt（OCaml 侧，可选）
 
-- Linux/macOS: OCaml 工具链（`apt install ocaml` / `brew install ocaml`）；Windows: opam（`winget install OCaml.opam`）或官网安装器；验证: `ocamlobjinfo -version`
+- Linux/macOS: OCaml 工具链（`apt install ocaml` / `brew install ocaml`）；Windows: opam（`winget install OCaml.opam`）或官网安装器；验证: `ocamlobjinfo` 处理任意 .cmx 输出 CRC 与导入表
+- 用途: 字节码产物/对象文件结构分析（ocamlobjinfo 可读 .cmo/.cmx/字节码可执行文件）
 
 ### Ghidra / IDA（反编译底座）
 
@@ -37,37 +41,51 @@ description: >
 
 1. **运行时识别**：
    ```sh
-   readelf -s sample | grep -iE 'ghc|stg_|RTS|HsMain' | head   # GHC 特征
-   readelf -s sample | grep -iE 'caml_|camlMain' | head         # OCaml 特征
+   readelf -s sample | grep -iE 'ghc|stg_|RTS|HsMain|_closure|_info' | head   # GHC 特征
+   readelf -s sample | grep -iE 'caml_' | head                                # OCaml 特征
+   file sample                                                              # 字节码产物判别（脚本头）
    ```
-   - GHC：`main`（RTS 入口）+ RTS 运行时符号（stg_*/hs_*；旧版产物为 `HsMain` 入口）
-   - OCaml：`camlMain` 入口、`caml_*` 运行时符号
-   - **字节码 vs 原生**：`caml_start_program` 在 native 与字节码运行库中都存在，**不可作字节码判据**——字节码产物识别改用 `ocamlobjinfo`/字节码段特征（ocamlrun 脚本头），native 产物走常规反编译
+   - GHC：`main`（C RTS 入口）+ RTS 运行时符号（`stg_*`/`hs_*`）+ 业务符号 `Main_main_closure`/`Main_main_info`（`模块_名字_closure/info` 形态）
+   - OCaml 原生：`main` → `caml_startup` → `caml_start_program` → `caml<模块>__entry`；`caml_*` 运行时符号（caml_alloc/caml_apply2/3 等）
+   - **字节码 vs 原生**：`caml_start_program` 在 native 与字节码运行库中都存在，**不可作字节码判据**；字节码产物判别用 `file`（`ocamlrun script executable`）/`xxd` 头（`#!...ocamlrun\n` 脚本头 + `T`/`C` 魔数 + 分节）
+   - 老 OCaml（4.x 早期）入口符号为 `caml_main`（实测 4.14.2 ocamlopt 无此符号，入口即 `main → caml_startup`）
 
 2. **闭包与堆对象**：
-   - GHC：thunk（未求值闭包）与已求值值的堆对象布局——closure header（info table 指针）+ 字段；CAF 以 thunk 形式静态分配，首次引用才求值（惰性）
-   - OCaml：block 头（tag + 大小）；tagged int 判定用值的最低位（bit 0，奇数=整数，偶数=指针）
+   - GHC：thunk（未求值闭包）与已求值值的堆对象布局——closure 首字段即 info table 指针（实测字节验证见 [[examples]]）；CAF 以 thunk 形式静态分配，首次引用才求值（惰性）；`Main_main_closure` 是 CAF，其 info 指向 thunk 求值代码
+   - OCaml：block 头（tag + 大小，64 位下 header = (size<<10)|(color<<8)|tag）；tagged int 判定用值的最低位（bit 0，奇数=整数，偶数=指针/block）
    - 分析：字段与构造器是主要线索（数据流优先）
 
 3. **调用约定**：
-   - GHC：参数经栈传递；返回值在寄存器 R1-R3（盒值在 R1）
-   - OCaml：参数经寄存器（前 N 个）传递，闭包调用经 `caml_applyN`
+   - GHC：参数经栈传递；返回值在寄存器 R1-R3（盒值在 R1）；entry 代码以 info table 为枢纽（`_info` 符号 = entry code）
+   - OCaml：参数经寄存器（前 N 个）传递，闭包调用经 `caml_applyN`；原生代码调用闭包 = 寄存器装载 + `caml_apply2/3` 或直接跳 entry
    - 分析：先识别运行时包装（`caml_apply` / stg 入口）再进用户逻辑
 
 4. **分析策略（数据流优先）**：
    - 控制流打散：惰性求值导致求值顺序不可预测——静态控制流分析价值低
    - 数据流线索：闭包字段初始化点（构造器参数）、模式匹配分支（构造器标签分发）、字符串/常量引用
    - 产出：数据流图（构造器 → 字段 → 使用点）替代控制流图（与 [[analysis-contract]] 数据契约衔接）
+   - 模式匹配还原：分支按构造器 tag 分发（OCaml）或 info 表指针比较（GHC）——tag/指针值 → 构造器序号
+
+5. **字节码产物（OCaml 特有）**：
+   ```sh
+   head -c 64 sample | xxd          # #!...ocamlrun 脚本头 + 魔数 T/C + 长度
+   ocamlobjinfo sample              # 直接解析字节码可执行文件（导入单位/CRC）
+   ```
+   - 字节码 exe = 脚本头 + 魔数（`T`=新版 / `C`=旧版）+ 4 字节代码长度（LE）+ 分节（`W` 字符串表 / `C` 代码 / `L` 原始函数表 / `D` 数据 / `P` 重定位 / `B` 回溯 / `S` 段表）
+   - 字节码反汇编不是常规反编译（指令集为 OCaml bytecode 自定），分析入口用 ocamlobjinfo 的结构视图
 
 ## 跨域联合
 
 - [[re-binary-core]] 网关：本技能归属（选择树「Haskell/OCaml 产物」分支）
 - [[analysis-contract]]：数据流图按数据契约传递
+- [[re-cpp-abi]]：vtable/info table 对照思路（表指针分派同构）
 
 ## 常见坑与陷阱
 
-- **RTS 版本差异**：现象——closure 布局解读失败；原因——GHC/OCaml 版本演进；对策——按目标版本确认布局
-- **thunk 惰性求值误导**：现象——未求值闭包被当已求值数据；原因——惰性求值；对策——区分 thunk 头（info table 指向求值代码）与已求值值
-- **OCaml 字节码非 native**：现象——反编译全是运行时包装；原因——字节码产物；对策——识别 ocamlrun 脚本头/字节码段特征后按字节码反汇编（非常规反编译；`caml_start_program` 两种产物都有，不作判据）
+- **RTS 版本差异**：现象——closure 布局解读失败；原因——GHC/OCaml 版本演进；对策——按目标版本确认布局（本技能字段表基于 9.14/4.14 实测，见 [[layout]]）
+- **thunk 惰性求值误导**：现象——未求值闭包被当已求值数据；原因——惰性求值；对策——区分 thunk 头（info 指向求值代码）与已求值值（info 指向 WHNF 头）；CAF 首引用前都是 thunk
+- **OCaml 字节码非 native**：现象——反编译全是运行时包装；原因——字节码产物；对策——识别 ocamlrun 脚本头/字节码段特征后按字节码结构分析（非常规反编译；`caml_start_program` 两种产物都有，不作判据）
 - **控制流打散导致静态分析失效**：现象——函数体无连续逻辑；原因——函数式编译产物；对策——转数据流分析（步骤 4），不硬追控制流
-- **tagged int 误读**：现象——整数被当指针/指针被当整数；原因——OCaml 值标记位；对策——按最低位区分（1=整数，0=指针），访问前先解标记
+- **tagged int 误读**：现象——整数被当指针/指针被当整数；原因——OCaml 值标记位；对策——按最低位区分（1=整数，0=指针），访问前先解标记（int >> 1 取真值）
+- **GHC 模块名带 z 编码**：现象——符号 `GHCziInternalziTopHandler_runMainIO1_info` 难读；原因——`z`+小写转义特殊字符（GHC mangling：`zi`=`.` `zu`=下划线 `zz`=z `zc`=: `zh`=# 等）；对策——按转义规则手工还原模块名（`GHCziInternal` → `GHC.Internal`），还原后与源码模块结构对应
+- **info table 与 entry code 是同一指针的两个视图**：现象——info 指针处反汇编出的是字段表数据而非代码；原因——info table 指针指向 entry code，表字段在 entry code 之前；对策——反汇编从 info 指针处开始（即 entry），字段表按负偏移读
