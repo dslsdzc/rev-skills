@@ -23,13 +23,13 @@ description: >
 
 ### 反编译器（Ghidra / IDA 任选其一）
 
-- Ghidra（内置 ARM 处理器模块，Cortex-M0/M0+ 选 v6M、Cortex-M3/M4/M7 选 v7 或 v8M、Cortex-A 选 v7，均为小端 LE）：
+- Ghidra（内置 ARM 处理器模块，Cortex-M0/M0+/M3/M4/M7 选 Cortex 变体（v8-m 仅 M23/M33/M55）、Cortex-A 选 v7，均为小端 LE）：
   - Linux: 官方 release 包（需 JDK）；部分发行版仓库有 `apt install ghidra` / `pacman -S ghidra`
   - macOS: `brew install --cask ghidra`；Windows: 官方 zip
   - 验证: `analyzeHeadless -help`（headless 模式）或 GUI 导入 ARM ELF
   - Ghidra 按 Thumb 函数位 0（TMode）自动切换 Thumb/ARM 反汇编；导入时核对处理器变体与端序
 - IDA：商业版含 ARM32/ARM64 + Thumb 模块；Freeware 版架构支持范围以官方页面为准
-- 导入时确认架构（ARM vs AArch64）与变体——Cortex-M0/M0+（ARMv6-M）只有 16 位 Thumb 指令集，选错变体会反汇编出 32 位 Thumb-2 幻觉指令
+- 导入时确认架构（ARM vs AArch64）与变体——Cortex-M0/M0+ 只有 16 位 Thumb 指令集，选错变体会反汇编出 32 位 Thumb-2 幻觉指令
 
 ### readelf / file —— 架构与字节序确认（binutils）
 
