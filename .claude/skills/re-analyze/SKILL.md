@@ -51,9 +51,22 @@ description: >
 
 按 `references/triage.md` 决策表，把 `RE_GOAL` + 输入文件映射到一条编排路径。复合目标按依赖顺序串联多个大类。
 
-## 第三步：编排分派
+**先判授权上下文**：按 triage 第 0 步判定 `RE_AUTH`（owned / ctf / research / unknown）——补丁/绕过/动态执行等敏感路径受其约束（与 [[re-cracking]] 授权边界一致）。
 
-调用对应大类网关技能（`[[re-binary-core]]` `[[re-malware]]` `[[re-firmware]]` `[[re-protocol]]` `[[re-mobile]]` `[[re-anti-analysis]]` `[[re-cracking]]` `[[re-vuln]]` `[[re-ctf]]` `[[re-managed]]` `[[re-forensics]]`），网关内部自行选择原子技能。每个环节完成后检查新证据，必要时回退调整路径（见 triage.md 复合任务示例）。
+## 第三步：路由引擎（状态机）
+
+技能不是调用链，是**状态转移**：每个技能执行后产出新证据，证据驱动下一跳。
+
+```
+triage → route → skill execution → evidence → route（循环）
+```
+
+调用对应大类网关技能（`[[re-binary-core]]` `[[re-malware]]` `[[re-firmware]]` `[[re-protocol]]` `[[re-mobile]]` `[[re-anti-analysis]]` `[[re-cracking]]` `[[re-vuln]]` `[[re-ctf]]` `[[re-managed]]` `[[re-forensics]]`），网关内部自行选择原子技能。
+
+**Route State（循环防护）**：
+- `visited`：已进入技能列表（会话变量 `RE_VISITED`）
+- `max revisit`：1
+- **规则**：同技能第二次进入必须携带**新证据**（相对上次进入时的证据增量——新字符串/新行为/新结构特征）；无新证据禁止重入，回到当前技能的备选分支或按 [[rerouting]] B 表收束（防 binary-core ↔ crypto ↔ anti-analysis 类循环）
 
 **双轨再路由（强制，见 [[rerouting]]）**：
 - 轨 1（网关完成必查）：每网关完成后，对照 [[rerouting]] 的 A/B 表检查新证据；命中 → 调用对应技能，完成后回到轨 1 继续
