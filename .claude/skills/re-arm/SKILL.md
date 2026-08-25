@@ -51,9 +51,9 @@ description: >
 
 ### gdb-multiarch —— 交叉调试
 
-- Linux: Debian/Ubuntu `apt install gdb-multiarch`（该包仅 Debian 系官方仓库有）；Fedora `dnf install gdb`（官方 gdb 支持多目标，嵌入式专用可 `dnf install arm-none-eabi-gdb`）；Arch `pacman -S gdb`（官方 gdb 已内置 multiarch）
+- Linux: Debian/Ubuntu `apt install gdb-multiarch`（该包在 Debian/Ubuntu 及其衍生的官方仓库有）；Fedora `dnf install gdb`（官方 gdb 支持多目标、可调裸机 ARM；arm-none-eabi-gdb 不在 Fedora 官方仓库，如需嵌入式专用工具链用官方预编译 ARM 工具链）；Arch `pacman -S gdb`（官方 gdb 已内置 multiarch）
 - macOS: `brew install gdb`（需 Developer Tools 授权，见 [[platform-tips]] macOS 分支）或 WSL 内 Linux 版；Windows/WSL: WSL 内 Linux 版
-- 验证: Debian/Ubuntu `gdb-multiarch --version`；Fedora/Arch `gdb --version`（选 arm-none-eabi-gdb 则 `arm-none-eabi-gdb --version`）；载入裸机固件后 `set architecture armv7-m` 再 `file` 加载，`info registers` 确认
+- 验证: Debian/Ubuntu `gdb-multiarch --version`；Fedora/Arch `gdb --version`；载入裸机固件后 `set architecture armv7-m` 再 `file` 加载，`info registers` 确认
 - 真机 SWD/JTAG 调试走 OpenOCD + gdb（[[re-hardware-io]]）；仿真目标用 `qemu-system-arm -s -S` 或 `qemu-arm -g <port>`
 
 ## 操作步骤
