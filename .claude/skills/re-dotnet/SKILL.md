@@ -69,6 +69,9 @@ description: .NET CIL 逆向：dnSpy/ILSpy 反编译、de4dot 去混淆、Confus
    print(hex(dd.VirtualAddress), hex(dd.Size))  # 非 0 → 托管程序集
    ```
    注意混合模式程序集（native + 托管都看得到）与自包含单文件（见坑 4）。
+   CLI header 结构速查（实测 .NET 10 产物）：cb=0x48(72)、MajorRuntimeVersion=2、MinorRuntimeVersion=5、MetaData RVA、EntryPoint RVA（0=DLL）、CorFlags（1=ILONLY、2=32BITREQUIRED、0x20000=强名签名）。
+   元数据根（MetaData RVA 处）：签名 `BSJB`(0x424A5342) + 版本 1.1 + 保留 + 版本串长 + 版本串（"v4.0.30319"，.NET Framework/.NET Core/.NET 10 产物恒定）+ flags(2) + 流数(2) + 流头（offset + size + 名字，4 字节对齐）。
+   流名即内容形态：`#~`（压缩表，Roslyn 默认）/`#-`（未压缩表）、`#Strings`（元数据字符串池）、`#US`（用户字符串：代码里的 C# 字面量）、`#GUID`、`#Blob`（签名/常量 blob）——字符串加密样本的明文不在 `#US` 就是运行时拼的；`#~` 的表内容即 dnSpy/ILSpy 的类型/方法树。
 
 2. **dnSpy/ILSpy 反编译浏览**：
    - ilspycmd 单文件: `ilspycmd sample.exe`（stdout 输出反编译代码）
@@ -79,6 +82,7 @@ description: .NET CIL 逆向：dnSpy/ILSpy 反编译、de4dot 去混淆、Confus
 3. **字符串/API 定位关键逻辑**：
    ```sh
    strings sample.exe | grep -iE 'http|https|api|key|secret|register'
+   strings -e l sample.exe | grep -iE 'http|key|secret'   # UTF-16LE：#US 池里 C# 字面量是 UTF-16
    grep -rn 'HttpClient\|WebRequest\|Regex\|Convert' decompiled/   # ilspycmd 产物
    ```
    - GUI 内搜索: ILSpy/dnSpy `Edit > Find`（Ctrl+Shift+F），输入目标串
@@ -119,4 +123,7 @@ description: .NET CIL 逆向：dnSpy/ILSpy 反编译、de4dot 去混淆、Confus
 - **.NET 自包含发布（单文件）**：现象——`file` 显示普通 PE、工具打开无托管结构/反编译为空；原因——self-contained single-file 把 host + 运行库 + IL 捆成一个 native 可执行；对策——先解包：`sfextract sample.exe -o extracted/`（或 ILSpy 直接打开/导出），对解出的程序集再反编译
 - **混合模式程序集**：现象——反编译只见少量托管类，主逻辑找不到；原因——C++/CLI 或 wrapper 把 native 代码与托管混合；对策——托管侧按本技能，native 侧转 [[re-binary-core]]（[[re-ghidra]] / [[re-imports]]）
 - **薄壳启动器程序集误判导出失败（dnSpy 无头批量）**：现象——单个程序集反编译产物源码极少（几行到几十行），主逻辑找不到，误以为导出失败；原因——该程序集只是薄壳启动器，主逻辑在伴随程序集/库中（纯托管，区别于上一条的 native 侧）；对策——目录级批量反编译拿整体视图再判断：Windows 侧用 dnSpy 控制台（`dotnet dnSpy.Console.dll`）输出 solution + 每程序集一个 .csproj + 源码树，Linux 对位 `ilspycmd -p`；批量时显式传依赖搜索路径（指向目标所在目录），否则伴随库引用解析不全；成功与否以「产物计数非零 + 退出码 0」双通道确认
+- **ReadyToRun（R2R）程序集**：现象——`file` 报 `Unknown processor 0xfd1d`（PE machine 0xfd1d 即 R2R 标记），反编译正常但动态侧行为与 IL 不一致时怀疑有预编译体；原因——R2R 发布在元数据之外预编译了 native 方法体（快速启动），IL 与 CLI header 仍在（实测 .NET 10 R2R 产物 DD[14] 与元数据齐全），实际执行的是 native 体；对策——检测：`file` 的 0xfd1d + 二进制内 `RTR\0`（READYTORUN 头魔数，实测在 .text 区）；分析：IL 侧逻辑一致照常反编译，性能/环境相关差异看 native 方法体（转 [[re-binary-core]]）
+- **NativeAOT 无托管结构**：现象——`file` 不显示 Mono/.Net assembly、无 CLI header，但来源声明是 .NET 程序；原因——NativeAOT 把 C# 直接编译为原生可执行（无 CLR、无元数据、无 CIL）；对策——按 native 分析（[[re-format-pe]]/[[re-format-elf]] + [[re-ghidra]]/[[re-imports]]）；特征：静态/动态链接原生二进制 + 无 mscoree 导入，业务字符串仍可 `strings -e l` 提取（.NET 字符串 UTF-16）
+- **.NET 字符串是 UTF-16LE，默认 strings 抓不到**：现象——`strings sample.exe | grep 'http'` 无结果但反编译里有明文 URL；原因——C# 字面量在 `#US` 池以 UTF-16LE 存储；对策——`strings -e l`（或 `-el`）再搜；动态侧 [[re-frida]] hook 字符串构造点也可取明文
 （来源：LazyReverse（a0yami），MIT）
