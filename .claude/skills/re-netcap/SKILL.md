@@ -33,6 +33,7 @@ description: >
 - macOS: `brew install --cask wireshark`（含 tshark CLI；或 `brew install wireshark` 仅 CLI）
 - Windows: `choco install wireshark`（或官方安装包）；WSL 内用 Linux 版
 - 验证: `tshark --version`；`tshark -D` 列出接口；`dumpcap -D`
+- 同族 CLI：`capinfos`（pcap 元信息：包数/时长/截断）、`mergecap`（合并）、`editcap`（切分/去重/改写时间戳），随 Wireshark 一起安装
 
 ### mitmproxy —— HTTPS/TLS 中间人解密
 
@@ -69,15 +70,21 @@ description: >
    ```
    - BPF 语法要点：`and/or/not`、`host/port/proto`、括号分组；先不带 `-w` 屏显验证过滤命中目标再写盘
    - 组合多个条件用括号: `tcpdump -i eth0 '(host 1.2.3.4 or host 5.6.7.8) and not port 53' -w out.pcap`
+   - 抓包期选项：`-n` 禁反向 DNS 解析（避免解析延迟与结果污染）；`-s 200` 限定捕获长度（默认 262144 全包长）；长时抓包加 `-C 100 -W 10` 按 100MB 轮转、保留 10 个文件防爆盘
 
 3. **tshark 导出与统计（从已有 pcap 提取关键流）**：
    ```sh
-   tshark -r out.pcap -T fields -e ip.src -e ip.dst -e tcp.dport | sort | uniq -c | sort -rn   # 会话统计
+   tshark -r out.pcap -T fields -e ip.src -e ip.dst -e tcp.dstport | sort | uniq -c | sort -rn   # 会话统计（目标端口字段名是 tcp.dstport / tcp.port，不存在 tcp.dport 字段）
    tshark -r out.pcap -Y 'http.request' -T fields -e http.host -e http.request.uri             # 只看 HTTP 请求
    tshark -r out.pcap -Y 'tls.handshake.type == 1' -T fields -e tls.handshake.extensions_server_name   # SNI
+   tshark -r out.pcap -q -z conv,tcp -z io,phs                                                  # 会话表 + 协议层级统计（-q 静默，只出统计）
+   tshark -r out.pcap -T json -e ip.src -e dns.qry.name -Y dns | jq .                          # JSON 输出（脚本后续处理）
    tshark -r out.pcap -w filtered.pcap -Y 'ip.addr == 1.2.3.4'                                 # 按显示过滤导出子集（display filter 语法，`host` 是 BPF 捕获语法不适用）
+   capinfos out.pcap                                                                           # pcap 元信息：包数/时长/是否截断
    ```
+   - 字段名以 `tshark -G fields | grep <关键字>` 核验为准——写错字段名 tshark 直接报 "Some fields aren't valid"，不会静默
    - 统计结论（会话数、协议分布、异常连接）记入分析笔记，是 [[re-proto-rev]] 步骤 1 的输入
+   - 复杂交互分析（Follow TCP Stream、协议解码跳转）用 Wireshark GUI 打开同一 pcap
 
 4. **HTTPS 解密准备（mitmproxy CA）**：
    ```sh
@@ -122,3 +129,4 @@ description: >
 - **过滤表达式写错漏关键流**：现象——抓了半天 pcap 里没有目标流量（比如只按了 IP 没按端口，或 `and/or` 优先级用错）；原因——BPF 语法组合错误且没先屏显验证；对策——先不带 `-w` 屏显跑几秒确认命中目标（IP/端口/方向都对）再写盘
 - **抓包文件巨大 → 分析卡死**：现象——全量抓包 pcap 几十 GB，tshark 统计/导出长时间无响应；原因——没先过滤就存盘（步骤 2 的正确做法是先过滤再存）；对策——用 BPF 过滤 + `-c` 限包数 + `-s` 限捕获长度，先按会话统计缩小范围再导出子集（步骤 3）
 - **DoH/DoT 回连抓不到查询内容**：现象——fake DNS/INetSim 日志零查询，pcap 里只有到 dns.google / cloudflare-dns.com 的 443（DoH）或 853（DoT/DoQ）密文流，样本回连域名线索完全缺失；原因——样本实现自有 DNS 客户端直连加密解析器，不经系统 resolver——DNS 层监控看不到查询，内容又被 TLS 加密；对策——把"已知 DoH 端点 + 无 SNI 的 TLS 握手 + 非浏览器进程直连 DoH 解析器"当 C2 信号捕获（DoT/DoQ 的 853 端口可防火墙直断，DoH 只能重定向端点 IP 或 mitmproxy 中间人 443），配合信标周期分析补内容缺失，单凭"查询内容"定位回连在此场景不成立
+- 命令族速查与操作序列见 [[commands]]；工具特有坑与版本差异见 [[gotchas]]
