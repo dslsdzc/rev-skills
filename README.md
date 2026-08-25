@@ -65,7 +65,7 @@ npx skills add dslsdzc/rev-skills -l       # 先列出技能，不安装
 入口 → 12 大类网关 → 105 原子技能，详见 `.claude/skills/` 与 `docs/skill-template.md`。快速索引：
 
 - **re-analyze**：入口（探测 → 偏好 → 识别 → 编排）
-- **re-binary-core**：re-triage、re-format-pe/elf/macho、re-imports、re-ghidra、re-ida、re-radare2、re-gdb、re-x64dbg、re-lldb、re-tracing、re-memdump、re-windbg、re-binaryninja、re-emulation、re-shellcode、re-kernel、re-game、re-go、re-rust、re-plugin-dev、re-hypervisor、re-anti-cheat、re-cpp-abi、re-swift、re-zig、re-nim、re-fp-runtime、re-variant、re-mips
+- **re-binary-core**：re-triage、re-format-pe/elf/macho、re-imports、re-ghidra、re-ida、re-radare2、re-gdb、re-x64dbg、re-lldb、re-tracing、re-memdump、re-windbg、re-binaryninja、re-emulation、re-shellcode、re-kernel、re-ebpf、re-game、re-console、re-go、re-rust、re-plugin-dev、re-hypervisor、re-anti-cheat、re-cpp-abi、re-swift、re-zig、re-nim、re-fp-runtime、re-variant、re-mips、re-arm、re-riscv
 - **re-malware**：re-sandbox、re-behavior、re-ioc、re-ransomware、re-loader、re-fileless、re-doc-malware
 - **re-firmware**：re-fw-extract、re-fw-rootfs、re-fw-emulate、re-hardware-io、re-automotive、re-uefi、re-rtos、re-tee
 - **re-protocol**：re-netcap、re-proto-rev、re-crypto-id、re-crypto-keys、re-crypto-decrypt、re-ics、re-iot-proto、re-whitebox、re-tls
@@ -74,7 +74,7 @@ npx skills add dslsdzc/rev-skills -l       # 先列出技能，不安装
 - **re-cracking**：re-license、re-patching、re-keygen、re-drm
 - **re-vuln**：re-fuzzing、re-crash-triage、re-exploit
 - **re-ctf**：re-angr、re-z3、re-pwn、re-stego
-- **re-managed**：re-dotnet、re-java、re-script-deob、re-wasm、re-ai-model、re-blockchain、re-python、re-browser-ext
+- **re-managed**：re-dotnet、re-java、re-script-deob、re-wasm、re-ai-model、re-blockchain、re-python、re-browser-ext、re-electron、re-javacard
 - **re-forensics**：re-mem-forensics、re-disk-forensics、re-ti、re-attribution、re-hunting、re-mobile-forensics
 - **re-macos**：macOS 应用逆向（签名/entitlements/Secure Enclave）
 - **re-hw-chip**：芯片/PCB 物理层（decap/裸片/木马检测）
