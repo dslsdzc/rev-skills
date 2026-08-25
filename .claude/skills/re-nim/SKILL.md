@@ -31,6 +31,11 @@ description: >
 - Linux: `apt install nim` / `dnf install nim` / `pacman -S nim`；macOS: `brew install nim`；Windows: choosenim/官方安装器
 - 验证: `nim -v`；用途: 同版本编译对照产物，验证字符串布局/GC 符号形态（版本差异见 [[layout]]）
 
+### xxd + Python struct（字节级核对）
+
+- 系统自带（`xxd`）；Python 3 自带 `struct`
+- 用途: 符号/布局输出异常时按偏移直接解析 NimString 与对象结构（示例见 [[examples]]）
+
 ## 操作步骤
 
 按顺序执行，每步产物存档（路径 + sha256，见 [[re-triage]]）。
@@ -49,27 +54,36 @@ description: >
    - **refc**（旧默认）：`NimStringDesc = {len, reserved, data[]}`——字符内联在结构体里
    - 定位：`rawNewString`（1.x 与 2.x 均为此 importc 名）分配调用点 → 结构布局 → 字符串操作函数（`eqStrings` 等）
    - 分析：字符串比较点是关键逻辑（校验/协议/命令分发）——`eqStrings` 调用点即字符串相等判断
+   - 序列（seq）与 string 同构：v2 布局同为 `len + payload 指针`（payload 带 cap），refc 同为 `len/reserved + 内联`——按同一判别表处理
 
-3. **异常与 raises 路径**：
+3. **内存中定位字符串（动态/转储场景）**：
+   ```python
+   # 在内存转储中按 v2 布局找字符串：cap 是 8 字节对齐的容量值，data 后跟可打印 ASCII
+   # 候选: 8 字节对齐的 cap + len 匹配的 data → 反推 NimStringV2 起点
+   ```
+   字符串内容在堆上 payload 里，栈上只有 len+指针；先按 `cap` 前缀特征定位 payload，再往回找引用它的 NimStringV2（[[examples]] 有完整示例）。
+
+4. **异常与 raises 路径**：
    - Nim 2.2.x（Linux x86-64 默认）异常走 goto 式异常表，**无 setjmp 符号**；raise 路径经 `raiseExceptionEx`/`raiseExceptionAux`
    - 老默认（`--exceptions:setjmp`，Nim 2.0 及以前）用 setjmp/longjmp：`nimSetjmp` 符号可见
    - 定位：`raiseExceptionEx` 调用点 → 异常对象分配与消息 → catch 分支（异常表驱动）
    - 分析：异常路径揭示输入校验与失败处理，比正常路径更早暴露边界条件
 
-4. **GC 与引用计数（按 GC 模式分叉）**：
+5. **GC 与引用计数（按 GC 模式分叉）**：
    - refc：引用计数 + 周期收集——`nimGC_*`/`nimGCunref`/`nimIncRef`/`nimDecRef` 调用点
    - orc/arc：ARC 语义——`nimIncRefCyclic`/`nimDecRefIsLastCyclicDyn` 等；显式 inc/dec 少，释放由编译期插入
    - 分析：GC 调用点帮助识别对象生命周期与所有权（配合字符串结构）；release 下内联后改用分配/释放边界推断
 
-5. **C 混合编译边界**：
+6. **C 混合编译边界**：
    - `{.compile:}` / `{.importc:}` 混合时 Nim 与 C 符号并存：Nim 侧符号带模块前缀（`hello__u8` 形态）与运行时（NimMain/NimString），C 侧符号无
    - 边界处是逻辑入口：Nim 业务逻辑在 NimMain 调用链内侧，C 库调用经导入表
 
-6. **stripped 产物兜底**：
+7. **stripped 产物兜底**：
    ```sh
-   strings -n 6 sample | grep -iE 'NimMain|nimErrorFlag|Exception|\.nim$'   # 源码文件名/错误消息
+   strings -n 6 sample | grep -E '@m.*\.nim\.c' | head      # C 生成缓存文件名（含模块名，release 也嵌入）
+   strings -n 6 sample | grep -iE 'fatal\.nim|Exception' | head
    ```
-   - `NimMain` 等被 strip 后按特征字符串/运行时行为识别（[[re-triage]] 初勘兜底）；`.nim` 源码路径字符串是强特征
+   - `NimMain` 等被 strip 后按特征串（`@m<模块>.nim.c`、std 运行时源文件名）与运行时行为识别（[[re-triage]] 初勘兜底）；业务源码名不嵌入二进制，别指望它
 
 ## 跨域联合
 
@@ -86,3 +100,5 @@ description: >
 - **字符串比较点误判**：现象——关键校验被当普通比较；原因——eqStrings 包装；对策——追踪 Nim 字符串函数调用点定位比较逻辑
 - **异常实现代际误判**：现象——按老思路找 nimSetjmp 找不到；原因——2.2+ Linux amd64 默认 goto 式异常（无 setjmp）；对策——无 nimSetjmp 时沿 `raiseExceptionEx` 与异常表定位 catch，别当"无异常处理"
 - **release 内联导致符号稀疏**：现象——debug 能看到的 nimGC_*/eqStrings 在 release 里消失；原因——-d:release 内联；对策——release 产物按行为特征（分配/释放边界、字符串函数调用模式）分析，符号表只是线索不是依据
+- **32 位产物结构尺寸减半**：现象——64 位布局表套 32 位产物偏移全错；原因——NI 在 32 位平台是 4 字节（NimStringV2 为 8 字节而非 16，NimStrPayload cap 为 4 字节）；对策——解析前先确认产物位数，按 4/8 字节 NI 选结构尺寸
+- **非 PIE 老构建入口即固定地址**：现象——`readelf -h` 的 e_entry 是绝对地址（如 0x401xxx），在内存里直接对得上；原因——非 PIE 构建（老默认）；对策——入口链定位用符号（NimMain 三连）不依赖 PIE 与否，但换算地址时按 e_type 区分
