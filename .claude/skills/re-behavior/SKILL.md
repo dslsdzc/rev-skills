@@ -27,7 +27,7 @@ description: >
 ### procmon / Process Monitor（Windows 行为记录主力）
 
 - Windows: Microsoft Sysinternals —— `choco install sysinternals`，或微软官网下载 Procmon64.exe
-- Linux/macOS: 不适用（用 sysdig / bpftrace）
+- Linux/macOS: 不适用（用 sysdig / bpftrace；函数级记录见 [[re-tracing]]）
 - 验证: 管理员运行 Procmon64.exe，出现捕获窗口并能记录事件
 - 附加: Process Explorer（同套件）看进程树与句柄
 
@@ -97,6 +97,64 @@ description: >
    - 把步骤 1-4 的行为按 ATT&CK 战术归类：初始访问、执行、持久化（T1547 / T1053 / T1543）、防御规避（T1055 注入）、命令与控制（T1071 / T1568）…
    - 每个行为写「行为 → 战术:技术 (ATT&CK ID) → 证据路径」一行，汇总成映射表进报告（供 [[re-ioc]] 报告结构使用）
 
+## 行为监控工具链（Windows）
+
+Windows 侧行为采集四件套：ProcMon（全系统文件/注册表/网络/进程）、API Monitor（API 级 hook）、ETW（内核侧事件）、Process Explorer（实时进程视图）。前二者为用户态采集，ETW 在内核侧；本节是采集侧视角，与 [[re-evasion]] 的绕过侧互补。除注明外均为仅 Windows 工具，Linux/macOS 对应走 [[re-tracing]]（strace/ltrace/dtruss）与本文件「工具准备」的 sysdig/bpftrace。
+
+### ProcMon：过滤 → 标注 → CSV 导出
+
+- 过滤（Filter 对话框，Ctrl+L）: 规则 = 列 + 关系 + 值，多条件叠加；列可选 Process Name / Operation / Path / Result / PID 等；关系支持 is / is not / contains / begins with / ends with / less than / more than（数值列用大小比较）；右键事件可快速生成规则（Add to Include filter / Add process and children to Include filter）
+- 过滤是非破坏性的: 不匹配事件仍入库只是不显示；勾选 Drop Filtered Events 才真正丢弃（超高频捕获控体积用，不可恢复——需要完整证据链时别勾）
+- 标注: Include 规则把关注事件黄色高亮，Highlight（Ctrl+H）自定义高亮颜色，Exclude 灰显排除——「高亮=重点、灰显=噪音」的分层阅读
+- CSV 导出: File → Save（Ctrl+S）对话框格式选 CSV，范围选 Events displayed using current filter（先过滤再导出，控制体量）；批量转换用命令行 `Procmon64.exe /OpenLog trace.pml /SaveAs out.csv`；原生 PML 保留全部字段与线程栈，可换机复盘
+- 时间线关联: 按 Time of Day 排序，把 Process Create / CreateFile / WriteFile / RegSetValue / TCP-UDP Send-Receive 对齐成「进程 → 文件 → 注册表 → 网络」证据链（对应操作步骤 1-4）；Process Tree 工具（Ctrl+T）看进程父子与注入脉络
+- 事件属性 Stack 标签页给线程调用栈（可配符号服务器），核对注入/持久化 API 序列（步骤 1 与坑 5-7 的实证）
+
+### API Monitor：API 级 hook 链
+
+- 定位: 以导入表 hook 挂接进程内 API 调用，逐调用记录参数（字符串已解码）与返回值，调用树展示嵌套层级——Windows 侧对应 [[re-tracing]] 的 strace/ltrace
+- 用法: 管理员运行 → 选择目标进程 → 勾选 API 类（File / Network / Registry / Process / Thread）→ 附加；调用树展开到关键 API（CreateProcess / WriteProcessMemory / RegSetValue / NtWriteFile）看参数实况
+- 位宽限制（常见坑）: 32 位版只能监控 32 位进程、64 位版只能监控 64 位进程——按样本位宽选 apimonitor-x86.exe / apimonitor-x64.exe
+- 安装: 官方渠道 rohitab.com（免费软件，v2 alpha，zip 解压即用）；站点偶发不可达，拿到压缩包先核对校验值
+- 验证: 附加目标进程后能列出调用树并记录参数与返回值
+
+### ETW：内核侧事件采集（logman / wevtutil）
+
+- 定位: Windows 内置事件框架，会话创建与事件解析用系统自带命令（logman / wevtutil / tracerpt），零安装；内核侧采集不受用户态 hook 影响——直通 syscall 的注入（坑 11）只能靠内核侧事件兜底
+- 建会话（需管理员）:
+
+  ```bat
+  logman create trace bhev -p Microsoft-Windows-Kernel-Process -o bhev.etl -ets
+  logman start bhev -ets
+  logman stop bhev -ets
+  logman delete bhev -ets
+  ```
+
+  `-p` 指定 provider（名称或 GUID），可带关键字与级别（如 `-p Microsoft-Windows-Sysmon 0xFF 5`）；`logman query -ets` 看活动会话；`logman query providers` 枚举已注册 provider（管道 `findstr` 筛目标）
+- 常用 provider: Microsoft-Windows-Kernel-Process（进程创建/退出）、Microsoft-Windows-PowerShell（脚本块）、Microsoft-Windows-Sysmon（装有 Sysmon 时直接复用其事件）
+- 事件解析: .etl 转 CSV 用 `tracerpt bhev.etl -o out.csv -of csv`；事件日志用 wevtutil：
+
+  ```bat
+  wevtutil qe Security /q:"*[System[(EventID=4688)]]" /c:10 /rd:true /f:text
+  wevtutil el
+  wevtutil epl Security C:\secevt.evtx
+  ```
+
+  `/q` 为 XPath 过滤，`/c` 条数上限，`/rd:true` 最新在前，`/f:xml|text` 输出格式
+- 与 re-evasion 互补: 本节是采集侧；绕过侧（patch EtwEventWrite、provider 掩码、事件流中断即禁用证据）见 [[re-evasion]]
+
+### Process Explorer：实时进程视图
+
+- 进程树: View → Show Process Tree（Ctrl+T）——父子关系、退出进程灰显保留；与 ProcMon 的 Process Tree 工具互补（PE 看实时、ProcMon 复盘录制）
+- 底窗: Handles（Ctrl+H）看进程打开的句柄（文件/注册表/网络对象），DLLs（Ctrl+D）看已加载模块与映射——查注入 DLL 是否落位、哪个进程握着被删文件；Hide Lower Pane（Ctrl+L）收起
+- Find Handle or DLL（Ctrl+Shift+F）: 按文件/路径/键反查持有进程——找谁在读写某路径
+- 签名验证: Options → Verify Image Signatures 开启后进程列表出现 Verified Signer 列；进程属性 Image 页 Verify 按钮单查——快速区分系统合法模块与可疑注入模块（签名缺失/失效即告警，配合步骤 1）
+
+### 跨 OS 约束
+
+- 以上工具（ProcMon / API Monitor / Process Explorer / logman-wevtutil）均为 Windows 内置或 Windows-only；Linux/macOS 对应走 [[re-tracing]]（strace/ltrace/dtruss）与「工具准备」的 sysdig / bpftrace
+- 例外注明: ProcMon 有微软官方 Linux 移植（ProcMon-for-Linux，GitHub microsoft 仓库，preview、系统调用级），实验性，正式分析仍以 sysdig/bpftrace 为主
+
 ## 跨域联合
 
 - [[re-malware]]：工作流第 3 步——行为分析是恶意样本判定的核心环节
@@ -104,6 +162,7 @@ description: >
 - [[re-protocol]]：步骤 4 发现 C2 → 转流量捕获 / 协议重建
 - [[re-anti-analysis]]：行为异常（延迟/交互检查、检测沙箱后退出）→ 转反分析对抗域
 - [[re-tracing]]：Linux 下用 strace 系列补充 sysdig/bpftrace 的函数级调用记录
+- [[re-evasion]]：ETW 采集侧（「行为监控工具链」一节）与绕过侧互补——事件流中断即禁用证据
 - [[re-ioc]]：步骤 3/4 产出的行为证据是 IOC 提取与报告的原料
 
 ## 常见坑与陷阱
