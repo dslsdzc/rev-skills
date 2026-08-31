@@ -1,6 +1,7 @@
 ---
 name: re-keygen
 description: 注册机算法还原。触发词：注册机、keygen、算法还原、序列号生成
+guard: {"require_authorization": true, "forbidden": ["unauthorized_cracking", "commercial_bypass", "keygen_distribution"]}
 ---
 
 # 注册机算法还原（keygen）

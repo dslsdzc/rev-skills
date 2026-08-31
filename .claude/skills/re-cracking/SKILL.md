@@ -6,6 +6,7 @@ description: >
   子技能：[[re-license]] [[re-patching]] [[re-keygen]] [[re-drm]]。
   触发词：破解、crack、注册码、序列号、授权验证、绕过验证、打补丁、patch、keygen、注册机、授权绕过。
 capabilities: [license-analysis]
+guard: {"require_authorization": true, "forbidden": ["unauthorized_cracking", "commercial_bypass", "keygen_distribution"]}
 ---
 
 # 软件破解（授权定位 / 补丁 / 注册机）
