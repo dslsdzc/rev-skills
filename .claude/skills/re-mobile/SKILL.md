@@ -62,3 +62,7 @@ capabilities: [dex-parser, jni-analysis, frida-instrumentation, mobile-forensics
 - **真机 native 崩溃排障顺序**：现象——tombstone/native 栈只定位到模块层，看不出根因；原因——运行时保护（pcall/异常捕获）救不住 native abort，托管异常日志才是根因；对策——先怀疑"重打包格式差异"（压缩/对齐/容器结构），再怀疑逻辑；根因证据看运行时异常日志（FATAL EXCEPTION / Unhandled Exception），别只看 native 栈
 - **渠道包 ≠ 官方包**：第三方渠道重打包版（包名带渠道标识、登录走渠道 SDK）的协议/行为结论不能直接套用官方包——分析前先确认包来源（包名/签名/渠道 SDK 特征）
 
+
+## 经验库
+
+实战经验全集见 [[experience]]。
