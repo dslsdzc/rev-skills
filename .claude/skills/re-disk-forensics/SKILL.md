@@ -86,7 +86,8 @@ description: >
    fls -r -o <分区start> evidence.dd                       # 全部文件，含 [DELETED]
    fls -o <分区start> evidence.dd <inode>                  # 指定目录 inode 下文件
    icat -o <分区start> evidence.dd <inode> > rec.bin       # 按 inode 提取（含删除文件）
-   tsk_recover -e -o <分区start> evidence.dd out/          # 批量恢复全部已删除文件
+   tsk_recover -o <分区start> evidence.dd out/             # 恢复已删除（未分配）文件——这是默认行为
+   tsk_recover -e -o <分区start> evidence.dd out_all/      # -e = 已分配 + 未分配全部导出（-a 则只导已分配）
    ```
    - fls 输出 `r/r 12345-128-1: 文件名 [DELETED]`——行首 inode 号供 icat；未删除文件也可用 icat 精确提取（比挂载拷贝可控）
    - 删除恢复结果不是 100%（SSD TRIM/覆写），见坑 5
@@ -112,7 +113,7 @@ description: >
    blkls -o <分区start> evidence.dd > unallocated.bin
    strings -n 8 unallocated.bin | grep -iE 'key|password|flag|http' | head -50
    # 分区表空隙（slack space）/隐藏分区: 按 mmls 相邻分区起止手工截取
-   dd if=evidence.dd of=gap.bin bs=512 skip=<A_end> count=<B_start-A_end>
+   dd if=evidence.dd of=gap.bin bs=512 skip=$((A_end+1)) count=$((B_start-A_end-1))   # mmls 的 End 是含端点的末扇区（Length=End-Start+1）；两分区之间的空白 = A_end+1 .. B_start-1。更省事：直接用 mmls 列出的 Unallocated 项 Start/Length
    ```
    - 未分配空间是"删除≠消失"的主战场：凭据/密钥/URL/文档残片常留在那里
    - 被删除/隐藏分区: testdisk 扫描重建分区表项后，把重建分区按步骤 3 流程恢复文件

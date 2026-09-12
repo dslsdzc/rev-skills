@@ -67,7 +67,7 @@ description: >
    otool -l sample | grep -A8 'segname __DATA'
    llvm-objdump --macho --section-headers sample
    ```
-   记录各段 vmaddr/vmsize/fileoff；`__TEXT,__text` 是代码，`__DATA,__data` 是可写数据，GOT 在 `__DATA_CONST,__got`（只读常量段；旧二进制在 `__DATA,__got`）；`__LINKEDIT` 无映射内容，只放符号/签名等元数据。
+   记录各段 vmaddr/vmsize/fileoff；`__TEXT,__text` 是代码，`__DATA,__data` 是可写数据，GOT 在 `__DATA_CONST,__got`（只读常量段；旧二进制在 `__DATA,__got`）；`__LINKEDIT` 是**有 vmaddr/vmsize 的正常段**，通常映射为只读区域（vmmap 里能看到），存放符号表/字符串表/重定位/签名等链接元数据——具体存在方式受 dyld 与 shared cache 影响。
 
 4. **入口（LC_MAIN / LC_UNIXTHREAD）**：
    ```sh
@@ -127,4 +127,4 @@ description: >
 - **GOT 位置随版本迁移**：新产物 GOT 在 `__DATA_CONST,__got`（只读，装载后重定位一次）；旧产物在 `__DATA,__got`（可写）——找 GOT 先 `otool -l` 看段名，别假设
 - **dyld 共享缓存里没有独立 dylib 文件**：系统库（libSystem.dylib 等）实际在 `/System/Library/dyld/` 缓存内，文件系统里只有 stub——分析系统库用 `dyld_shared_cache_util -extract` 抽出
 - **load command 遍历错位**：现象——`otool -l` 输出中途乱码/报错；原因——ncmds 与 sizeofcmds 被伪造或某条 LC 的 cmdsize 异常；对策——按 32/64 位结构体逐条校验 cmdsize（64 位下 LC 最小 16 字节），从 sizeofcmds 总量反推合法性
-- **__LINKEDIT 内容不是映射数据**：符号表/签名/重定位偏移在 __LINKEDIT 的文件范围内，但没有运行时可访问的映射内容——在内存里找不到符号表是正常的
+- **__LINKEDIT 是映射段，但内容可能被 dyld 加工**：它有自己的 vmaddr/vmsize，通常以只读映射存在（`vmmap` 可见）；不过 shared cache 共享库的链接元数据驻留在共享缓存里，直接从进程内存按文件偏移找符号表常常对不上——定位符号表优先用 `nm`/`dyldinfo`/MachOView 等按 LC_SYMTAB 解析，而不是照抄文件偏移

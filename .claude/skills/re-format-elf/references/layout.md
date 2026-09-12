@@ -26,13 +26,13 @@ ELF 文件 = ELF 头（ehdr）+ 程序头表（phdr，供加载器）+ 节区（
 | 0x18 | e_entry | u64 | 入口点（DYN 下为相对基址的偏移） |
 | 0x20 | e_phoff | u64 | 程序头表文件偏移 |
 | 0x28 | e_shoff | u64 | 节头表文件偏移 |
-| 0x30 | e_flags | u32 | 架构相关（如 MIPS 的字节序/ABI 位） |
+| 0x30 | e_flags | u32 | 架构相关（如 MIPS 的 ABI/ISA/PIC/NaN 等位，见 EF_MIPS_*；**不含字节序**——字节序始终看 e_ident[EI_DATA]） |
 | 0x34 | e_ehsize | u16 | 64（32 位为 52） |
 | 0x36 | e_phentsize | u16 | 56（32 位为 32） |
-| 0x38 | e_phnum | u16 | 程序头条数（PN_XNUM=0xffff 时真实值在 .shdr[0].sh_info） |
+| 0x38 | e_phnum | u16 | 程序头条数（=PN_XNUM 0xffff 时真实值在 shdr[0].sh_info） |
 | 0x3A | e_shentsize | u16 | 64（32 位为 40） |
-| 0x3C | e_shnum | u16 | 节头条数（同上 PN_XNUM 溢出处理） |
-| 0x3E | e_shstrndx | u16 | 节名表（.shstrtab）在节头表里的索引 |
+| 0x3C | e_shnum | u16 | 节头条数（=0 时真实值在 shdr[0].sh_size——与 e_phnum 不是同一套规则） |
+| 0x3E | e_shstrndx | u16 | 节名表（.shstrtab）在节头表里的索引（=SHN_XINDEX 0xffff 时真实索引在 shdr[0].sh_link） |
 
 32 位偏移变化：e_entry=0x18(4B)、e_phoff=0x1C、e_shoff=0x20、e_flags=0x24、e_ehsize=0x28、e_phentsize=0x2A、e_phnum=0x2C、e_shentsize=0x2E、e_shnum=0x30、e_shstrndx=0x32。
 
@@ -129,7 +129,7 @@ ELF 文件 = ELF 头（ehdr）+ 程序头表（phdr，供加载器）+ 节区（
 ## 实现教训（内化）
 
 - 一切偏移以 e_ident[4]（class）分派：32/64 位结构大小不同，解析器先读 class 再选格式
-- e_phnum/e_shnum 有 0xffff 溢出约定（真实值在节 0 的 sh_info）——手写解析器要处理，工具一般已处理
+- **扩展编号（extended numbering）是三套独立规则**，手写解析器必须分别实现，不能共用一套逻辑：`e_phnum==PN_XNUM(0xffff)` → 真实程序头数在 `shdr[0].sh_info`；`e_shnum==0` → 真实节头数在 `shdr[0].sh_size`；`e_shstrndx==SHN_XINDEX(0xffff)` → 真实索引在 `shdr[0].sh_link`。三者都以"节 0 存在"为前提——建议配 parser fixture 验证这三条路径（工具一般已处理）
 - 大端目标（MIPS 固件常见）解析前按 EI_DATA 换字节序，别默认小端
 - readelf 能正常解析 ≠ 结构"正确"：工具解析器有容错，关键结论（GOT 可写性、加载范围）对照 phdr 手工核一遍
 

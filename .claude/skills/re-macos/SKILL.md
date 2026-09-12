@@ -53,7 +53,7 @@ description: >
    - 关注：签名者（Apple 开发者/分发证书）、Team ID、CDHash、Hardened Runtime（runtime 标志）、Info.plist 的 CFBundleIdentifier/版本/最低系统版本
    - 架构确认：`file` 输出/x86_64 与 arm64 通用二进制（`lipo -archs`）——决定反编译与动态环境（Apple Silicon 上 arm64e 有 PAC 差异，见 [[gotchas]]）
    - 公证派生检查：`spctl -a` 通过不保证本地有 staple——`xcrun stapler validate Sample.app` 查票证是否随包
-   - 下载来源检查：`xattr -l Sample.app` 看 `com.apple.quarantine`（Gatekeeper 拦不拦、来源 URL）
+   - 隔离属性检查：`xattr -l Sample.app` 看 `com.apple.quarantine`（隔离标志 + 时间戳 + 责任方 App；**不含来源 URL**——来源信息在 Spotlight 属性里，用 `mdls -name kMDItemWhereFroms Sample.app` 查）
 
 2. **entitlements 与沙箱**：
    ```sh

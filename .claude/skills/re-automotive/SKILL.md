@@ -84,7 +84,7 @@ description: >
 2. **candump 抓包**：
    ```sh
    candump -t a can0                     # 实时查看（绝对时间戳）
-   candump -l can0                       # 落盘日志（自动轮转，Wireshark 可直接打开）
+   candump -l can0                       # 落盘日志（默认文件名带时间戳；无轮转——需要轮转交给 logrotate/外部脚本；Wireshark 可直接打开）
    candump can0 -n 100                   # 只抓 100 帧
    candump can0,7E0:7FF                  # ID 过滤：接口名后接 can_id:mask（逗号分隔）；掩码 7FF = 精确匹配 7E0，区间过滤用 7F8（匹配 7E0~7E7）；CAN 无地址（见坑 1）
    candump -f can.log can0               # 注意 -f 是"日志写入文件"，不是过滤参数
@@ -93,7 +93,7 @@ description: >
 3. **报文 ID / 周期 / 信号解析**：
    ```sh
    cansniffer can0                       # 按 ID 聚类、周期与变化字节高亮
-   candump -c can0                       # 每 ID 帧计数
+   candump can0 | awk '{print $2}' | sort | uniq -c   # 按 ID 统计帧数（默认输出第 2 列是 ID；注意 -c 是颜色模式，不是计数）
    canbusload can0@500000                # 总线负载率 %
    ```
    - 周期消息（固定间隔 10/50/100ms 常见）→ 转速/车速等连续信号；事件消息（无规律）→ 开关/按钮
@@ -147,7 +147,7 @@ description: >
 
 ## 常见坑与陷阱
 
-- **CAN 无地址概念 → 过滤/归因错**：现象——想"按目标 ECU 过滤"却要么漏帧要么全抓；原因——CAN 帧无源目地址，只有 11/29 位仲裁 ID，ID 兼具优先级与"身份"（ID 越小优先级越高）；对策——先全量抓（candump）再按 ID 聚类归类（cansniffer / candump -c），用 `candump can0,ID:mask` 过滤，不预设主机概念
+- **CAN 无地址概念 → 过滤/归因错**：现象——想"按目标 ECU 过滤"却要么漏帧要么全抓；原因——CAN 帧无源目地址，只有 11/29 位仲裁 ID，ID 兼具优先级与"身份"（ID 越小优先级越高）；对策——先全量抓（candump）再按 ID 聚类归类（cansniffer，或对 candump 输出管道 awk/sort/uniq 统计），用 `candump can0,ID:mask` 过滤，不预设主机概念
 - **信号位打包错**：现象——信号值乱（转速负值/巨大、多字节字段错位）；原因——信号跨字节跨位打包，Intel（小端）/Motorola（大端）序混用，且信号不必对齐字节边界；对策——先定字节序再解包，用 DBC + cantools 定义位布局，与实车读数/已知量程交叉验证
 - **波特率不符与总线负载**：现象——`candump` 错误帧刷屏（error frame），或高负载下周期抖动、抓到的周期不可信；原因——波特率与总线不一致；负载高（>60-70%）时仲裁延迟与丢帧；对策——接入前确认波特率（500 kbit/s 最常见，canbusload 看负载率），周期性分析排除高负载时段，需要精确时序用硬件时间戳
 - **seed-key 安全访问被拒**：现象——UDS 读内存/写标定回 0x7F 27 33（SecurityAccessDenied）；原因——0x27 需先解锁：服务端发 seed（0x27 01/03），客户端回 key（0x27 02/04），算法厂商私有（XOR/CRC/AES 常见）；对策——有合法诊断仪/工具时先抓一次正常解锁流程，算法还原走 [[re-crypto-id]] / [[re-crypto-decrypt]]；只在自有测试设备上做，不盲目爆破

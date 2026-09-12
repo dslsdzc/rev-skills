@@ -86,7 +86,7 @@ __TEXT        vmaddr 0x0000000100000000  RX
 __DATA        vmaddr 0x100002000         RW
   __got GOT（新产物在 __DATA_CONST） / __la_symbol_ptr / __data / __bss
 __DATA_CONST  只读常量（__got、__const；Swift 产物常见）
-__LINKEDIT    vmaddr 末尾段             R     （不映射运行内容）
+__LINKEDIT    vmaddr 末尾段             R     （映射只读；链接元数据，shared cache 场景驻留方式不同）
   LC_SYMTAB 符号表 / LC_DYSYMTAB 分类 / 重定位 / 代码签名 / 导出 trie
 ```
 

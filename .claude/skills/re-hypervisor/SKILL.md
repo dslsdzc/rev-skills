@@ -65,7 +65,7 @@ description: >
 2. **VMCS 结构分析（VT-x）**：
    - 启动路径：`VMXON`（进入 VMX 操作模式）→ `VMPTRLD`（加载当前 VMCS）→ 配置 VMCS 字段 → `VMLAUNCH`/`VMRESUME`（进 guest）→ VM exit 后查 `VM_EXIT_REASON` 字段分派
    - 反编译定位：搜 `VMXON`/`VMPTRLD`/`VMWRITE`/`VMREAD`/`VMLAUNCH` 指令（Ghidra 反汇编直接可读）；VMCS 区域是内存块，先找 VMCS 缓冲区分配与初始化代码
-   - **VMREAD/VMWRITE 的操作数是 VMCS 字段编码**（32 位，Intel SDM 附录 B 表 B-1~B-4）：宽度由 bit14（置 1=32 位）/bit13（置 1=64 位）两个标志位表示（同置=natural 宽度、同清=16 位）；类型在 bits 11:10（00=control、01=read-only、10=guest-state、11=host-state）；索引在 bits 9:0。解码示例：0x400C=VM-exit controls（32 位，bit14 置）、0x2000=I/O bitmap A（64 位，bit13 置）、0x681E=GUEST_RIP（natural）、0x681C=GUEST_RSP（natural）、0x4402=VM-exit reason（32 位 read-only）——在 Ghidra/IDA 里建枚举/结构标注
+   - **VMREAD/VMWRITE 的操作数是 VMCS 字段编码**（32 位，Intel SDM 附录 B 表 B-1~B-4）：**bit0 = 访问类型**（0=full field、1=high 32 bits）；**索引在 bits 9:1**（9 位，不是 bits 9:0）；类型在 bits 11:10（00=control、01=read-only、10=guest-state、11=host-state）；宽度在 bits 14:13（00=16 位、01=64 位、10=32 位、11=natural）；bit 12 与 bits 31:15 保留（必须为 0）。解码示例：0x400C=VM-exit controls（32 位，bits 14:13=10）、0x2000=I/O bitmap A（64 位，bits 14:13=01）、0x681E=GUEST_RIP（natural，bits 14:13=11）、0x681C=GUEST_RSP（natural）、0x4402=VM-exit reason（32 位 read-only）——即 `access=enc&1; index=(enc>>1)&0x1ff; type=(enc>>10)&3; width=(enc>>13)&3`，在 Ghidra/IDA 里建枚举/结构标注
    - 关注三块：guest-state（保存 guest 寄存器/CR3/RSP）、host-state（VM exit 后宿主现场）、control 字段（execution control 决定哪些事件触发 VM exit）
    - SVM 对应：VMCB（物理地址经 `VM_HSAVE_PA` MSR），字段是固定偏移——按 AMD APM 布局标注
    - 产物：VMCS 字段标注表（编码 → 字段名 → 作用）+ 初始化/exit 处理流程
@@ -83,8 +83,10 @@ description: >
 
 4. **嵌套虚拟化（VMM 内调试）**：
    ```sh
-   # KVM 开启嵌套（宿主）
-   echo 1 | sudo tee /sys/module/kvm_intel/parameters/nested    # Intel（AMD 为 kvm_amd）
+   # KVM 开启嵌套（宿主）——module_param 权限为 0444，sysfs 只读，echo 写入会失败
+   sudo modprobe -r kvm_intel && sudo modprobe kvm_intel nested=1    # Intel（AMD 用 kvm_amd nested=1）
+   # 持久化：/etc/modprobe.d/kvm.conf 写 `options kvm_intel nested=1`（重启后仍生效）
+   cat /sys/module/kvm_intel/parameters/nested                       # 验证（Y/1 为已开启）
    # QEMU 启动带 VT-x 透传的嵌套 VM（`-cpu host` 暴露 vmx 标志）
    qemu-system-x86_64 -enable-kvm -cpu host,+vmx -m 4096 disk.img &
    # 嵌套 VM 内再验证: grep vmx /proc/cpuinfo 可见 → 可在此跑 hypervisor 样本

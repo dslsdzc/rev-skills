@@ -83,7 +83,7 @@ description: >
    if hasattr(pe, 'DIRECTORY_ENTRY_TLS') and pe.DIRECTORY_ENTRY_TLS:
        # AddressOfCallBacks 按 VA 存放：VA - ImageBase = RVA（只减一次）
        cb_rva = pe.DIRECTORY_ENTRY_TLS.struct.AddressOfCallBacks - pe.OPTIONAL_HEADER.ImageBase
-       ptr_size = 8 if pe.FILE_HEADER.Machine == 0x8664 else 4   # 64 位回调指针 8 字节
+       ptr_size = 8 if pe.OPTIONAL_HEADER.Magic == 0x20b else 4  # PE32+(0x20b)/PE32(0x10b) 才是位宽判据；Machine==0x8664 只说明 x64，ARM64(0xAA64) 同样是 PE32+
        while True:                                                # 回调数组以 0 结尾
            ptr = int.from_bytes(pe.get_data(cb_rva, ptr_size), 'little')
            if ptr == 0:
@@ -99,9 +99,10 @@ description: >
    pe = pefile.PE('sample.exe')
    rh = pe.parse_rich_header()
    if rh:
-       for cid, count, off in rh['values']:
-           # cid 高 16 位是编译器 Product ID（如 0x10b=VS2015）
-           print(f"compid={cid>>16:#x} count={count}")
+       vals = rh['values']          # 扁平整数数组 [compid, count, compid, count, ...]（pefile 已按 key 解密）
+       for cid, count in zip(vals[0::2], vals[1::2]):
+           # compid 高 16 位是工具 Product ID、低 16 位是 build（如 0x10b=VS2015 系）
+           print(f"compid={cid:#x} tool={cid>>16:#x} build={cid & 0xffff} count={count}")
    ```
    Rich Header 位于 DOS stub 之后、e_lfanew 之前，标识编译工具链版本；被移除/伪造本身也是加壳或手工修改特征。
 

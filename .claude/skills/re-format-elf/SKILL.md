@@ -70,7 +70,8 @@ capabilities: [elf-parser]
    ```sh
    readelf -S sample | grep -i init_array
    readelf -a sample | grep -A5 -i 'init_array'
-   objdump -d -j .init_array sample     # 逐条反汇编回调地址
+   objdump -s -j .init_array sample     # .init_array 是函数指针数组（数据节），用 -s 打印内容；-d 只反汇编代码节，实际不输出
+   # 取到指针后逐个 `objdump -d --start-address=<ptr> --stop-address=<ptr+len> sample` 看回调函数
    ```
    `.init_array` 中的函数指针在 main 之前按序执行——初始化/反调试/解密常藏在这里，必须最先查。
 
@@ -88,7 +89,7 @@ capabilities: [elf-parser]
    readelf -s sample | head -20         # .dynsym 动态符号（导入/导出）
    readelf -r sample | grep -E 'JUMP_SLOT|GLOB_DAT|RELATIVE'
    ```
-   关联链: `DT_STRTAB`/`DT_SYMTAB` 标签指向 dynstr/dynsym，符号表按 `DT_SYMENT`(24 字节/条) 定长遍历；`DT_GNU_HASH`（新）替代 `DT_HASH`（旧）做符号查找；重定位类型决定 GOT 槽行为——`R_X86_64_JUMP_SLOT`(PLT 跳转)、`GLOB_DAT`(全局变量)、`RELATIVE`(基址相对)。`DT_BIND_NOW`/FLAGS 出现 = 全 RELRO、GOT 只读、无惰性绑定（现代发行版默认）。动态区解析细节见 [[layout]]。
+   关联链: `DT_STRTAB`/`DT_SYMTAB` 标签指向 dynstr/dynsym，符号表按 `DT_SYMENT`(24 字节/条) 定长遍历；`DT_GNU_HASH`（新）替代 `DT_HASH`（旧）做符号查找；重定位类型决定 GOT 槽行为——`R_X86_64_JUMP_SLOT`(PLT 跳转)、`GLOB_DAT`(全局变量)、`RELATIVE`(基址相对)。`DT_BIND_NOW`（或 FLAGS 的 `DF_BIND_NOW`）出现 = 启动时完成全部绑定、无惰性绑定（现代发行版默认）；**但 RELRO 是独立条件**——全 RELRO = `PT_GNU_RELRO` 段 + BIND_NOW 同时成立（GOT 转只读）；只有 `PT_GNU_RELRO` 是 Partial RELRO，只有 BIND_NOW 推不出 RELRO。动态区解析细节见 [[layout]]。
 
 6. **stripped 二进制符号恢复思路**：
    ```sh

@@ -52,7 +52,7 @@ capabilities: [address-translation, elf-parser]
    readelf -l target | grep LOAD        # 首个 LOAD 段 p_vaddr 即链接基址（ET_EXEC 固定；ET_DYN/PIE 为 0 起相对）
    readelf -h target | grep Type        # EXEC（固定基址）/ DYN（PIE，运行时才定基址）
    ```
-   - 链接基址（link-time base）：非 PIE = p_vaddr 首个 LOAD；PIE = 0（所有地址是相对偏移）
+   - 链接基址（link-time base）：取**最低 PT_LOAD 的 p_vaddr**（页对齐）——不要假设 PIE/ET_DYN 的 p_vaddr 必为 0，格式没这条要求；PIE 下常见 0，但也可能非 0（如 0x1000 起的布局）。load_bias = 运行时映射起点 − 最低 p_vaddr（见步骤 3）
    - 文件偏移 ↔ VA：`VA = p_vaddr + (file_offset - p_offset)`（按段匹配，别用全文件线性换算）
 
 2. **RVA / VA 换算**：
