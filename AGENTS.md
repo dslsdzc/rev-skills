@@ -16,7 +16,7 @@
 
 ## 关键约定
 
-- 技能 frontmatter：name 以 re- 前缀，description 含中英触发词
+- 技能 frontmatter：name 以 re- 前缀，description 含中英触发词（validate.mjs 强制：CJK 与拉丁字母各至少一个）
 - 原子技能必含「工具准备」章节（跨 OS 安装指引）
 - 动态分析默认沙箱；内存读取默认转储优先（见 re-analyze/references/platform-tips.md）
 - 分析流程入口：先读 .claude/skills/re-analyze/SKILL.md 与 references/triage.md

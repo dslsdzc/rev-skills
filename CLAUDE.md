@@ -18,6 +18,9 @@ node validate.mjs                               # 只跑结构校验，输出 OK
 node --test tests/validate.test.mjs             # 单跑一个测试文件
 node --test --test-name-pattern="good-skill" tests/*.test.mjs   # 按用例名过滤
 
+node bin/capindex.mjs                           # 重新生成能力索引（改 capabilities 声明后必跑）
+node bin/capindex.mjs --check                   # 只校验索引是否过期（npm test 已含）
+
 npx rev-skills install --target <claude|gemini|cline|codex|cursor|copilot|windsurf|all> \
   [--global|--project] [--dry-run] [--link] [--force]
 node bin/convert.mjs --target <cursor|copilot|windsurf> --out <dir>   # 技能 → 规则文件转换（调试用）
@@ -48,12 +51,12 @@ re-analyze（entry，唯一入口）
 | `re-analyze/references/triage.md` | 入口决策表：目标 + 输入文件 → 编排路径；第 0 步定 `RE_AUTH` |
 | `re-analyze/references/rerouting.md` | 中途再路由：A 表「证据特征 → 触发技能」，B 表「卡住信号 → 换路」 |
 | `re-analyze/references/preferences.md` | 偏好询问分级（Level 0 用默认值直接开始 / Level 1 完整问 5 项） |
-| `re-analyze/references/analysis-contract.md` | 分析契约：上下文清单、数据契约、独立复核、调查预算 |
+| `re-analyze/references/analysis-contract.md` | 分析契约：上下文清单（按域展开）、数据契约（核心字段 + 域扩展字段两层）、独立复核、调查预算 |
 | `re-analyze/references/platform-tips.md` | 平台经验库（最高原则：默认沙箱；内存读取默认转储优先） |
 | `re-analyze/references/capabilities.md` | 能力注册表（`capabilities` frontmatter 的合法标签全集） |
 | `re-analyze/references/probe.sh` | 环境探测脚本（OS/ARCH/CORES/MEM/工具清单） |
 
-**能力层**：技能用 `capabilities: [tag1, tag2]` 声明「提供哪些可执行分析动作」，标签必须在 `capabilities.md` 注册表内。路由正在从「按领域名」逐步改为「输入特征 → 需要能力 → 提供该能力的技能」。网关/入口声明其聚合能力；纯元技能（如 `re-feedback`）可省略该字段。
+**能力层**：技能用 `capabilities: [tag1, tag2]` 声明「提供哪些可执行分析动作」，标签必须在 `capabilities.md` 注册表内。**原子技能必须声明**（入口/元网关可省略）。声明的消费端是 `re-analyze/references/capability-index.md`（机器生成的「能力 → 技能」反查表：`node bin/capindex.mjs` 生成、`npm test` 校验过期、`--check` 单查）。**路由已按能力匹配**：`triage.md` 与 `rerouting.md` 的表格带「需要能力」列，技能列是索引反查结果——新增/修改路由行时必须先定能力标签再反查技能，不能只写领域名。CI 四条防漂移：标签不得悬空｜原子技能必须声明｜路由能力列须在注册表内｜路由标称能力须被本行技能声明｜索引须与声明同步。**网关选择树**里的技能链接用 `[[re-xxx]]（能力：`tag`）` 标注（选择树段内强制，`npm test` 校验标注与声明一致；无「能力：」前缀的括号视为普通说明，不参与校验）。
 
 **guard 字段**：敏感技能必须带机器可读安全前置声明，JSON 格式 `{"require_authorization": true, "forbidden": ["行为标签"]}`。入参与 `RE_AUTH`（owned / ctf / research / unknown）联动——`require_authorization: true` 时仅 owned/ctf/research 可执行，unknown 只做静态分析并先询问归属。
 
@@ -61,9 +64,12 @@ re-analyze（entry，唯一入口）
 
 ## validate.mjs 校验规则（改技能前必读）
 
+frontmatter 解析的唯一实现在 `lib/frontmatter.mjs`（`validate.mjs` 与 `bin/convert.mjs` 共用；支持简单 scalar / 块标量 `>` `|` / 内联 flow list 与 JSON，其余 YAML 特性不支持）。**新增 frontmatter 写法前先扩展该模块并补测试**——历史上校验与转换各写一套解析，104 个技能的 `description` 因此在校验侧被解析成字面量 `>`，非空校验空转。
+
 `validate.mjs` 是结构闸口，以下任一不满足即 `npm test` 失败：
 
 - frontmatter 必须有 `name`（**必须等于目录名**）与非空 `description`；`name` 以 `re-` 前缀
+- `description` 必须**同时含 CJK 与拉丁字母**（中英触发词约定——英文环境也要能命中该技能）
 - `type` 只认 `atomic` / `entry` / `gateway`（缺省视为 atomic）
 - **原子技能且是叶子目录**（无子技能目录）必须含 `## 工具准备` 章节；入口/网关豁免
 - 正文所有 `[[xxx]]` 必须解析到已存在的技能名或某个 `references/*.md` 的文件名——**先建文件再加链接**，否则断链
