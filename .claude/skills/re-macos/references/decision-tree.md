@@ -41,7 +41,7 @@ codesign -dv 结果
 ```
 要拿什么
 ├─ 网络行为 → 抓包（[[re-netcap]]）+ 沙箱网络权限确认
-├─ 钥匙串条目 → 定位 SecItemCopyMatching 调用点，读用途与 ACL（不导出内容，红线）
+├─ 钥匙串条目 → 定位 SecItemCopyMatching 调用点，读用途与访问条件（可访问性/访问控制，不导出内容，红线）
 ├─ Secure Enclave 密钥 → 确认 tokenID，记录用途（不可提取，不找字节）
 ├─ 本地文件/偏好 → 容器路径（沙箱下在 ~/Library/Containers/）分析
 └─ 授权/注册逻辑 → 校验 API 调用点 → [[re-license]] 方法论
@@ -64,7 +64,7 @@ codesign -dv 结果
 - 先读 Info.plist + entitlements 再定动态方案——hardened runtime/沙箱直接决定注入与观察手段
 - 签名信息本地可查（codesign -d -r- / -dv），公证状态需网络——离线时用本地信息替代并标注
 - TCC 数据只读分析、不导出内容（红线）；Full Disk Access 是读取前置，先确认授权
-- Secure Enclave 密钥记用途不找字节；钥匙串条目记录 ACL 与访问点而非口令内容
+- Secure Enclave 密钥记用途不找字节；钥匙串条目记录访问条件与访问点而非口令内容
 - 动态观察在沙箱内进行（[[re-sandbox]]，[[platform-tips]] 最高原则）
 - 证据链记录：签名者/Team ID、entitlements 原文、TCC 依赖点、dyld 依赖清单、动态行为对照
 

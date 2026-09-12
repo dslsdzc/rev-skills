@@ -10,8 +10,8 @@
 
 ## 解析坑
 
-- **iOS 哈希路径**：备份文件按 SHA1(domain+relative path) 命名，没有 manifest 映射就是乱码目录——永远先解析 Manifest.plist 再碰文件
-- **manifest 损坏**：Manifest.plist 缺失/损坏时备份文件仍在，但映射不可用——可尝试按文件特征（plist/数据库头）反查，属弱证据
+- **iOS 哈希路径**：备份文件按 fileID 命名（fileID = SHA1(domain + "-" + relativePath)，路径派生、与内容无关），分两级目录（前两位/完整 fileID），没有索引就是乱码目录——永远先解析 Manifest.db 的映射再碰文件
+- **索引损坏**：Manifest.db（文件索引）缺失/损坏时备份文件仍在，但映射不可用——可尝试按文件特征（plist/数据库头）反查，属弱证据
 - **SQLite 状态**：WAL 模式下删除数据可能仍在 WAL 未 checkpoint 页；journal 模式下 freelist 页残留——恢复前先看数据库日志模式（[[re-disk-forensics]] 方法）
 - **时区与时钟**：设备时区/时钟偏差导致时间线错位——先归一 UTC，标注时间来源；跨设备合并时间线时先对齐时钟
 

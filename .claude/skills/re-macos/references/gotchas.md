@@ -26,10 +26,10 @@
 
 ## 钥匙串与 Secure Enclave 组
 
-- **Secure Enclave 密钥不可提取**：`kSecAttrTokenIDSecureEnclave` 绑定的私钥永不离开 SE——内存/文件搜索必然无果，记录用途与 ACL 即可（反例：拿不到字节 ≠ 分析失败）
-- **钥匙串 ACL 决定访问条件**：`kSecAttrAccessible` 与 `kSecAccessControl`（生物识别/密码提示）决定条目何时可读——分析访问点（SecItemCopyMatching 参数）比导出内容更有价值
+- **Secure Enclave 密钥不可提取**：`kSecAttrTokenIDSecureEnclave` 绑定的私钥永不离开 SE——内存/文件搜索必然无果，记录用途与访问条件即可（反例：拿不到字节 ≠ 分析失败）
+- **可访问性 ≠ 访问控制（别混称 ACL）**：`kSecAttrAccessible` 管设备状态（何时可读：非锁定/首次解锁/此设备）；`kSecAttrAccessControl`/`SecAccessControl`（生物识别/密码门槛）才是访问控制；macOS 传统 ACL 另属 `SecAccess`/`kSecAttrAccess`——分析访问点（SecItemCopyMatching 参数）比导出内容更有价值
 - **钥匙串数据敏感**：条目内容属凭据，分析只读调用面，不导出口令内容（红线）
-- **钥匙串迁移**：系统升级/备份恢复后 ACL 可能变化——历史环境复现时注意
+- **钥匙串迁移**：系统升级/备份恢复后访问控制策略可能变化——历史环境复现时注意
 
 ## 反例与边界组
 

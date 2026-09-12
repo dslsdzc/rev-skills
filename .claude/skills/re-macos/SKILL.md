@@ -75,9 +75,9 @@ description: >
    - 注意：TCC 数据属系统隐私数据，只读分析不导出内容（红线）
 
 4. **钥匙串与 Secure Enclave**：
-   - 钥匙串条目类型（通用密码/互联网密码/密钥）与 ACL（`kSecAttrAccessible` 可访问性类：非锁定/首次解锁/此设备）
-   - Secure Enclave 密钥：`SecKeyCreateWithData` 带 `kSecAttrTokenIDSecureEnclave` —— 私钥**不可提取**（等价 Android Keystore 硬件背书，见 [[re-android-native]] Keystore 审计）
-   - 分析：目标读哪些钥匙串条目（SecItemCopyMatching 调用点）、密钥是否 Secure Enclave 绑定（不可提取 → 记录用途与 ACL 而非找字节）
+   - 钥匙串条目类型（通用密码/互联网密码/密钥）与访问条件——`kSecAttrAccessible` 是**可访问性**（设备处于什么状态时可读：非锁定/首次解锁/此设备），**不是 ACL**；访问控制是 `kSecAttrAccessControl`/`SecAccessControl`（生物识别/密码门槛），macOS 传统 ACL 另有 `SecAccess`/`kSecAttrAccess`（见 [[gotchas]]）
+   - Secure Enclave 密钥：用 `SecKeyCreateRandomKey`（属性含 `kSecAttrTokenID: kSecAttrTokenIDSecureEnclave`）在设备内生成——`SecKeyCreateWithData` 是从外部 key data 导入/恢复，SE 私钥永不出芯片、无法导入，别把它当 SE 生成接口；私钥**不可提取**（等价 Android Keystore 硬件背书，见 [[re-android-native]] Keystore 审计）
+   - 分析：目标读哪些钥匙串条目（SecItemCopyMatching 调用点）、密钥是否 Secure Enclave 绑定（不可提取 → 记录用途与访问条件而非找字节）
 
 5. **dyld 加载链**：
    ```sh
@@ -109,7 +109,7 @@ description: >
 ## 常见坑与陷阱
 
 - **签名校验多处触发**：现象——patch 后运行即退；原因——加载/运行/更新多处校验；对策——逐点定位（步骤 6），先处理校验点再过逻辑
-- **Secure Enclave 密钥不可提取**：现象——内存搜不到私钥；原因——硬件背书；对策——记录用途与 ACL，不找字节（见步骤 4）
+- **Secure Enclave 密钥不可提取**：现象——内存搜不到私钥；原因——硬件背书；对策——记录用途与访问条件，不找字节（见步骤 4）
 - **TCC 权限导致功能缺失**：现象——目标功能灰掉；原因——TCC 未授权；对策——分析其请求逻辑而非绕过系统权限（红线）
 - **公证检查离线不可复现**：现象——离线环境 spctl 结果异常；原因——公证需要网络查询（含吊销状态）；对策——用 codesign 本地签名信息替代，标注「公证状态未验证」
 - **hardened runtime 限制注入**：现象——DYLD_INSERT_LIBRARIES 无效；原因——runtime 标志未含 allow-dyld 环境变量；对策——静态分析路径（[[re-ghidra]]），不硬注入

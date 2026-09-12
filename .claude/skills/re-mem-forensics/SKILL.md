@@ -18,7 +18,7 @@ description: >
 
 本技能只读转储文件、不运行样本；涉及动态确认的转 [[re-sandbox]]（默认沙箱最高原则，见 [[platform-tips]]）。
 
-### volatility3 —— 内存取证主力（Python 3.8-3.11）
+### volatility3 —— 内存取证主力（Python 3.8+）
 
 - 全平台: `pip install volatility3`（命令为 `vol`）；官方要求 **Python 3.8+**（README 表述），2026 实测 2.28.0 在 Python 3.14 可安装且插件正常加载——先 `python3 --version` 确认，版本不匹配用 pyenv/venv 建对应环境再装
 - Windows/WSL: 同上 pip 方案（WSL 内可分析 Windows dump，见 [[platform-tips]] WSL 分支）

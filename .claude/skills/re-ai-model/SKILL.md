@@ -66,8 +66,8 @@ description: >
    ```sh
    file model.bin && sha256sum model.bin > model.sha256 && xxd model.bin | head -2
    ```
-   - **ONNX**：无固定魔数——protobuf 流，起始字节形如 `08 08 12 <len> ...`（field 1=ir_version varint tag 0x08、field 2=producer_name string tag 0x12，非 varint）；`onnx.checker.check_model` 可验证合法性
-   - **Safetensors**：前 8 字节 = 大端 u64 头长度，随后是 JSON 头（张量名/形状/dtype/偏移）
+   - **ONNX**：无固定魔数——protobuf 流，首字段为 ir_version（tag `0x08` + 变长值；**值随 ONNX 版本递增**：IR 8 对应 ONNX 1.10，当前发布已到 IR 13——所以第二个字节不是常量 `08`，不能拿 `08 08 12` 当识别特征）；producer_name（tag `0x12`，长度前缀）按规范只 SHOULD 出现，不保证紧跟其后；`onnx.checker.check_model` 可验证合法性
+   - **Safetensors**：前 8 字节 = **小端** u64 头长度（`struct.unpack("<Q", data[:8])`），随后是 JSON 头（张量名/形状/dtype/偏移）
    - **PyTorch**：`file` 显示 Zip archive（`PK\x03\x04` 头）——`unzip -l model.pt` 看条目（state_dict 含 `data.pkl`；torch.jit.script 含 `data.pkl`/`constants.pkl`/`bytecode.pkl`）；老式纯 pkl 是裸 pickle 流（无 PK 头）——**不直接 load**，先 xxd/strings 粗看（坑 2）
    - **TFLite**：flatbuffers 流——无固定魔数，但字节 4–7 为文件标识符 `TFL3`（对应 schema 的 `__model_identifier` 字段），xxd/strings 可见；结构解析可用 Netron（支持 .tflite 可视化），权重提取分支思路同 onnx（flatbuffers 解析，超出本技能深度时标注"结构化 dump 为准"）
    - 判定后按格式走对应分支；拿不准先 [[re-triage]] 初勘（熵/strings 特征）

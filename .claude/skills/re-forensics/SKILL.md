@@ -12,7 +12,7 @@ capabilities: [memory-forensics, threat-intel, mobile-forensics]
 
 ## 完整工作流
 
-1. 转储来源：默认转储优先——先确认有没有现成 dump；没有则按 [[re-memdump]] 转一份（`gcore -o out <pid>`，脱壳样本须等 OEP 解密后，转储前按 `/proc/<pid>/maps` 过滤 `[vsyscall]`/`[vdso]`，见 [[platform-tips]]「直读 vs 转储」决策表与 Linux 内存转储极端段）；已有 .raw/.mem/.core 直接进入下一步
+1. 转储来源：默认转储优先——先确认有没有现成 dump。**按取证层级分流**：整机镜像（LiME/AVML/崩溃转储等，Volatility 可解析）→ 内存取证分支；进程级 `gcore` 产物是单进程 ELF core（无内核结构，Volatility 整机插件不可解析）→ 只走进程级复盘（gdb/`eu-stack`，见 [[re-memdump]] 步骤 3），不进 [[re-mem-forensics]]。转储按 [[re-memdump]] 执行（脱壳样本须等 OEP 解密后，转储前按 `/proc/<pid>/maps` 过滤 `[vsyscall]`/`[vdso]`，见 [[platform-tips]]「直读 vs 转储」决策表与 Linux 内存转储极端段）
 2. 内存取证：[[re-mem-forensics]] —— 确认 dump 来源与架构 → 进程列表（pslist）→ 网络连接（netscan）→ 注入/异常（dlllist/malfind）→ 凭据线索（hashdump/lsadump）与可疑对象提取
 3. 线索提取：从内存取证产物里整理线索——可疑进程/注入地址/网络回连/凭据哈希/提取出的对象（模块、shellcode、明文密钥），每项记证据路径与时间戳（取证要求可追溯，见 [[platform-tips]]）
 4. 情报关联：[[re-ti]] —— 用线索中的哈希/域名/IP 查 VirusTotal / Any.run / hybrid-analysis，家族与团伙关联，结果进 [[re-ioc]] 的 IOC 列表与报告

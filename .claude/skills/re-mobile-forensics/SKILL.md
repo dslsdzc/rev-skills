@@ -67,15 +67,15 @@ description: >
 2. **iOS 提取**：
    ```sh
    idevicebackup2 backup ./backup_dir
-   # 备份结构：Manifest.plist + 按 SHA1 哈希路径组织的文件
+   # 备份结构：Manifest.plist（元数据）+ Manifest.db（文件索引）+ 按 fileID 分目录的文件
    ```
-   - 备份结构：Manifest.plist（文件映射表：domain/相对路径 → 哈希文件名）、Info.plist（设备信息）、Status.plist（备份状态）、文件按内容哈希命名（[[gotchas]] 坑 3）
+   - 备份结构：Manifest.db（SQLite 文件索引：domain/相对路径 → fileID，iOS 10+；更早版本为 Manifest.mbdb）、Manifest.plist（备份元数据：IsEncrypted/BackupKeyBag/ManifestKey/设备信息）、Info.plist（设备信息）、Status.plist（备份状态）、文件按 fileID 命名（fileID = SHA1(domain + "-" + relativePath)，由路径派生、与内容无关；见 [[gotchas]] 解析坑）
    - 首次连接需设备端信任（设置 > 通用 > 设备管理/信任此电脑）——未信任时 idevice_id 无输出
-   - 加密备份判定：Manifest.plist 无法明文读取而 Info.plist/Status.plist 正常 → 加密备份；需备份密码（无密码则标注不可提取）
+   - 加密备份判定：读 Manifest.plist 的 `IsEncrypted` 键（加密备份下 Manifest.plist 仍可明文读取，密钥材料 BackupKeyBag/ManifestKey 就在其中）；被加密的是 Manifest.db 与各文件内容——需备份密码解密（无密码则标注不可提取）
    - Keychain 数据在 keychain-backup.plist，同样需备份密码解密（密钥由密码派生，工具差异大，按实际工具文档操作）
    - 应用数据路径：Library/Preferences（plist 偏好）、Documents（用户数据）、Caches（缓存）、Library/Application Support（数据库常见位置）——App 结构理解见 [[re-mobile]]
    - 提取优先级：数据库 > 偏好 > 缓存（缓存可能含已删除内容残留）
-   - 备份完整性核对：Manifest.plist 的文件大小/时间字段与实际文件对照
+   - 备份完整性核对：按 Manifest.db 索引逐条核对——每条 domain/相对路径对应的 fileID 文件实际存在，索引与文件不一致时标注
    - 备份与实时提取选型：备份优先（不触碰设备，证据完整性好）；需最新状态时实时提取并记录操作时间
    - 已有本地备份时直接解析默认目录：`~/Library/Application Support/MobileSync/Backup`（每设备独立子目录，核对 UDID 防混设备）
 
@@ -105,7 +105,7 @@ description: >
 
 - **加密备份无密钥**：现象——备份无法解析；原因——AES 加密；对策——无密码则标注不可提取，不硬破解（授权边界）
 - **ADB backup 权限限制**：现象——备份为空；原因——应用未声明 `allowBackup` 或 targetSDK≥31（Android 12+）；对策——换 root/镜像提取，标注路径局限
-- **iOS 哈希路径混淆**：现象——文件找不到；原因——备份文件按内容哈希组织（非原名）；对策——manifest.plist 映射解析
+- **iOS 哈希路径混淆**：现象——文件找不到；原因——备份文件按 fileID（路径派生的 SHA1，不是内容哈希）分两级目录组织（fileID 前两位/完整 fileID），不是原名；对策——先解析 Manifest.db 的 domain/相对路径 ↔ fileID 映射再定位文件
 - **时间线时区**：现象——时间错位；原因——设备时区与取证时区不一致；对策——统一 UTC 记录，标注设备时区
 - **沙箱边界**：现象——拿不到目标数据；原因——无 root/未越狱；对策——按可提取范围交付（限定结论），不越授权
 - **设备联网被远端擦除**：现象——提取中数据消失/变化；原因——设备联网触发远端抹除/同步覆盖；对策——先隔离（飞行模式/断网），后接电源防自动关机

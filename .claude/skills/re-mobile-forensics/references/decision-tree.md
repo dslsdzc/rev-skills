@@ -13,7 +13,7 @@
 │  └─ 加密备份 → 有备份密码才可解析，否则标注
 ├─ iOS
 │  ├─ 已解锁 + 信任本机 → idevicebackup2 备份（加密/非加密）
-│  ├─ 已有本地备份（MobileSync/Backup）→ 直接解析 Manifest.plist
+│  ├─ 已有本地备份（MobileSync/Backup）→ 解析 Manifest.db（文件索引）+ Manifest.plist（元数据/加密状态）
 │  └─ 未越狱且无备份 → 仅可提取有限信息，标注边界
 └─ 其他（功能机/定制系统）→ 按厂商工具与接口评估，无通用流程
 ```

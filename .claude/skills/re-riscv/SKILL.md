@@ -73,7 +73,7 @@ description: >
 
 2. **入口定位（reset / 启动代码）**：
    - **Linux 用户态**：入口即 ELF e_entry（`readelf -h` 的 Entry point）= `_start`；动态链接程序先经 ld.so（PT_INTERP），断点/分析从 _start 起
-   - **裸机**：RISC-V 无固定向量表（对比 ARM Cortex-M），入口 = SoC datasheet 的 reset 向量（QEMU virt 机器 0x80000000、部分 MCU flash 基址 0x08000000 类）；异常/中断向量基址在 mtvec（M 态）/ stvec（S 态）CSR，trap 处理代码按 CSR 值定位
+   - **裸机**：RISC-V 无固定向量表（对比 ARM Cortex-M），入口 = SoC datasheet 的 reset 向量；QEMU virt 机器 reset 向量在 MROM `0x1000`（reset stub 再跳 start_addr，默认 DRAM `0x80000000`，pflash 固件场景为 `0x20000000`）——**别把 DRAM 基址当 reset 入口**；部分 MCU flash 基址形如 0x08000000；异常/中断向量基址在 mtvec（M 态）/ stvec（S 态）CSR，trap 处理代码按 CSR 值定位
    - 启动流程一般为：设栈（`la sp, ...`）→ 拷贝 .data / 清零 .bss → 跳 main（裸机）或 __libc_start_main（Linux）
    - 定位入口后在反编译器中标注，沿调用链展开主逻辑
 

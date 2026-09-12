@@ -55,21 +55,27 @@ capabilities: [crypto-identification, key-extraction]
    java.util.Enumeration<String> aliases = ks.aliases();
    ```
    - **遍历**：`aliases()` 枚举全部条目（密钥别名 = 应用内引用键）
-   - **条目属性**：算法（AES/RSA/EC）、用途（encrypt/decrypt/sign/verify）、来源——`KeyInfo.isInsideSecureHardware`（硬件背书）；TEE 与 StrongBox 区分需 `isStrongBoxBacked`（API 28+）
+   - **条目属性**：算法（AES/RSA/EC）、用途（encrypt/decrypt/sign/verify）、来源——`KeyInfo.getSecurityLevel()`（API 31+，返回 SOFTWARE / TRUSTED_ENVIRONMENT(TEE) / STRONGBOX 三档）；API 23–30 只有 `isInsideSecureHardware()`（布尔，TEE 与 StrongBox 同为 true，分不开）
    - **生物绑定**：`setUserAuthenticationRequired` 的密钥在认证失败时不可用（绕过与检测见 [[anti-dynamic-workflow]]）
    - 产出：别名 → 算法/用途/硬件背书 清单（不记录密钥字节）
 
 2. **crypto hook**（加密调用点拦截）：
    ```js
-   // frida：拦截 Cipher 初始化，记录算法/模式/密钥别名
+   // frida：拦截加密调用点，记录算法/模式/密钥别名
+   // 别名来源：Key 对象本身不携带别名（KeyStore 无 getKeyAlias），须在 getKey 处记录
+   const KeyStore = Java.use('java.security.KeyStore');
+   KeyStore.getKey.overload('java.lang.String', '[C').implementation = function (alias, password) {
+     console.log('KeyStore.getKey', alias);
+     return this.getKey(alias, password);
+   };
    const Cipher = Java.use('javax.crypto.Cipher');
    Cipher.init.overload('int', 'java.security.Key', 'java.security.spec.AlgorithmParameterSpec').implementation =
      function (opmode, key, params) {
-       const ks = Java.use('java.security.KeyStore').getInstance('AndroidKeyStore');
-       const alias = ks.getKeyAlias(key);          // 取别名（若有）
-       console.log('Cipher.init', opmode, alias ? alias.toString() : '(非Keystore密钥)', params);
+       console.log('Cipher.init', opmode, key.getClass().getName(), params);  // 对应别名见上方 getKey 输出
        return this.init(opmode, key, params);
      };
+   // 另路取回别名：SecretKeyFactory.getInstance(key.getAlgorithm(), 'AndroidKeyStore')
+   //   .getKeySpec(key, KeyInfo.class) → KeyInfo.getKeystoreAlias()
    ```
    - hook 目标：`Cipher.init` 系列（算法/模式/IV 来源）、`KeyStore.getKey` / `getEntry`（别名与用途）、`Signature`/`Mac` 初始化（验签/校验链）
    - 记录：别名与用途，**不记录密钥字节**（安全边界，见坑 2）
@@ -93,6 +99,6 @@ capabilities: [crypto-identification, key-extraction]
 ## 常见坑与陷阱
 
 - **把 Keystore 当普通密钥提取**：现象——`getEncoded()` 拿不到密钥字节，误判「密钥不存在」；原因——AndroidKeyStore 硬件背书密钥不可导出，这是设计而非缺失；对策——改走审计（步骤 1：别名/算法/用途/背书），不追求密钥字节
-- **TEE 与 StrongBox 混为一谈**：现象——`isInsideSecureHardware` 为 true 就断言 StrongBox；原因——Secure Hardware 含 TEE 与 StrongBox 两级；对策——API 28+ 用 `isStrongBoxBacked` 区分，结论注明层级
+- **TEE 与 StrongBox 混为一谈**：现象——`isInsideSecureHardware` 为 true 就断言 StrongBox；原因——Secure Hardware 含 TEE 与 StrongBox 两级，该接口是布尔、分不开（`isStrongBoxBacked` 在 `KeyGenParameterSpec` 上，只管生成侧，`KeyInfo` 没有）；对策——API 31+ 用 `KeyInfo.getSecurityLevel()` 取 SOFTWARE / TEE / STRONGBOX 三档；API 23–30 无法细分，结论按「secure hardware（TEE 或 StrongBox）」标注层级
 - **记录密钥字节**：现象——hook 脚本把 Keystore 密钥内容打印/落盘；原因——把审计当提取，越过安全边界；对策——只记录别名与用途，密钥字节不落盘（见步骤 2 注）
 - **库语义当 JNI 逻辑分析**：现象——第三方加密库的 .so 被按 native 逻辑深挖而忽略加密语义；原因——域不清；对策——库 API 的加密语义（算法/密钥来源/用途）归本技能，内部实现细节才走 [[re-android-native]]
