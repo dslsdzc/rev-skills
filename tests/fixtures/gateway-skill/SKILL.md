@@ -1,6 +1,6 @@
 ---
 name: gateway-skill
-description: 网关型技能，无工具准备章节。
+description: 网关型技能，无工具准备章节。gateway skill.
 type: gateway
 ---
 

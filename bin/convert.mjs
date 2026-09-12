@@ -2,6 +2,7 @@
 import { readdirSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseFrontmatterDocument } from '../lib/frontmatter.mjs';
 
 export function skillDirs(skillsRoot) {
   return readdirSync(skillsRoot, { withFileTypes: true })
@@ -11,24 +12,8 @@ export function skillDirs(skillsRoot) {
 
 export function readSkill(dir) {
   const md = readFileSync(join(dir, 'SKILL.md'), 'utf8');
-  const m = md.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
-  const fm = {};
-  const lines = (m?.[1] ?? '').split('\n');
-  for (let i = 0; i < lines.length; i++) {
-    const kv = lines[i].match(/^(\w+):\s*(.*)$/);
-    if (!kv) continue;
-    if (/^[>|]/.test(kv[2])) {
-      // YAML 块标量（折叠 > / 字面 |）：吸收后续缩进行为实际值
-      const folded = [];
-      while (lines[i + 1] !== undefined && /^\s+/.test(lines[i + 1])) {
-        folded.push(lines[++i].replace(/^\s+/, ''));
-      }
-      fm[kv[1]] = folded.join(kv[2][0] === '>' ? ' ' : '\n').trim();
-    } else {
-      fm[kv[1]] = kv[2];
-    }
-  }
-  return { name: fm.name, description: fm.description, body: m?.[2] ?? md };
+  const { fm, body } = parseFrontmatterDocument(md); // 与 validate.mjs 同一解析器（lib/frontmatter.mjs）
+  return { name: fm.name, description: fm.description, body };
 }
 
 // parseSkill：readSkill 的别名，保持调用方兼容

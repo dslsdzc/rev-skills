@@ -1,6 +1,6 @@
 ---
 name: no-tools
-description: 缺工具准备章节。
+description: 缺工具准备章节。missing tools section.
 ---
 
 # No Tools

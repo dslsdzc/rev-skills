@@ -1,6 +1,7 @@
 ---
 name: good-skill
 description: 测试用合法技能。Trigger: test。
+capabilities: [triage]
 ---
 
 # Good Skill

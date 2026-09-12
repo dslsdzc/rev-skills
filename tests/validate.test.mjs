@@ -22,8 +22,11 @@ test('parseFrontmatter 拒绝缺失 name/description', () => {
   assert.throws(() => parseFrontmatter('# no frontmatter'), /frontmatter/);
 });
 
+// 校验用例共用的能力注册表子集（原子技能必须声明能力，声明值须在注册表内）
+const CAPS = { knownCapabilities: new Set(['triage']) };
+
 test('good-skill 通过全部检查', () => {
-  const { errors } = checkSkillDir(FIX + 'good-skill');
+  const { errors } = checkSkillDir(FIX + 'good-skill', CAPS);
   assert.deepEqual(errors, []);
 });
 
@@ -65,19 +68,49 @@ test('parseFrontmatter 解析 capabilities list', () => {
 test('guard 合法 JSON 通过、结构非法报错', () => {
   const dir = mkdtempSync(join(tmpdir(), 'guard-test-'));
   const name = dir.split(/[\\/]/).pop();
-  const body = `---\nname: ${name}\ndescription: 测试。\nguard: %GUARD%\n---\n\n# 标题\n\n## 工具准备\n\n正文`;
+  const body = `---\nname: ${name}\ndescription: 测试。test。\ncapabilities: [triage]\nguard: %GUARD%\n---\n\n# 标题\n\n## 工具准备\n\n正文`;
   try {
     // 合法
     writeFileSync(join(dir, 'SKILL.md'), body.replace('%GUARD%', '{"require_authorization": true, "forbidden": ["unauthorized_api_testing"]}'));
-    assert.deepEqual(checkSkillDir(dir, {}).errors, []);
+    assert.deepEqual(checkSkillDir(dir, CAPS).errors, []);
     // 非 JSON
     writeFileSync(join(dir, 'SKILL.md'), body.replace('%GUARD%', 'require_authorization: true'));
-    const { errors } = checkSkillDir(dir, {});
+    const { errors } = checkSkillDir(dir, CAPS);
     assert.ok(errors.some(e => e.includes('guard must be')));
     // 结构缺字段
     writeFileSync(join(dir, 'SKILL.md'), body.replace('%GUARD%', '{"require_authorization": "yes"}'));
-    const { errors: e2 } = checkSkillDir(dir, {});
+    const { errors: e2 } = checkSkillDir(dir, CAPS);
     assert.ok(e2.some(e => e.includes('guard must be')));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('description 须中英双含（触发词约定）', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'desc-i18n-'));
+  const name = dir.split(/[\\/]/).pop();
+  const withDesc = (d) => `---\nname: ${name}\ndescription: ${d}\ncapabilities: [triage]\n---\n\n# 标题\n\n## 工具准备\n\n正文`;
+  try {
+    // 双语俱全 → 通过
+    writeFileSync(join(dir, 'SKILL.md'), withDesc('测试技能：test skill 触发词'));
+    assert.deepEqual(checkSkillDir(dir, CAPS).errors, []);
+    // 仅中文 → 报错（英文环境命中不了）
+    writeFileSync(join(dir, 'SKILL.md'), withDesc('只有中文触发词'));
+    assert.ok(checkSkillDir(dir, CAPS).errors.some(e => e.includes('CJK')));
+    // 仅英文 → 报错
+    writeFileSync(join(dir, 'SKILL.md'), withDesc('english triggers only'));
+    assert.ok(checkSkillDir(dir, CAPS).errors.some(e => e.includes('CJK')));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('原子技能未声明能力即报错（能力层完整性）', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'no-caps-'));
+  const name = dir.split(/[\\/]/).pop();
+  try {
+    writeFileSync(join(dir, 'SKILL.md'), `---\nname: ${name}\ndescription: 测试。test。\n---\n\n# 标题\n\n## 工具准备\n\n正文`);
+    assert.ok(checkSkillDir(dir, CAPS).errors.some(e => e.includes('must declare capabilities')));
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -87,7 +120,7 @@ test('capabilities 合法通过、未知标签与非法写法报错', () => {
   const dir = mkdtempSync(join(tmpdir(), 'cap-test-'));
   const name = dir.split(/[\\/]/).pop();
   const caps = new Set(['elf-parser', 'unpack', 'tracing']);
-  const body = `---\nname: ${name}\ndescription: 测试。\ncapabilities: %CAPS%\n---\n\n# 标题\n\n## 工具准备\n\n正文`;
+  const body = `---\nname: ${name}\ndescription: 测试。test。\ncapabilities: %CAPS%\n---\n\n# 标题\n\n## 工具准备\n\n正文`;
   try {
     // 合法 list 通过
     writeFileSync(join(dir, 'SKILL.md'), body.replace('%CAPS%', '[elf-parser, unpack]'));

@@ -1,6 +1,6 @@
 ---
 name: wrong-name
-description: 名字与目录不符。
+description: 名字与目录不符。name mismatch.
 ---
 
 # Bad Name

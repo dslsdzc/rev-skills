@@ -1,6 +1,6 @@
 ---
 name: broken-link
-description: 含死链接与合法 references 链接。
+description: 含死链接与合法 references 链接。broken link.
 ---
 
 # Broken Link
