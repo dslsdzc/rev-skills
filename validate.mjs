@@ -198,10 +198,32 @@ export function checkSkillDir(dir, opts = {}) {
       errors.push(`${name}: guard must be {"require_authorization": bool, "forbidden": [tags]}`);
     }
   }
+  // 链接规则：技能 `[[re-xxx]]`；跨技能 references `[[re-xxx/name]]`；裸 `[[name]]` 必须落在本技能 references/ 内
+  // （references 同名文件普遍——gotchas 33 个、decision-tree 13 个——裸链会歧义，故跨技能须限定前缀）
   const known = new Set(opts.knownSkills ?? []);
-  for (const link of fm.body.matchAll(/\[\[([a-z0-9-]+)\]\]/g)) {
-    if (!known.has(link[1]) && !(opts.knownRefs?.has(link[1]))) {
-      errors.push(`${name}: broken [[${link[1]}]] link`);
+  const checkLinks = (text, label) => {
+    for (const link of text.matchAll(/\[\[([a-z0-9-]+(?:\/[a-z0-9-]+)?)\]\]/g)) {
+      const target = link[1];
+      if (target.includes('/')) {
+        const [owner, ref] = target.split('/');
+        if (!known.has(owner) || !existsSync(join(dir, '..', owner, 'references', `${ref}.md`))) {
+          errors.push(`${label}: broken [[${target}]] link（跨技能 references 须解析到 ${owner}/references/${ref}.md）`);
+        }
+        continue;
+      }
+      if (known.has(target)) continue;
+      if (!existsSync(join(dir, 'references', `${target}.md`))) {
+        errors.push(`${label}: broken [[${target}]] link（裸 references 链接须在本技能 references/ 内；跨技能请写 [[re-xxx/${target}]]）`);
+      }
+    }
+  };
+  checkLinks(fm.body, name);
+  // references/ 内的链接同规则校验（跨技能引用多在此处）
+  const refDir = join(dir, 'references');
+  if (existsSync(refDir)) {
+    for (const f of readdirSync(refDir)) {
+      if (!f.endsWith('.md')) continue;
+      checkLinks(readFileSync(join(refDir, f), 'utf8'), `${name}/references/${f}`);
     }
   }
   return { errors, name };

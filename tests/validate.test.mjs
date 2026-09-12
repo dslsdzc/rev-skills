@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseFrontmatter, checkSkillDir, collectSkills, SKILL_PREFIX } from '../validate.mjs';
@@ -40,13 +40,30 @@ test('no-tools 叶子技能报缺工具准备', () => {
   assert.ok(errors.some(e => e.includes('工具准备')));
 });
 
-test('broken-link 报死链接但放行 references 链接', () => {
-  const { errors } = checkSkillDir(FIX + 'broken-link', {
-    knownSkills: ['re-abc'],
-    knownRefs: new Set(['platform-tips']),
-  });
-  assert.ok(errors.some(e => e.includes('re-does-not-exist')));
-  assert.ok(!errors.some(e => e.includes('platform-tips')));
+test('链接规则：技能死链与跨技能裸引用报错，本技能 references 放行', () => {
+  const { errors } = checkSkillDir(FIX + 'broken-link', { knownSkills: ['re-abc'] });
+  assert.ok(errors.some(e => e.includes('re-does-not-exist')), '技能死链应报错');
+  assert.ok(errors.some(e => e.includes('platform-tips')), '跨技能裸引用应报错');
+  assert.ok(!errors.some(e => e.includes('local-note')), '本技能 references 链接应放行');
+});
+
+test('跨技能 references 用 [[re-xxx/name]] 限定后放行，指向不存在则报错', () => {
+  const root = mkdtempSync(join(tmpdir(), 'link-'));
+  const mkSkill = (skill, body, refs = {}) => {
+    mkdirSync(join(root, skill, 'references'), { recursive: true });
+    writeFileSync(join(root, skill, 'SKILL.md'),
+      `---\nname: ${skill}\ndescription: 测试。test。\ncapabilities: [triage]\n---\n\n# 标题\n\n## 工具准备\n\n${body}`);
+    for (const [n, c] of Object.entries(refs)) writeFileSync(join(root, skill, 'references', `${n}.md`), c);
+  };
+  const opts = { ...CAPS, knownSkills: ['re-a', 're-b'] };
+  try {
+    mkSkill('re-a', '跨技能见 [[re-b/shared]]');
+    mkSkill('re-b', '本技能内见 [[shared]]', { shared: 'x' });
+    assert.deepEqual(checkSkillDir(join(root, 're-a'), opts).errors, []);
+    assert.deepEqual(checkSkillDir(join(root, 're-b'), opts).errors, []);
+    mkSkill('re-a', '跨技能见 [[re-b/nope]]');
+    assert.ok(checkSkillDir(join(root, 're-a'), opts).errors.some(e => e.includes('re-b/nope')));
+  } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
 test('gateway-skill 豁免工具准备检查', () => {
