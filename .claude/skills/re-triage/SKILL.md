@@ -125,7 +125,7 @@ capabilities: [triage]
    - 熵异常 / 节名可疑（UPX0/.aspack）→ 转 [[re-anti-analysis]] 先确认壳
    - 目标是动态行为 → 沙箱内 [[re-tracing]] + [[re-gdb]]（见 [[platform-tips]] 最高原则）
 
-7. **输出契约**：按 [[analysis-contract]] 数据契约输出结构化摘要——sha256 / arch / format / entropy / sections / imports / strings_refs / 安全特性，作为下一环节（format / 反编译 / 沙箱）的输入字段，不重新扫描。
+7. **输出契约**：按 [[analysis-contract]] 输出结构化摘要——**核心字段**（target_id / sha256 / evidence / findings / unverified）+ **文件域扩展字段**（arch / format / entropy / sections / imports_exports / strings_refs / 安全特性），作为下一环节（format / 反编译 / 沙箱）的输入，不重新扫描。非文件目标（协议/模型/设备）按对应域字段出契约（见 [[analysis-contract]] §3.2），不套文件域字段。
 
 ## 跨域联合
 

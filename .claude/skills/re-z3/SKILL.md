@@ -1,6 +1,7 @@
 ---
 name: re-z3
 description: Z3 约束求解：建模、密钥/flag 推导。触发词：z3、约束求解、solver、SMT
+capabilities: [constraint-solving]
 ---
 
 # Z3 约束求解（建模 / 密钥与 flag 推导）

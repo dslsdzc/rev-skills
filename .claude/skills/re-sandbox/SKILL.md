@@ -3,6 +3,7 @@ name: re-sandbox
 description: >
   沙箱环境搭建（动态分析强制前置）。
   触发词：沙箱、隔离环境、firejail、VM快照、安全运行
+capabilities: [sandbox-setup]
 ---
 
 # 沙箱环境搭建

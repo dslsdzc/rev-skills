@@ -2,6 +2,7 @@
 name: re-kernel
 description: >
   内核逆向：Windows 驱动/内核模块/rootkit。触发词：内核、驱动、.sys、rootkit、内核模块、IRP
+capabilities: [kernel-analysis]
 ---
 
 # 内核逆向（Windows 驱动 / rootkit）

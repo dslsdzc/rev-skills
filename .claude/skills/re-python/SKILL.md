@@ -4,6 +4,7 @@ type: atomic
 description: >
   Python 打包/混淆样本分析：PyInstaller/PyArmor/Nuitka/Cython 解包、pyc 版本识别与反编译。
   触发词：Python打包、PyInstaller、PyArmor、pyc、python exe、Python 样本、打包样本。
+capabilities: [bytecode-parser]
 ---
 
 # Python 打包样本分析（PyInstaller / PyArmor / pyc）

@@ -3,6 +3,7 @@ name: re-tee
 description: >
   TEE/TrustZone 逆向：OP-TEE 架构、可信应用（Trusted App）、secure storage、SMC 接口与设备密钥。
   触发词：TEE、TrustZone、OP-TEE、可信应用、Trusted App、secure world、SMC、安全存储、secure storage、设备密钥
+capabilities: [tee-analysis]
 ---
 
 # TEE / TrustZone 逆向（OP-TEE / Trusted App / secure storage）

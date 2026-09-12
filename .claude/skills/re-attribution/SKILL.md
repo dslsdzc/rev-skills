@@ -4,6 +4,7 @@ type: atomic
 description: >
   威胁归因方法论：钻石模型、基础设施图谱、置信度分级与归因报告。
   触发词：归因、APT、attribution、攻击者身份、基础设施图谱、钻石模型、威胁组织。
+capabilities: [threat-intel]
 ---
 
 # 威胁归因（APT Attribution）

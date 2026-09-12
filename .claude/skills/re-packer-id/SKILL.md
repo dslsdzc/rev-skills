@@ -1,6 +1,7 @@
 ---
 name: re-packer-id
 description: 壳与混淆器识别：签名/节名/EP/熵。触发词：查壳、加壳识别、packer、壳名、UPX
+capabilities: [unpack]
 ---
 
 # 壳与混淆器识别

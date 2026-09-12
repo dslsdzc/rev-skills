@@ -3,6 +3,7 @@ name: re-pwn
 description: >
   CTF pwn 入门：栈溢出、格式化字符串、ret2libc。
   触发词：pwn、栈溢出、格式化字符串、ret2libc、ROP、shellcode 注入
+capabilities: [exploit-development]
 ---
 
 # CTF pwn 入门（栈溢出 / 格式化字符串 / ret2libc）

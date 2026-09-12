@@ -3,6 +3,7 @@ name: re-shellcode
 description: >
   Shellcode 分析：提取、解码循环、模拟执行。
   触发词：shellcode、shell code、位置无关、解码循环、恶意载荷
+capabilities: [shellcode-analysis]
 ---
 
 # Shellcode 分析

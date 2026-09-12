@@ -3,6 +3,7 @@ name: re-anti-cheat
 description: >
   反作弊对抗分析：EAC/BattlEye 驱动、内存校验、检测机制还原。
   触发词：反作弊、EAC、BattlEye、内存校验、anti-cheat
+capabilities: [kernel-analysis]
 ---
 
 # 反作弊对抗分析（EAC / BattlEye / 内存校验）

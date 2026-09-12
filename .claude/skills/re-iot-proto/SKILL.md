@@ -3,6 +3,7 @@ name: re-iot-proto
 description: >
   物联网协议：MQTT/CoAP/BLE/Zigbee；BLE 链路层（广播解析/配对加密）与 NFC/智能卡（ISO14443/APDU/MIFARE）。
   触发词：MQTT、CoAP、BLE、Zigbee、物联网协议、IoT协议、BLE链路、BLE嗅探、广播解析、配对加密、GATT、NFC、智能卡、MIFARE、APDU、ISO14443
+capabilities: [protocol-recovery]
 ---
 
 # 物联网协议逆向（MQTT / CoAP / BLE / Zigbee / NFC 智能卡）

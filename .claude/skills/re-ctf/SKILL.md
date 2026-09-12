@@ -13,37 +13,37 @@ capabilities: [constraint-solving, stego-detection, shellcode-analysis]
 
 ## 完整工作流
 
-按顺序执行；每步产物（题型结论 / 关键函数地址 / 约束模型 / flag）记录证据路径 + sha256（见 [[re-triage]]），供 writeup 引用。
+按顺序执行；每步产物（题型结论 / 关键函数地址 / 约束模型 / flag）记录证据路径 + sha256（见 [[re-triage]]（能力：`triage`）），供 writeup 引用。
 
 1. **题型识别** —— 先别急着上工具，读题 + 初勘定题型（见坑 1）：
    - 逆向题（rev / babyre）：给一个二进制，要求还原算法 / 找输入 / 找 flag —— 按第 2-4 步走
-   - 加密 / 算法题：给加密函数 / 密文，要求解出明文或逆算法 —— 涉及 [[re-crypto-id]] / [[re-crypto-decrypt]]，约束求解用 [[re-z3]]
-   - 序列号 / 注册类题：校验函数还原 → 注册机（见 [[re-license]] / [[re-keygen]]，硬推比较链用 [[re-z3]]）
-   - pwn / 栈溢出题：入门利用走 [[re-pwn]]（[[re-gdb]] / [[re-radare2]] 动态调试，运行在 [[re-sandbox]]）
-   - 初勘命令：`file` / `checksec` / 熵 / strings（[[re-triage]]），识别架构、是否带壳、是否静态链接
-2. **简单题直接 [[re-binary-core]]** —— 题不需要自动化时，走通用分析（初勘 → 格式解析 → 反编译 → 调试）：[[re-ghidra]] / [[re-ida]] / [[re-radare2]] 反编译主逻辑，人工还原出 flag / 注册算法。**先估算复杂度**：几行比较 / 简单 XOR 的题 15 分钟人工就够，上 angr 反而慢（见坑 2）
-3. **需自动化 → [[re-angr]] / [[re-z3]]**：
-   - 输入在长循环 / 深比较链里逐字节校验（human 逐位逆推费时、容易错）→ **[[re-angr]]** 符号执行（符号化输入 → find 目标地址 → 求解）
-   - 校验是"一组数学等式 / 比较链"（满足约束即 flag）→ **[[re-z3]]** 建模求解（比 angr 轻、快、稳）
+   - 加密 / 算法题：给加密函数 / 密文，要求解出明文或逆算法 —— 涉及 [[re-crypto-id]]（能力：`crypto-identification`） / [[re-crypto-decrypt]]（能力：`crypto-decryption`），约束求解用 [[re-z3]]（能力：`constraint-solving`）
+   - 序列号 / 注册类题：校验函数还原 → 注册机（见 [[re-license]]（能力：`license-analysis`） / [[re-keygen]]（能力：`license-analysis`），硬推比较链用 [[re-z3]]（能力：`constraint-solving`））
+   - pwn / 栈溢出题：入门利用走 [[re-pwn]]（[[re-gdb]]（能力：`debugging`） / [[re-radare2]]（能力：`decompilation`） 动态调试，运行在 [[re-sandbox]]（能力：`sandbox-setup`））
+   - 初勘命令：`file` / `checksec` / 熵 / strings（[[re-triage]]（能力：`triage`）），识别架构、是否带壳、是否静态链接
+2. **简单题直接 [[re-binary-core]]（能力：`decompilation`、`debugging`、`memory-dump`、`elf-parser`、`pe-parser`、`macho-parser`）** —— 题不需要自动化时，走通用分析（初勘 → 格式解析 → 反编译 → 调试）：[[re-ghidra]]（能力：`decompilation`、`debugging`） / [[re-ida]]（能力：`decompilation`、`debugging`） / [[re-radare2]]（能力：`decompilation`） 反编译主逻辑，人工还原出 flag / 注册算法。**先估算复杂度**：几行比较 / 简单 XOR 的题 15 分钟人工就够，上 angr 反而慢（见坑 2）
+3. **需自动化 → [[re-angr]]（能力：`symbolic-execution`） / [[re-z3]]（能力：`constraint-solving`）**：
+   - 输入在长循环 / 深比较链里逐字节校验（human 逐位逆推费时、容易错）→ **[[re-angr]]（能力：`symbolic-execution`）** 符号执行（符号化输入 → find 目标地址 → 求解）
+   - 校验是"一组数学等式 / 比较链"（满足约束即 flag）→ **[[re-z3]]（能力：`constraint-solving`）** 建模求解（比 angr 轻、快、稳）
    - 分派细则见「选择树」
-4. **混淆 → [[re-deobfuscate]]** —— 反编译产物有花指令 / 控制流平坦化 / 字符串加密：**先还原再自动化**。直接对混淆函数上 angr 会路径爆炸 / 解不出（见坑 3）；[[re-deobfuscate]] 还原后回到第 2/3 步
+4. **混淆 → [[re-deobfuscate]]（能力：`deobfuscation`）** —— 反编译产物有花指令 / 控制流平坦化 / 字符串加密：**先还原再自动化**。直接对混淆函数上 angr 会路径爆炸 / 解不出（见坑 3）；[[re-deobfuscate]]（能力：`deobfuscation`） 还原后回到第 2/3 步
 5. **验证与产出**：
    - 求解出的输入跑原程序（沙箱内，[[platform-tips]] 最高原则）必须打印 `flag{...}`（见坑 4：flag 格式 / 与求解结果一致性）
-   - 记录：题型、关键函数地址、约束模型、求解脚本、flag、复现命令 —— writeup 与 [[re-ioc]] 特征（如自动化解题特征）
+   - 记录：题型、关键函数地址、约束模型、求解脚本、flag、复现命令 —— writeup 与 [[re-ioc]]（能力：`threat-intel`） 特征（如自动化解题特征）
 
 ## 何时用哪个原子技能（选择树）
 
 按题型特征 / 目标分支：
 
-- **刚拿到题，未定题型** → 第 1 步：[[re-triage]] 初勘 + 反编译扫一眼主逻辑，先人工判断（大多数简单题人工即可，别急着自动化）
-- **简单 XOR / 移位 / 查表变换（≤ 一屏伪代码）** → [[re-binary-core]] 人工还原（[[re-ghidra]] / [[re-radare2]]），或小规模约束直接 [[re-z3]] 建模
-- **逐字节 / 逐字符长循环校验（每个字节都要满足条件，人工逆推繁琐）** → [[re-angr]]（符号化输入 + find 校验通过地址）
-- **"满足一组等式 / 比较链即 flag / 密钥"（无循环或循环已人工展开）** → [[re-z3]]（BitVec 建模 + solver 求解）
-- **输入位置复杂（argv / 文件 / 标准输入 / 网络）** → [[re-angr]]（符号化任意输入点，[[re-z3]] 需人工先定位变量来源）
-- **花指令 / 平坦化 / 字符串加密可见** → 先 [[re-deobfuscate]] 还原，再按题型走 angr / z3 / 人工（坑 3）
-- **带壳题**（CTF 少见，常见于"脱壳题"）→ 先 [[re-anti-analysis]]（packer-id → unpack-*），脱壳后回本网关
-- **加密 / 密码学题**（AES / RSA / 自定义加密 + 密文）→ [[re-crypto-id]] 识别 → [[re-crypto-decrypt]] 还原；自定义数学关系用 [[re-z3]] 求解
-- **pwn 题** → [[re-pwn]]（漏洞利用入门：栈溢出 / 格式化字符串 / ret2libc）→ [[re-gdb]] / [[re-radare2]] + [[re-sandbox]] 动态调试（本网关以逆向题为主，pwn 作为相邻题型移交调试域）
+- **刚拿到题，未定题型** → 第 1 步：[[re-triage]]（能力：`triage`） 初勘 + 反编译扫一眼主逻辑，先人工判断（大多数简单题人工即可，别急着自动化）
+- **简单 XOR / 移位 / 查表变换（≤ 一屏伪代码）** → [[re-binary-core]]（能力：`decompilation`、`debugging`、`memory-dump`、`elf-parser`、`pe-parser`、`macho-parser`） 人工还原（[[re-ghidra]]（能力：`decompilation`、`debugging`） / [[re-radare2]]（能力：`decompilation`）），或小规模约束直接 [[re-z3]]（能力：`constraint-solving`） 建模
+- **逐字节 / 逐字符长循环校验（每个字节都要满足条件，人工逆推繁琐）** → [[re-angr]]（能力：`symbolic-execution`；符号化输入 + find 校验通过地址）
+- **"满足一组等式 / 比较链即 flag / 密钥"（无循环或循环已人工展开）** → [[re-z3]]（能力：`constraint-solving`；BitVec 建模 + solver 求解）
+- **输入位置复杂（argv / 文件 / 标准输入 / 网络）** → [[re-angr]]（能力：`symbolic-execution`；符号化任意输入点，[[re-z3]]（能力：`constraint-solving`） 需人工先定位变量来源）
+- **花指令 / 平坦化 / 字符串加密可见** → 先 [[re-deobfuscate]]（能力：`deobfuscation`） 还原，再按题型走 angr / z3 / 人工（坑 3）
+- **带壳题**（CTF 少见，常见于"脱壳题"）→ 先 [[re-anti-analysis]]（能力：`unpack`、`deobfuscation`、`evasion-analysis`；packer-id → unpack-*），脱壳后回本网关
+- **加密 / 密码学题**（AES / RSA / 自定义加密 + 密文）→ [[re-crypto-id]]（能力：`crypto-identification`） 识别 → [[re-crypto-decrypt]]（能力：`crypto-decryption`） 还原；自定义数学关系用 [[re-z3]]（能力：`constraint-solving`） 求解
+- **pwn 题** → [[re-pwn]]（能力：`exploit-development`；漏洞利用入门：栈溢出 / 格式化字符串 / ret2libc）→ [[re-gdb]]（能力：`debugging`） / [[re-radare2]]（能力：`decompilation`） + [[re-sandbox]]（能力：`sandbox-setup`） 动态调试（本网关以逆向题为主，pwn 作为相邻题型移交调试域）
 - **flag 解出但格式不对** → 检查大小写 / 换行 / 编码（坑 4）
 
 ## 跨域联合

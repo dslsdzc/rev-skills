@@ -12,14 +12,14 @@ capabilities: [unpack, deobfuscation, evasion-analysis]
 
 ## 完整工作流
 
-1. **壳识别：[[re-packer-id]]** —— 先识别再动手。DIE/PEiD 签名库扫描、节名异常（UPX0/.aspack/自定义）、入口点是否指向非首节、熵 >7、导入表极小。**先记 OEP 线索**（EP 附近 pushad 等壳入口特征），识别出的壳名决定路径
-2. **分派**：简单压缩壳（UPX/ASPack/FSG）→ [[re-unpack-simple]]；强壳/虚拟化壳（VMProtect/Themida）→ [[re-unpack-advanced]]；**识别不出 → 手动流程**（按 [[re-unpack-simple]] 的 ESP 定律 + 内存断点手动找 OEP，或按强壳流程处理），不硬猜壳名
-3. **简单壳脱壳：[[re-unpack-simple]]** —— 优先官方/自动解包（`upx -d`）→ ESP 定律 / 内存断点找 OEP → **OEP 解密完成后转储**（时机见 [[platform-tips]] 关键经验，默认转储优先）→ IAT 修复（Scylla/ImpREC，Windows）
-4. **强壳脱壳：[[re-unpack-advanced]]** —— 反调试对抗（scyllaHide 思路：NtQueryInformationProcess/时间差）→ 堆栈回溯/内存断点组合找 OEP → 转储（默认转储优先）→ IAT 修复（含重定向）→ 虚拟化代码区域标注（标记绕过而非还原）
-5. **反混淆：[[re-deobfuscate]]** —— 脱壳后若仍有花指令 / 控制流平坦化 / 字符串加密：花指令清除、平坦化还原（D-810/手动）、字符串解密循环定位与仿真、批量脚本化、还原前后对比验证
-6. **验证**：脱壳产物 sha256 存档 → 沙箱内复跑（[[re-sandbox]] 判定脱干净、[[platform-tips]] 最高原则）→ 导入 [[re-ghidra]] / [[re-ida]] 确认 OEP 处可正常反编译；导入表可解析才算完成。产物交回原调用域继续（恶意样本回 [[re-malware]] 行为分析、破解目标转 [[re-cracking]] 授权定位）
+1. **壳识别：[[re-packer-id]]（能力：`unpack`）** —— 先识别再动手。DIE/PEiD 签名库扫描、节名异常（UPX0/.aspack/自定义）、入口点是否指向非首节、熵 >7、导入表极小。**先记 OEP 线索**（EP 附近 pushad 等壳入口特征），识别出的壳名决定路径
+2. **分派**：简单压缩壳（UPX/ASPack/FSG）→ [[re-unpack-simple]]（能力：`unpack`）；强壳/虚拟化壳（VMProtect/Themida）→ [[re-unpack-advanced]]（能力：`unpack`）；**识别不出 → 手动流程**（按 [[re-unpack-simple]]（能力：`unpack`） 的 ESP 定律 + 内存断点手动找 OEP，或按强壳流程处理），不硬猜壳名
+3. **简单壳脱壳：[[re-unpack-simple]]（能力：`unpack`）** —— 优先官方/自动解包（`upx -d`）→ ESP 定律 / 内存断点找 OEP → **OEP 解密完成后转储**（时机见 [[platform-tips]] 关键经验，默认转储优先）→ IAT 修复（Scylla/ImpREC，Windows）
+4. **强壳脱壳：[[re-unpack-advanced]]（能力：`unpack`）** —— 反调试对抗（scyllaHide 思路：NtQueryInformationProcess/时间差）→ 堆栈回溯/内存断点组合找 OEP → 转储（默认转储优先）→ IAT 修复（含重定向）→ 虚拟化代码区域标注（标记绕过而非还原）
+5. **反混淆：[[re-deobfuscate]]（能力：`deobfuscation`）** —— 脱壳后若仍有花指令 / 控制流平坦化 / 字符串加密：花指令清除、平坦化还原（D-810/手动）、字符串解密循环定位与仿真、批量脚本化、还原前后对比验证
+6. **验证**：脱壳产物 sha256 存档 → 沙箱内复跑（[[re-sandbox]]（能力：`sandbox-setup`） 判定脱干净、[[platform-tips]] 最高原则）→ 导入 [[re-ghidra]]（能力：`decompilation`、`debugging`） / [[re-ida]]（能力：`decompilation`、`debugging`） 确认 OEP 处可正常反编译；导入表可解析才算完成。产物交回原调用域继续（恶意样本回 [[re-malware]]（能力：`malware-behavior`、`document-malware`、`evasion-analysis`、`key-extraction`、`threat-intel`） 行为分析、破解目标转 [[re-cracking]]（能力：`license-analysis`） 授权定位）
 
-每步结果存档（证据路径 + sha256，见 [[re-triage]]）；壳指纹 / 脱壳产物是 [[re-ioc]] YARA 特征来源。
+每步结果存档（证据路径 + sha256，见 [[re-triage]]（能力：`triage`））；壳指纹 / 脱壳产物是 [[re-ioc]]（能力：`threat-intel`） YARA 特征来源。
 
 ## 反调试方法论（全库通用，见 [[analysis-contract]] 索引）
 
@@ -165,15 +165,15 @@ capabilities: [unpack, deobfuscation, evasion-analysis]
 
 **先识别、再选脱壳路径；识别不出走手动流程。**
 
-- **输入是未知样本 / 怀疑带壳** → [[re-packer-id]] 识别 → 按结果分支（不跳步）
-  - 识别出简单压缩壳（UPX / ASPack / FSG 等）→ [[re-unpack-simple]]
-  - 识别出强壳 / 虚拟化壳（VMProtect / Themida 等）→ [[re-unpack-advanced]]
-  - **识别不出壳名**（无签名匹配）→ 手动流程：先按 [[re-unpack-simple]] 的 ESP 定律 + 内存断点尝试；失败或发现反调试/虚拟化特征 → [[re-unpack-advanced]] 手动脱壳
-- **目标只是确认壳**（"这是什么壳"）→ [[re-packer-id]] 即可，不进入脱壳
-- **脱壳后仍有代码混淆**（花指令 / 平坦化 / 字符串加密）→ [[re-deobfuscate]]
-- **目标已确认无壳** → 不需要本网关，转 [[re-binary-core]]（[[re-ghidra]] / [[re-ida]] / [[re-radare2]]）直接分析
-- **检测规避/EDR 对抗（AMSI/ETW 绕过、无文件、lolbin 链，样本被检测"为什么"）** → [[re-evasion]]（动态优先，配 [[re-sandbox]] / [[re-memdump]]）
-- 脱壳全程需要读进程内存 → [[re-memdump]]（OEP 后默认转储）；Windows 调试 → [[re-x64dbg]]；Linux/Wine 调试 → [[re-gdb]]
+- **输入是未知样本 / 怀疑带壳** → [[re-packer-id]]（能力：`unpack`） 识别 → 按结果分支（不跳步）
+  - 识别出简单压缩壳（UPX / ASPack / FSG 等）→ [[re-unpack-simple]]（能力：`unpack`）
+  - 识别出强壳 / 虚拟化壳（VMProtect / Themida 等）→ [[re-unpack-advanced]]（能力：`unpack`）
+  - **识别不出壳名**（无签名匹配）→ 手动流程：先按 [[re-unpack-simple]]（能力：`unpack`） 的 ESP 定律 + 内存断点尝试；失败或发现反调试/虚拟化特征 → [[re-unpack-advanced]]（能力：`unpack`） 手动脱壳
+- **目标只是确认壳**（"这是什么壳"）→ [[re-packer-id]]（能力：`unpack`） 即可，不进入脱壳
+- **脱壳后仍有代码混淆**（花指令 / 平坦化 / 字符串加密）→ [[re-deobfuscate]]（能力：`deobfuscation`）
+- **目标已确认无壳** → 不需要本网关，转 [[re-binary-core]]（能力：`decompilation`、`debugging`、`memory-dump`、`elf-parser`、`pe-parser`、`macho-parser`；[[re-ghidra]]（能力：`decompilation`、`debugging`） / [[re-ida]]（能力：`decompilation`、`debugging`） / [[re-radare2]]（能力：`decompilation`））直接分析
+- **检测规避/EDR 对抗（AMSI/ETW 绕过、无文件、lolbin 链，样本被检测"为什么"）** → [[re-evasion]]（能力：`evasion-analysis`；动态优先，配 [[re-sandbox]]（能力：`sandbox-setup`） / [[re-memdump]]（能力：`memory-dump`））
+- 脱壳全程需要读进程内存 → [[re-memdump]]（能力：`memory-dump`；OEP 后默认转储）；Windows 调试 → [[re-x64dbg]]（能力：`debugging`）；Linux/Wine 调试 → [[re-gdb]]（能力：`debugging`）
 
 ## 跨域联合
 

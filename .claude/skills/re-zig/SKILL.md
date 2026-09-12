@@ -4,6 +4,7 @@ type: atomic
 description: >
   Zig 编译产物逆向：产物识别、comptime 展开、panic/错误处理路径、C ABI 边界。
   触发词：Zig逆向、zig、comptime、zig 产物、panic。
+capabilities: [lang-runtime-analysis]
 ---
 
 # Zig 逆向

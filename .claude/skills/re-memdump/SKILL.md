@@ -3,6 +3,7 @@ name: re-memdump
 description: >
   内存转储与提取：默认转储优先(gcore)，直读特例。
   触发词：内存转储、dump内存、找密钥、DEX提取
+capabilities: [memory-dump]
 ---
 
 # 内存转储与提取

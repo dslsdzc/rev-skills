@@ -1,6 +1,7 @@
 ---
 name: re-unpack-simple
 description: 压缩壳脱壳：UPX/ASPack/FSG。触发词：脱壳、unpack、UPX、esp定律、OEP
+capabilities: [unpack]
 ---
 
 # 脱壳：压缩壳（UPX/ASPack/FSG）

@@ -1,6 +1,7 @@
 ---
 name: re-wasm
 description: WASM 逆向：格式解析、wasm2wat、浏览器侧。触发词：WASM、wasm、WebAssembly、wat
+capabilities: [web-assembly]
 ---
 
 # WebAssembly 逆向（WABT / wasmtime / Chrome DevTools）

@@ -3,6 +3,7 @@ name: re-fw-emulate
 description: >
   固件仿真：QEMU 用户态/全系统。
   触发词：仿真、QEMU、firmadyne、跑固件
+capabilities: [emulation]
 ---
 
 # 固件仿真（QEMU）

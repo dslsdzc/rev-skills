@@ -3,6 +3,7 @@ name: re-ebpf
 description: >
   eBPF 程序逆向与对抗分析：BPF-64 指令集、progs/maps 关联、bpftool 反汇编、跟踪取证/恶意样本/EDR 对抗三用途。
   触发词：eBPF、BPF、bpftool、bcc、libbpf、xlated、BPF 指令、bpf hook、EDR 对抗、tracepoint、kprobe。
+capabilities: [ebpf-analysis]
 ---
 
 # eBPF 程序逆向与对抗分析（BPF-64、progs/maps、xlated）

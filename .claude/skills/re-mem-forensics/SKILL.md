@@ -3,6 +3,7 @@ name: re-mem-forensics
 description: >
   Volatility 3 内存取证：进程/内核对象/网络/凭据线索。
   触发词：内存取证、Volatility、memdump分析、进程列表、mimikatz线索
+capabilities: [memory-forensics]
 ---
 
 # 内存取证（Volatility 3）

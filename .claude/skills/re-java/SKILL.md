@@ -1,6 +1,7 @@
 ---
 name: re-java
 description: Java 字节码逆向：CFR/JD-GUI、jar 解包、Java 加固。触发词：Java、jar、字节码、JD-GUI、CFR、class文件
+capabilities: [bytecode-parser]
 ---
 
 # Java 字节码逆向（CFR / JD-GUI / javap）

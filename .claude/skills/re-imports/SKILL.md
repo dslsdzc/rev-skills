@@ -3,6 +3,7 @@ name: re-imports
 description: >
   导入导出表与库指纹：IAT/EAT、DLL/so 指纹、FLIRT 思路。
   触发词：导入表、IAT、库指纹、链接了哪些库
+capabilities: [pe-parser, elf-parser]
 ---
 
 # 导入导出表与库指纹

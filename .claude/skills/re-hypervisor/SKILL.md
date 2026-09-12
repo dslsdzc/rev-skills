@@ -3,6 +3,7 @@ name: re-hypervisor
 description: >
   虚拟化逆向：VT-x/SVM、hypervisor 检测、VMCS/EPT 分析。
   触发词：hypervisor、VT-x、SVM、虚拟化检测、EPT
+capabilities: [hypervisor-analysis]
 ---
 
 # 虚拟化逆向（VT-x / SVM / hypervisor 检测）

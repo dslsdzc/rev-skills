@@ -3,6 +3,7 @@ name: re-fileless
 description: >
   无文件恶意软件：内存执行、持久化、PowerShell 链。
   触发词：无文件、fileless、内存执行、PowerShell 无文件、注册表持久化
+capabilities: [malware-behavior]
 ---
 
 # 无文件恶意软件分析

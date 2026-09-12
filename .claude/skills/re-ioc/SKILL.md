@@ -3,6 +3,7 @@ name: re-ioc
 description: >
   IOC 提取与 YARA 规则、报告结构。
   触发词：IOC、YARA、写规则、分析报告、hash列表
+capabilities: [threat-intel]
 ---
 
 # IOC 提取与 YARA 规则

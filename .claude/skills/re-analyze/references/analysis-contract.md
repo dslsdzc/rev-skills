@@ -5,12 +5,12 @@
 
 ## 一、分析上下文清单（分析前）
 
-分析一个目标（文件 / 函数 / 协议）前，先收集以下上下文再动手：
+分析一个目标前，先收集以下上下文再动手。**通用四项按目标域展开**（域字段见第三节 3.2），不套用文件域字段：
 
-- 目标标识：路径 / 地址、哈希（sha256）、大小、熵
-- 结构信息：架构、格式（PE/ELF/Mach-O/…）、节表摘要、导入导出摘要
-- 关联信息：xrefs（引用目标的位置）、目标引用的字符串、caller/callee（函数目标时）
-- 已知线索：已命名符号表、已恢复的 struct/类型、本会话已得出的结论（跨环节传递）
+- 目标标识：标识符（路径 / 端点 / 设备 / 包名 / 模型文件）、哈希（sha256）、大小
+- 结构信息（**按域取**）：文件域 = 架构/格式/节表/导入导出；协议域 = 端点/端口/帧样例；车载域 = 仲裁 ID/周期/DLC；射频域 = 中心频率/采样率/调制；模型域 = 格式/张量清单；TEE 域 = TA/会话/SMC 号；取证域 = 来源设备/时间线
+- 关联信息（**按域取**）：文件域 = xrefs/caller/callee/引用字符串；协议域 = 请求-响应配对；模型域 = 层间依赖与算子序列；取证域 = 跨数据源的同一记录
+- 已知线索：已命名/已恢复的结构（符号表、struct/字段语义、协议字段名）、本会话已得出的结论（跨环节传递）
 
 收集不到的项目记「未知」，不阻塞开工——但禁止跳过收集直接分析。
 
@@ -22,20 +22,38 @@
 
 ## 三、数据契约（分析中，环节间传递）
 
-链式编排（triage → format → 反编译 → 后续环节）的传递字段：
+链式编排（入口 → 域环节 → 后续环节）的传递字段，**分两层：核心字段（所有域必带）+ 域扩展字段（按目标域选用）**。此前本表只有文件域一套字段，对其他域（协议/射频/车载/模型/TEE/取证）不适用——按域取字段，不硬套。
+
+### 3.1 核心字段（所有域）
 
 | 字段 | 含义 | 产出环节 |
 |---|---|---|
-| sha256 | 样本哈希（证据存档键） | re-triage |
-| arch / format | 架构与文件格式 | re-triage / re-format-* |
-| entropy | 熵值（>7.0 提示加壳/加密） | re-triage |
-| sections | 节表摘要（名称/权限/大小） | re-format-* |
-| imports / exports | 导入导出摘要 | re-format-* / re-imports |
-| strings_refs | 关键字符串引用（地址+内容） | re-triage / re-ghidra |
-| base_addr | 加载基址（含偏移换算） | re-format-* / re-ghidra |
-| symbols_known | 已命名符号表（会话内累积） | 各环节 |
+| target_id | 目标标识（路径 / 端点 / 设备 / 包名 / 模型文件） | 入口 / [[re-triage]] |
+| sha256 | 目标哈希（证据存档键；非文件目标用等价指纹——pcap 哈希、固件镜像哈希、模型文件哈希） | 入口 / [[re-triage]] |
+| evidence | 证据链（路径 + 哈希 + 命令输出位置） | 各环节 |
+| findings | 结论列表（每条带等级 confirmed / supported / hypothesis 与置信度，见第四节） | 各环节 |
+| unverified | 本环节无法确认的部分（对应复核格式的「未验证项」） | 各环节 |
 
-每个环节输出以上述字段为骨架的结构化摘要（JSON 或表格），下一环节直接消费，不重新扫描。
+### 3.2 域扩展字段（按目标域选，代表技能仅示例）
+
+| 域 | 扩展字段 | 代表产出技能 |
+|---|---|---|
+| 文件 / 二进制（PE/ELF/Mach-O/固件） | arch、format、entropy、sections、imports_exports、strings_refs、base_addr、symbols_known | [[re-triage]]、[[re-format-pe]] / [[re-format-elf]] / [[re-format-macho]]、[[re-imports]]、[[re-ghidra]] |
+| 网络 / 协议 | endpoints（五元组与会话）、frames（帧样例与字段偏移）、state_machine（状态转移）、crypto_layer（加密层与密钥来源） | [[re-netcap]]、[[re-proto-rev]]、[[re-tls]] |
+| 总线 / 车载（CAN 等） | arbitration_ids（ID/周期/DLC）、signals（字节序与位布局）、diagnostic_sessions（UDS 服务序列）、seed_key（算法与密钥来源） | [[re-automotive]]、[[re-ics]] |
+| 射频 / SDR | center_freq、sample_rate、modulation、sync_words（帧同步字）、demod_chain | [[re-sdr]] |
+| AI 模型（文件级） | model_format、tensors（名/形状/dtype）、graph_ops（算子序列）、watermark_evidence（权重/metadata 异常） | [[re-ai-model]] |
+| AI 模型（行为级 / 仅 API） | api_endpoints、query_budget、behavior_fingerprint（响应一致性）、extraction_evidence | [[re-ai-attack]] |
+| 移动 / 托管代码 | package、components（Activity/Service）、sandbox_paths、jni_map（native 方法 ↔ 地址）、bytecode_units | [[re-apk]]、[[re-android-native]]、[[re-dotnet]]、[[re-java]] |
+| TEE / 可信执行 | ta_uuid、smc_ids、secure_storage_items、key_derivation | [[re-tee]]、[[re-hardware-io]] |
+| 取证 / 情报 | device_source、timeline（时间/动作/来源）、integrity（哈希链与分区摘要）、iocs | [[re-mem-forensics]]、[[re-disk-forensics]]、[[re-mobile-forensics]]、[[re-ioc]] |
+| 沙箱 / 行为 | process_tree、persistence、network_behavior、attck_mapping | [[re-sandbox]]、[[re-behavior]] |
+
+### 3.3 传递规则
+
+- **核心字段必带**（收集不到记「未知」，不阻塞）；**域扩展字段按目标域选填**——不要求跨域填充（CAN 目标不需要 sections，模型目标不需要 base_addr）
+- 每个环节**只增不改**：后续环节追加字段与原字段并存；冲突以新证据为准并记录更正
+- 输出形态：JSON 或结构化表格；下一环节直接消费，不重新扫描
 
 ## 四、复核格式（分析后）
 

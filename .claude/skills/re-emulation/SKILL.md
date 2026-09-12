@@ -2,6 +2,7 @@
 name: re-emulation
 description: >
   模拟执行：Unicorn/Qiling 框架。触发词：Unicorn、Qiling、模拟执行、emulate、无硬件运行
+capabilities: [emulation]
 ---
 
 # 模拟执行（Unicorn / Qiling）

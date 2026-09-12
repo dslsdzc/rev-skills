@@ -2,6 +2,7 @@
 name: re-game
 description: >
   游戏逆向：Unity/Unreal、Cheat Engine、Lua 脚本引擎、图形 Shader。触发词：游戏逆向、Unity、Unreal、Cheat Engine、内存修改、反作弊、Lua、LuaJIT、.luac、.jsc、脚本引擎、Shader、着色器、SPIR-V、DXIL、DXBC、GLSL
+capabilities: [game-analysis]
 ---
 
 # 游戏逆向（Unity / Unreal / Lua 脚本引擎 / 图形 Shader）

@@ -4,6 +4,7 @@ type: atomic
 description: >
   物理层硬件逆向：去封装、裸片分析、探针与 FIB、PCB 电路分析、硬件木马检测。
   触发词：芯片逆向、去封装、decapping、PCB、硬件木马、电路分析、裸片、FIB、侧信道、SPA、DPA、故障注入、时钟毛刺、电压毛刺。
+capabilities: [chip-analysis]
 ---
 
 # 芯片/PCB 硬件逆向

@@ -3,6 +3,7 @@ name: re-fw-rootfs
 description: >
   固件文件系统分析：rootfs、配置、密钥、启动脚本。
   触发词：rootfs、文件系统分析、squashfs、cramfs、配置文件
+capabilities: [firmware-extraction]
 ---
 
 # 固件文件系统分析（rootfs）

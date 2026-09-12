@@ -3,6 +3,7 @@ name: re-ransomware
 description: >
   勒索软件分析：加密识别、勒索信、解密恢复思路。
   触发词：勒索、ransomware、加密文件、勒索信、解密恢复
+capabilities: [malware-behavior, crypto-identification]
 ---
 
 # 勒索软件分析（加密识别 / 勒索信 / 解密恢复）

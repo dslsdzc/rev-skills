@@ -3,6 +3,7 @@ name: re-crypto-decrypt
 description: >
   加密数据还原：定位解密函数、写解密脚本。
   触发词：解密、decrypt、还原数据、解密流量
+capabilities: [crypto-decryption]
 ---
 
 # 加密数据还原

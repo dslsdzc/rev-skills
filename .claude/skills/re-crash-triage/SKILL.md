@@ -5,6 +5,7 @@ description: >
   (afl-tmin/cmin)、gdb 回溯定位、rr 录制重放、PoC 产出。
   触发词：崩溃、crash、ASAN、UAF、堆溢出、越界、段错误、segfault、
   core dump、PoC、漏洞分析、崩溃分析。
+capabilities: [debugging]
 ---
 
 # 崩溃分析与漏洞定位（crash triage）

@@ -3,6 +3,7 @@ name: re-behavior
 description: >
   恶意行为分析：持久化、注入、进程树、文件/注册表、ATT&CK 映射。
   触发词：行为分析、持久化、注册表、进程注入、它在干什么
+capabilities: [malware-behavior]
 ---
 
 # 恶意行为分析

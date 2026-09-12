@@ -12,25 +12,25 @@ capabilities: [firmware-extraction, emulation, rtos-analysis, hardware-interface
 
 ## 完整工作流
 
-1. 初勘：[[re-triage]] —— file/哈希/熵确认固件类型、架构与字节序（未走 [[re-analyze]] 入口则先补做，读取 `RE_*` 会话变量）
-2. 提取：[[re-fw-extract]] —— binwalk/unblob 自动解包，magic 手工扫描，字节序判断
-3. rootfs：[[re-fw-rootfs]] —— 挂载/解包文件系统，启动脚本定位入口，配置/密钥/硬编码口令挖掘
-4. 仿真：[[re-fw-emulate]] —— 需要运行时用 QEMU 用户态优先（最轻方案，见 [[platform-tips]]），全系统按需
-5. 硬件接口：[[re-hardware-io]] —— 需实物板子时（JTAG/UART/flash 读取）；有固件文件先走 2-4，硬件是最后手段
-6. 通信：提取/运行中发现固件通信、回连、自定义协议 → [[re-protocol]]（netcap / proto-rev / crypto-*）
-7. 产出：结论 / 报告（按 `RE_REPORT`），哈希与证据存档（见 [[re-triage]]）
+1. 初勘：[[re-triage]]（能力：`triage`） —— file/哈希/熵确认固件类型、架构与字节序（未走 [[re-analyze]] 入口则先补做，读取 `RE_*` 会话变量）
+2. 提取：[[re-fw-extract]]（能力：`firmware-extraction`） —— binwalk/unblob 自动解包，magic 手工扫描，字节序判断
+3. rootfs：[[re-fw-rootfs]]（能力：`firmware-extraction`） —— 挂载/解包文件系统，启动脚本定位入口，配置/密钥/硬编码口令挖掘
+4. 仿真：[[re-fw-emulate]]（能力：`emulation`） —— 需要运行时用 QEMU 用户态优先（最轻方案，见 [[platform-tips]]），全系统按需
+5. 硬件接口：[[re-hardware-io]]（能力：`hardware-interface`） —— 需实物板子时（JTAG/UART/flash 读取）；有固件文件先走 2-4，硬件是最后手段
+6. 通信：提取/运行中发现固件通信、回连、自定义协议 → [[re-protocol]]（能力：`network-capture`、`protocol-recovery`、`crypto-identification`、`crypto-decryption`、`key-extraction`、`tls-analysis`；netcap / proto-rev / crypto-*）
+7. 产出：结论 / 报告（按 `RE_REPORT`），哈希与证据存档（见 [[re-triage]]（能力：`triage`））
 
-每步结果存档（证据路径 + sha256，见 [[re-triage]]），供报告引用；发现恶意样本/后门随时转 [[re-malware]]。
+每步结果存档（证据路径 + sha256，见 [[re-triage]]（能力：`triage`）），供报告引用；发现恶意样本/后门随时转 [[re-malware]]（能力：`malware-behavior`、`document-malware`、`evasion-analysis`、`key-extraction`、`threat-intel`）。
 
 ## 何时用哪个原子技能（选择树）
 
-- 有固件文件（.bin / .img / 升级包）→ [[re-fw-extract]] 解包
-- 已有 rootfs / 解包产物 → [[re-fw-rootfs]] 分析文件系统
-- 需要运行固件观察行为 → [[re-fw-emulate]]（先确认架构，见 [[re-triage]]）
-- 有实物板子 / 需要硬件提取 → [[re-hardware-io]]
-- 汽车 ECU / CAN 总线 / OBD-UDS 诊断 → [[re-automotive]]
-- 见通信（固件回连 / 自定义协议 / 加密通信）→ [[re-protocol]]
-- 目标是 UEFI 固件（BIOS 更新包/DXE 驱动/bootkit）→ [[re-uefi]]（UEFITool 解析 + OVMF 仿真）
+- 有固件文件（.bin / .img / 升级包）→ [[re-fw-extract]]（能力：`firmware-extraction`） 解包
+- 已有 rootfs / 解包产物 → [[re-fw-rootfs]]（能力：`firmware-extraction`） 分析文件系统
+- 需要运行固件观察行为 → [[re-fw-emulate]]（能力：`emulation`；先确认架构，见 [[re-triage]]（能力：`triage`））
+- 有实物板子 / 需要硬件提取 → [[re-hardware-io]]（能力：`hardware-interface`）
+- 汽车 ECU / CAN 总线 / OBD-UDS 诊断 → [[re-automotive]]（能力：`automotive-analysis`）
+- 见通信（固件回连 / 自定义协议 / 加密通信）→ [[re-protocol]]（能力：`network-capture`、`protocol-recovery`、`crypto-identification`、`crypto-decryption`、`key-extraction`、`tls-analysis`）
+- 目标是 UEFI 固件（BIOS 更新包/DXE 驱动/bootkit）→ [[re-uefi]]（能力：`uefi-analysis`；UEFITool 解析 + OVMF 仿真）
 
 ## 跨域联合
 

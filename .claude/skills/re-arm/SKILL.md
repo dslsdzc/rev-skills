@@ -3,6 +3,7 @@ name: re-arm
 description: >
   ARM 架构逆向（非 Android）：Cortex-M/A 向量表、Thumb/ARM 切换、AAPCS 调用约定、位置相关代码重定位、MMIO 外设寄存器交叉。
   触发词：ARM、arm32、Cortex-M、Cortex-A、Thumb、AAPCS、嵌入式逆向、裸机固件、stm32、向量表。
+capabilities: [arch-analysis]
 ---
 
 # ARM 架构逆向（Cortex-M/A、Thumb、AAPCS）

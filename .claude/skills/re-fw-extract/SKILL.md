@@ -3,6 +3,7 @@ name: re-fw-extract
 description: >
   固件提取与解包：binwalk/unblob、magic 扫描、字节序。
   触发词：固件、binwalk、解包固件、firmware、IoT、MCU、8051、AVR、PIC、MSP430、Intel HEX、.hex
+capabilities: [firmware-extraction]
 ---
 
 # 固件提取与解包

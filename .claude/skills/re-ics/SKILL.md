@@ -3,6 +3,7 @@ name: re-ics
 description: >
   工控协议逆向：Modbus/DNP3/OPC UA。
   触发词：工控、ICS、Modbus、DNP3、OPC UA、SCADA、PLC
+capabilities: [protocol-recovery]
 ---
 
 # 工控协议逆向（ICS/SCADA）

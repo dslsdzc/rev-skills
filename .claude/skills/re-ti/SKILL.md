@@ -3,6 +3,7 @@ name: re-ti
 description: >
   威胁情报查询与关联：VT/Any.run/hybrid-analysis、MISP。
   触发词：威胁情报、VirusTotal、Any.run、沙箱查询、MISP、样本关联
+capabilities: [threat-intel]
 ---
 
 # 威胁情报查询与关联

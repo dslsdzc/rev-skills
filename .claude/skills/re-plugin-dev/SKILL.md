@@ -3,6 +3,7 @@ name: re-plugin-dev
 description: >
   Ghidra/IDA 插件开发：脚本→插件工程化。
   触发词：插件开发、Ghidra插件、IDA插件、插件工程
+capabilities: [plugin-development]
 ---
 
 # Ghidra / IDA 插件开发

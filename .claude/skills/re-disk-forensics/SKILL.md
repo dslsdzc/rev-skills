@@ -3,6 +3,7 @@ name: re-disk-forensics
 description: >
   磁盘/文件系统取证：删除恢复、时间线、可疑文件定位。
   触发词：磁盘取证、文件系统、删除恢复、时间线、ext4、NTFS
+capabilities: [disk-forensics]
 ---
 
 # 磁盘取证与文件系统分析

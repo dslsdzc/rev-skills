@@ -3,6 +3,7 @@ name: re-lldb
 description: >
   lldb 调试（macOS/iOS）：attach、expr、image。
   触发词：lldb、macOS调试、iOS调试
+capabilities: [debugging]
 ---
 
 # lldb 动态调试（macOS/iOS）

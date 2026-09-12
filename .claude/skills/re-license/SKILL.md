@@ -1,6 +1,7 @@
 ---
 name: re-license
 description: 授权验证逻辑分析：注册校验定位。触发词：注册码、授权验证、license、序列号校验、破解定位
+capabilities: [license-analysis]
 ---
 
 # 授权验证逻辑分析（注册校验定位）

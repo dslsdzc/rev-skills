@@ -3,6 +3,7 @@ name: re-format-macho
 description: >
   Mach-O 格式解析：mach_header、LC_*、segment、dyld 信息。
   触发词：Mach-O、解析mac程序、dyld
+capabilities: [macho-parser]
 ---
 
 # Mach-O 格式解析

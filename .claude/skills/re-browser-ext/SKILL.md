@@ -4,6 +4,7 @@ type: atomic
 description: >
   浏览器扩展逆向：权限清单、恶意行为定位、混淆还原、上架审查绕过面。
   触发词：浏览器扩展、Chrome扩展、Firefox扩展、恶意扩展、extension。
+capabilities: [browser-extension]
 ---
 
 # 浏览器扩展逆向

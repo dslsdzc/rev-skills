@@ -3,6 +3,7 @@ name: re-console
 description: >
   现代主机与复古平台逆向：Switch NSO/NPDM 容器与加密分区、PS4/PS5 ORBIS 结构、SDK 库指纹；复古 ROM 头/卡带格式/存档与 Cheat 码。
   触发词：主机逆向、Switch、NSO、NPDM、PS4、PS5、ORBIS、Xbox、复古、ROM、NES、GBA、模拟器、Cheat。
+capabilities: [console-analysis]
 ---
 
 # 现代主机与复古平台逆向（Switch NSO/NPDM、PS4/PS5 ORBIS、复古 ROM/存档）

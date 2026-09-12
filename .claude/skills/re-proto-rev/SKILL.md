@@ -3,6 +3,7 @@ name: re-proto-rev
 description: >
   协议状态机重建：Scapy 解析、消息结构。
   触发词：协议逆向、状态机、scapy、自定义协议
+capabilities: [protocol-recovery]
 ---
 
 # 协议状态机重建

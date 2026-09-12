@@ -3,6 +3,7 @@ name: re-blockchain
 description: >
   EVM 智能合约逆向：字节码反编译、漏洞分析。
   触发词：智能合约、EVM、Solidity、字节码、合约漏洞、ABI、Solana、Move、BPF
+capabilities: [blockchain-analysis]
 ---
 
 # EVM 智能合约逆向（cast / panoramix / web3.py）

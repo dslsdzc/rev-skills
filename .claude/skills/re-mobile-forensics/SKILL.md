@@ -4,6 +4,7 @@ type: atomic
 description: >
   移动设备取证：Android/iOS 备份解析、应用数据提取、删除恢复与时间线。
   触发词：移动取证、手机取证、ADB备份、iTunes备份、手机数据提取。
+capabilities: [mobile-forensics]
 ---
 
 # 移动设备取证

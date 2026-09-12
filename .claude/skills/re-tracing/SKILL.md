@@ -3,6 +3,7 @@ name: re-tracing
 description: >
   系统调用/函数调用跟踪：strace/ltrace/dtruss。
   触发词：strace、跟踪系统调用、ltrace、API监控
+capabilities: [tracing]
 ---
 
 # 系统调用/函数调用跟踪

@@ -3,6 +3,7 @@ name: re-harmonyos
 description: >
   鸿蒙（HarmonyOS）应用逆向：hap/hsp/har 包结构、ArkTS 字节码（.abc、ArkCompiler）分析。
   触发词：鸿蒙、HarmonyOS、hap、ArkTS、abc 字节码、方舟编译器
+capabilities: [bytecode-parser]
 ---
 
 # 鸿蒙应用逆向（HarmonyOS / hap / ArkTS）

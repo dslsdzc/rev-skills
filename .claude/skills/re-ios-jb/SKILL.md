@@ -3,6 +3,7 @@ name: re-ios-jb
 description: >
   iOS 越狱逆向环境：越狱检测识别与绕过、tweak 分析与开发。
   触发词：越狱、jailbreak、tweak、Theos、LLDB 远程
+capabilities: [jailbreak-analysis]
 ---
 
 # iOS 越狱逆向环境（越狱检测 / tweak）

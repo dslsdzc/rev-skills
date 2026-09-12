@@ -4,6 +4,7 @@ type: atomic
 description: >
   macOS 原生应用逆向：App Bundle/签名公证、entitlements、沙箱与 TCC、钥匙串与 Secure Enclave。
   触发词：macOS逆向、mac app、entitlements、Secure Enclave、钥匙串、TCC、codesign、公证。
+capabilities: [macho-parser]
 ---
 
 # macOS 应用逆向

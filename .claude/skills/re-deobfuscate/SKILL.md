@@ -1,6 +1,7 @@
 ---
 name: re-deobfuscate
 description: 反混淆：花指令、控制流平坦化、字符串加密。触发词：反混淆、花指令、控制流平坦化、字符串解密、obfuscation
+capabilities: [deobfuscation]
 ---
 
 # 反混淆（花指令 / 控制流平坦化 / 字符串加密）

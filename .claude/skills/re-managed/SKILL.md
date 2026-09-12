@@ -13,30 +13,30 @@ capabilities: [bytecode-parser, deobfuscation]
 ## 完整工作流
 
 1. 识别运行时（不先判型就反编译是最大浪费）：
-   - **PE 文件**：`file` 输出含 "Mono/.Net assembly"、PE 可选头数据目录第 15 项（COM Descriptor / CLI header）非零、导入 `mscoree.dll` → .NET 程序集 → [[re-dotnet]]
-   - **jar/war/class**：`unzip -p app.jar META-INF/MANIFEST.MF` 见 `Main-Class`、class 文件魔数 `CAFEBABE` → Java 字节码 → [[re-java]]
-   - **脚本/宏**：shebang（`#!/usr/bin/pwsh`）、`-EncodedCommand` / `IEX`（PowerShell）、OLE 文档（`file` 显示 "Composite Document"）内嵌 VBA、`eval(` / `fromCharCode`（JavaScript）→ [[re-script-deob]]
-   - 拿不准先 [[re-triage]] 初勘（file/hash/熵/strings），不要凭扩展名猜
-2. 反编译：按识别结果走 [[re-dotnet]] / [[re-java]] / [[re-script-deob]]，先把目标逻辑还原成可读代码
-3. 去混淆：各原子技能内含对应方案——de4dot（ConfuserEx/SmartAssembly）、混淆识别 + 字符串解密（ProGuard/Allatori）、逐层解码（脚本/宏）；混杂原生组件（native stub / JNI）的反混淆转 [[re-deobfuscate]]
-4. 恶意场景（钓鱼宏、下载器脚本、恶意 .NET/Java 样本）：转 [[re-malware]] 网关——默认沙箱 → 行为分析 → C2/协议 → IOC/报告；反编译还原结果作为静态证据回传给 [[re-malware]] 使用
+   - **PE 文件**：`file` 输出含 "Mono/.Net assembly"、PE 可选头数据目录第 15 项（COM Descriptor / CLI header）非零、导入 `mscoree.dll` → .NET 程序集 → [[re-dotnet]]（能力：`bytecode-parser`）
+   - **jar/war/class**：`unzip -p app.jar META-INF/MANIFEST.MF` 见 `Main-Class`、class 文件魔数 `CAFEBABE` → Java 字节码 → [[re-java]]（能力：`bytecode-parser`）
+   - **脚本/宏**：shebang（`#!/usr/bin/pwsh`）、`-EncodedCommand` / `IEX`（PowerShell）、OLE 文档（`file` 显示 "Composite Document"）内嵌 VBA、`eval(` / `fromCharCode`（JavaScript）→ [[re-script-deob]]（能力：`deobfuscation`）
+   - 拿不准先 [[re-triage]]（能力：`triage`） 初勘（file/hash/熵/strings），不要凭扩展名猜
+2. 反编译：按识别结果走 [[re-dotnet]]（能力：`bytecode-parser`） / [[re-java]]（能力：`bytecode-parser`） / [[re-script-deob]]（能力：`deobfuscation`），先把目标逻辑还原成可读代码
+3. 去混淆：各原子技能内含对应方案——de4dot（ConfuserEx/SmartAssembly）、混淆识别 + 字符串解密（ProGuard/Allatori）、逐层解码（脚本/宏）；混杂原生组件（native stub / JNI）的反混淆转 [[re-deobfuscate]]（能力：`deobfuscation`）
+4. 恶意场景（钓鱼宏、下载器脚本、恶意 .NET/Java 样本）：转 [[re-malware]]（能力：`malware-behavior`、`document-malware`、`evasion-analysis`、`key-extraction`、`threat-intel`） 网关——默认沙箱 → 行为分析 → C2/协议 → IOC/报告；反编译还原结果作为静态证据回传给 [[re-malware]]（能力：`malware-behavior`、`document-malware`、`evasion-analysis`、`key-extraction`、`threat-intel`） 使用
 
 ## 何时用哪个原子技能（选择树）
 
 按运行时分支：
 
-- **PE 且确认 .NET 元数据（CLI header / mscoree）** → [[re-dotnet]]（dnSpy/ILSpy 反编译、de4dot 去混淆）
-- **jar / war / class（Java 字节码）** → [[re-java]]（CFR/JD-GUI、javap、加固脱壳）
-- **.ps1 / .docm / .xlsm / .js / .jse / .hta（脚本或宏）** → [[re-script-deob]]（逐层解码，动态执行默认沙箱）
-- **Python 打包样本（.exe 含 PyInstaller/PyArmor 特征 / .pyc / python 打包）** → [[re-python]]（pyinstxtractor 解包、PyArmor-Unpacker、pyc 反编译；纯脚本混淆转 [[re-script-deob]]）
-- **.wasm / WebAssembly 模块（网页/Node 侧载荷）** → [[re-wasm]]（WABT 解析 section、wasm-decompile 反编译、DevTools/wasmtime 动态）
-- **AI 模型相关** → [[re-ai-triage]] 分流：模型文件（.onnx/.safetensors/.pt）→ [[re-ai-model]]（格式识别、权重提取、文件级水印；未知 pkl 默认隔离）；仅 API → [[re-ai-attack]]（行为层评估，guard 授权前置）
-- **EVM 合约字节码（.bin / hex）** → [[re-blockchain]]（ABI 恢复、panoramix 反编译、漏洞分析）
-- **浏览器扩展（crx/xpi/zip 扩展文件）** → [[re-browser-ext]]（权限审计/恶意行为/混淆还原）
-- **Electron 打包应用（resources/app.asar）** → [[re-electron]]（asar 解包、V8 字节码边界、CDP 动态调试）
-- **Java Card / SIM（CAP 文件）** → [[re-javacard]]（12 组件解析、process(APDU) 分派还原）
-- **Android DEX** → 不是本网关——转 [[re-mobile]]（[[re-apk]]），其中含 Java 原生逻辑再回 [[re-java]]
-- **仅脚本调用 native 下载的 PE** → 动态侧跟 [[re-malware]]，静态侧回 [[re-binary-core]]
+- **PE 且确认 .NET 元数据（CLI header / mscoree）** → [[re-dotnet]]（能力：`bytecode-parser`；dnSpy/ILSpy 反编译、de4dot 去混淆）
+- **jar / war / class（Java 字节码）** → [[re-java]]（能力：`bytecode-parser`；CFR/JD-GUI、javap、加固脱壳）
+- **.ps1 / .docm / .xlsm / .js / .jse / .hta（脚本或宏）** → [[re-script-deob]]（能力：`deobfuscation`；逐层解码，动态执行默认沙箱）
+- **Python 打包样本（.exe 含 PyInstaller/PyArmor 特征 / .pyc / python 打包）** → [[re-python]]（能力：`bytecode-parser`；pyinstxtractor 解包、PyArmor-Unpacker、pyc 反编译；纯脚本混淆转 [[re-script-deob]]（能力：`deobfuscation`））
+- **.wasm / WebAssembly 模块（网页/Node 侧载荷）** → [[re-wasm]]（能力：`web-assembly`；WABT 解析 section、wasm-decompile 反编译、DevTools/wasmtime 动态）
+- **AI 模型相关** → [[re-ai-triage]]（能力：`triage`） 分流：模型文件（.onnx/.safetensors/.pt）→ [[re-ai-model]]（能力：`ai-model-analysis`；格式识别、权重提取、文件级水印；未知 pkl 默认隔离）；仅 API → [[re-ai-attack]]（能力：`ai-model-analysis`；行为层评估，guard 授权前置）
+- **EVM 合约字节码（.bin / hex）** → [[re-blockchain]]（能力：`blockchain-analysis`；ABI 恢复、panoramix 反编译、漏洞分析）
+- **浏览器扩展（crx/xpi/zip 扩展文件）** → [[re-browser-ext]]（能力：`browser-extension`；权限审计/恶意行为/混淆还原）
+- **Electron 打包应用（resources/app.asar）** → [[re-electron]]（能力：`electron-analysis`；asar 解包、V8 字节码边界、CDP 动态调试）
+- **Java Card / SIM（CAP 文件）** → [[re-javacard]]（能力：`bytecode-parser`；12 组件解析、process(APDU) 分派还原）
+- **Android DEX** → 不是本网关——转 [[re-mobile]]（能力：`dex-parser`、`jni-analysis`、`frida-instrumentation`、`mobile-forensics`；[[re-apk]]（能力：`dex-parser`）），其中含 Java 原生逻辑再回 [[re-java]]（能力：`bytecode-parser`）
+- **仅脚本调用 native 下载的 PE** → 动态侧跟 [[re-malware]]（能力：`malware-behavior`、`document-malware`、`evasion-analysis`、`key-extraction`、`threat-intel`），静态侧回 [[re-binary-core]]（能力：`decompilation`、`debugging`、`memory-dump`、`elf-parser`、`pe-parser`、`macho-parser`）
 
 ## 跨域联合
 

@@ -3,6 +3,7 @@ name: re-whitebox
 description: >
   白盒加密分析：白盒实现识别、密钥提取。
   触发词：白盒、whitebox、白盒加密、密钥隐藏
+capabilities: [crypto-identification, key-extraction]
 ---
 
 # 白盒加密分析

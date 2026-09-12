@@ -3,6 +3,7 @@ name: re-ios
 description: >
   iOS 应用分析：Mach-O、class-dump、越狱环境。
   触发词：ios逆向、ipa、class-dump、越狱
+capabilities: [macho-parser]
 ---
 
 # iOS 应用分析

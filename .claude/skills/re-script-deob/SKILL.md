@@ -1,6 +1,7 @@
 ---
 name: re-script-deob
 description: 脚本/宏去混淆：PowerShell、VBA、JavaScript。触发词：PowerShell混淆、VBA宏、JS去混淆、脚本解密、恶意脚本
+capabilities: [deobfuscation]
 ---
 
 # 脚本/宏去混淆（PowerShell / VBA / JavaScript）

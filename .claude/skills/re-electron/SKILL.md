@@ -3,6 +3,7 @@ name: re-electron
 description: >
   Electron 桌面应用逆向：asar 解包、主/渲染进程 JS、V8 字节码（.jsc）边界、CDP 动态调试、反调试对抗。
   触发词：Electron、asar、桌面应用逆向、.jsc、V8 快照、CDP、ELECTRON_RUN_AS_NODE、devtools 检测。
+capabilities: [electron-analysis]
 ---
 
 # Electron 桌面应用逆向（asar / CDP / .jsc）

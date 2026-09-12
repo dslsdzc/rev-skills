@@ -1,6 +1,7 @@
 ---
 name: re-rtos
 description: RTOS 结构分析：FreeRTOS/ThreadX/Zephyr/RT-Thread/VxWorks/QNX/INTEGRITY 任务表与 TCB 定位、内核对象还原、按任务拆分反编译。触发词：RTOS、FreeRTOS、ThreadX、Zephyr、VxWorks、QNX、INTEGRITY、任务表、TCB、固件调度、MCU 固件
+capabilities: [rtos-analysis]
 ---
 
 # RTOS 结构分析（FreeRTOS / ThreadX / Zephyr / RT-Thread / VxWorks / QNX / INTEGRITY）

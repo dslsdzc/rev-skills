@@ -4,6 +4,7 @@ type: atomic
 description: >
   函数式语言运行时逆向（Haskell/OCaml）：闭包/堆对象模型、调用约定、数据流优先策略。
   触发词：Haskell逆向、OCaml逆向、GHC RTS、thunk、STG、OCaml runtime、闭包、函数式产物。
+capabilities: [lang-runtime-analysis]
 ---
 
 # 函数式运行时逆向（Haskell / OCaml）

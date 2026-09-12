@@ -3,6 +3,7 @@ name: re-uefi
 description: >
   UEFI/BIOS 固件：DXE 驱动、UEFI 模块、bootkit。
   触发词：UEFI、BIOS、DXE、bootkit、Secure Boot、EFI 固件
+capabilities: [uefi-analysis]
 ---
 
 # UEFI 固件逆向（DXE 驱动 / UEFI 模块 / bootkit）

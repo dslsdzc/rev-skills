@@ -3,6 +3,7 @@ name: re-mips
 description: >
   MIPS 架构逆向与路由器固件分析方法论：延迟槽、$gp 调用约定、大小端判断、httpd 定位。
   触发词：MIPS、mipsel、路由器固件、嵌入式、延迟槽、big-endian、大端、小端、httpd、busybox
+capabilities: [arch-analysis]
 ---
 
 # MIPS 架构逆向（路由器固件）

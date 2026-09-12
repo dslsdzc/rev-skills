@@ -1,6 +1,7 @@
 ---
 name: re-flutter
 description: Flutter/Dart AOT 逆向：libapp.so 快照分区解析、符号还原、Dart VM 动态分析。触发词：Flutter、Dart、libapp.so、AOT snapshot、kernel_blob、flutter_assets、Dart VM
+capabilities: [hybrid-app-analysis]
 ---
 
 # Flutter / Dart AOT 逆向（快照解析 / 符号还原 / VM 动态分析）

@@ -3,6 +3,7 @@ name: re-crypto-keys
 description: >
   密钥与口令提取：硬编码、内存搜索、资源。
   触发词：找密钥、硬编码、key extraction、口令
+capabilities: [key-extraction]
 ---
 
 # 密钥与口令提取

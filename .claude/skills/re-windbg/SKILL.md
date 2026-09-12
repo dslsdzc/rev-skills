@@ -2,6 +2,7 @@
 name: re-windbg
 description: >
   WinDbg 调试（Windows 用户态+内核）。触发词：WinDbg、windbg、内核调试、kd、!analyze
+capabilities: [debugging]
 ---
 
 # WinDbg 动态调试（Windows 用户态 + 内核）

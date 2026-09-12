@@ -4,6 +4,7 @@ type: atomic
 description: >
   二进制变体/补丁对比：函数匹配、N-day 补丁 diff、变体溯源与相似度分析。
   触发词：二进制对比、补丁对比、N-day、变体分析、BinDiff、函数匹配、样本相似。
+capabilities: [binary-diffing]
 ---
 
 # 二进制变体/补丁对比

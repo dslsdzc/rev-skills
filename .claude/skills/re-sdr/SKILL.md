@@ -4,6 +4,7 @@ type: atomic
 description: >
   射频逆向：信号采集、频谱分析、解调、帧同步与协议恢复、重放。
   触发词：SDR、射频、信号分析、解调、RTL-SDR、HackRF、无线协议、遥测。
+capabilities: [rf-analysis, sdr-analysis]
 ---
 
 # 射频信号逆向（SDR）

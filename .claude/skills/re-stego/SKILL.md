@@ -4,6 +4,7 @@ type: atomic
 description: >
   隐写术检测与提取：文件尾附加、图片 LSB、音频与其他载体、提取验证。
   触发词：隐写、stego、LSB、文件尾附加、隐写提取、图片隐写。
+capabilities: [stego-detection]
 ---
 
 # 隐写术检测与提取

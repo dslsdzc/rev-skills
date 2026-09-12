@@ -14,28 +14,28 @@ capabilities: [dex-parser, jni-analysis, frida-instrumentation, mobile-forensics
 
 ## 完整工作流
 
-1. 初勘：[[re-triage]] —— file/哈希/熵确认输入类型（APK 与 IPA 都是 ZIP 容器，`file` 报 ZIP；纯 `.so` / Framework dylib 直接进第 4 步）；未走 [[re-analyze]] 入口则先补做，读取 `RE_*` 会话变量
+1. 初勘：[[re-triage]]（能力：`triage`） —— file/哈希/熵确认输入类型（APK 与 IPA 都是 ZIP 容器，`file` 报 ZIP；纯 `.so` / Framework dylib 直接进第 4 步）；未走 [[re-analyze]] 入口则先补做，读取 `RE_*` 会话变量
 2. 静态：
-   - Android：[[re-apk]] —— apktool 解包、AndroidManifest 入口/权限/组件、jadx 反编译 Java、smali 补丁思路、加固识别
-   - iOS：[[re-ios]] —— ipa 解包与签名检查、class-dump 头文件、加密二进制脱壳
-3. 动态：[[re-frida]] —— 需要运行时行为（解密、hook、绕过证书/检测、观察调用链）时 spawn/attach 插桩；iOS 断点调试走 [[re-lldb]]
-4. 原生库：移动 App 含原生代码（Android `lib/*.so`、iOS Framework 内 dylib）→ [[re-binary-core]]：[[re-format-elf]]（Android）/ [[re-format-macho]]（iOS）解析格式，[[re-ghidra]] 反编译 JNI/OC 底层逻辑；Android native 深挖（JNI 注册还原、so 逻辑）走 [[re-android-native]]；iOS 越狱环境（越狱检测 / tweak / 动态调试）走 [[re-ios-jb]]
-5. 加固/带壳：[[re-apk]] 识别加固后转脱壳域（[[re-anti-analysis]]，Android）；iOS App Store 加密二进制按 [[re-ios]] 脱壳（frida-ios-dump 思路）。脱壳产物回到步骤 2 复跑
-6. 产出：结论/报告（按 `RE_REPORT`），哈希与证据存档（见 [[re-triage]]）
+   - Android：[[re-apk]]（能力：`dex-parser`） —— apktool 解包、AndroidManifest 入口/权限/组件、jadx 反编译 Java、smali 补丁思路、加固识别
+   - iOS：[[re-ios]]（能力：`macho-parser`） —— ipa 解包与签名检查、class-dump 头文件、加密二进制脱壳
+3. 动态：[[re-frida]]（能力：`frida-instrumentation`） —— 需要运行时行为（解密、hook、绕过证书/检测、观察调用链）时 spawn/attach 插桩；iOS 断点调试走 [[re-lldb]]（能力：`debugging`）
+4. 原生库：移动 App 含原生代码（Android `lib/*.so`、iOS Framework 内 dylib）→ [[re-binary-core]]（能力：`decompilation`、`debugging`、`memory-dump`、`elf-parser`、`pe-parser`、`macho-parser`）：[[re-format-elf]]（能力：`elf-parser`；Android）/ [[re-format-macho]]（能力：`macho-parser`；iOS）解析格式，[[re-ghidra]]（能力：`decompilation`、`debugging`） 反编译 JNI/OC 底层逻辑；Android native 深挖（JNI 注册还原、so 逻辑）走 [[re-android-native]]（能力：`jni-analysis`）；iOS 越狱环境（越狱检测 / tweak / 动态调试）走 [[re-ios-jb]]（能力：`jailbreak-analysis`）
+5. 加固/带壳：[[re-apk]]（能力：`dex-parser`） 识别加固后转脱壳域（[[re-anti-analysis]]（能力：`unpack`、`deobfuscation`、`evasion-analysis`），Android）；iOS App Store 加密二进制按 [[re-ios]]（能力：`macho-parser`） 脱壳（frida-ios-dump 思路）。脱壳产物回到步骤 2 复跑
+6. 产出：结论/报告（按 `RE_REPORT`），哈希与证据存档（见 [[re-triage]]（能力：`triage`））
 
-每步结果存档（证据路径 + sha256，见 [[re-triage]]），供报告引用；发现恶意样本/回连随时转 [[re-malware]]。
+每步结果存档（证据路径 + sha256，见 [[re-triage]]（能力：`triage`）），供报告引用；发现恶意样本/回连随时转 [[re-malware]]（能力：`malware-behavior`、`document-malware`、`evasion-analysis`、`key-extraction`、`threat-intel`）。
 
 ## 何时用哪个原子技能（选择树）
 
-- 输入是 APK / 目标为 Android → [[re-apk]] 静态 → 需要运行时 → [[re-frida]]
-- 输入是 IPA / 目标为 iOS → [[re-ios]] 静态 + 脱壳 → 断点调试 [[re-lldb]] / 插桩 [[re-frida]]
-- 目标含原生库（.so / dylib）→ [[re-binary-core]]（[[re-format-elf]] / [[re-format-macho]] / [[re-ghidra]]）；Android native 专项（JNI/so）→ [[re-android-native]]
-- 目标有越狱检测 / 要 tweak 分析 / 越狱设备动态调试 → [[re-ios-jb]]
-- 需要解密 / 绕过证书 / hook 函数 / 观察调用链 → [[re-frida]]
-- 加固/带壳：Android → [[re-anti-analysis]]（先经 [[re-apk]] 识别）；iOS 加密 → [[re-ios]] 脱壳
-- Android 加固脱壳专项（乐固/360/梆梆/爱加密）→ [[re-mobile-pack]]（识别后运行/静态脱壳 + DEX 修复）
-- Flutter / React Native 混合应用 → [[re-hybrid-app]]（引擎识别 → blutter / hermes-dec）
-- 提取运行时内存中的 DEX/密钥 → [[re-memdump]]（DEX 提取见该技能）
+- 输入是 APK / 目标为 Android → [[re-apk]]（能力：`dex-parser`） 静态 → 需要运行时 → [[re-frida]]（能力：`frida-instrumentation`）
+- 输入是 IPA / 目标为 iOS → [[re-ios]]（能力：`macho-parser`） 静态 + 脱壳 → 断点调试 [[re-lldb]]（能力：`debugging`） / 插桩 [[re-frida]]（能力：`frida-instrumentation`）
+- 目标含原生库（.so / dylib）→ [[re-binary-core]]（能力：`decompilation`、`debugging`、`memory-dump`、`elf-parser`、`pe-parser`、`macho-parser`；[[re-format-elf]]（能力：`elf-parser`） / [[re-format-macho]]（能力：`macho-parser`） / [[re-ghidra]]（能力：`decompilation`、`debugging`））；Android native 专项（JNI/so）→ [[re-android-native]]（能力：`jni-analysis`）
+- 目标有越狱检测 / 要 tweak 分析 / 越狱设备动态调试 → [[re-ios-jb]]（能力：`jailbreak-analysis`）
+- 需要解密 / 绕过证书 / hook 函数 / 观察调用链 → [[re-frida]]（能力：`frida-instrumentation`）
+- 加固/带壳：Android → [[re-anti-analysis]]（能力：`unpack`、`deobfuscation`、`evasion-analysis`；先经 [[re-apk]]（能力：`dex-parser`） 识别）；iOS 加密 → [[re-ios]]（能力：`macho-parser`） 脱壳
+- Android 加固脱壳专项（乐固/360/梆梆/爱加密）→ [[re-mobile-pack]]（能力：`unpack`；识别后运行/静态脱壳 + DEX 修复）
+- Flutter / React Native 混合应用 → [[re-hybrid-app]]（能力：`hybrid-app-analysis`；引擎识别 → blutter / hermes-dec）
+- 提取运行时内存中的 DEX/密钥 → [[re-memdump]]（能力：`memory-dump`；DEX 提取见该技能）
 
 ## 跨域联合
 

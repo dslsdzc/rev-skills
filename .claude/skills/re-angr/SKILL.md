@@ -1,6 +1,7 @@
 ---
 name: re-angr
 description: angr 符号执行：符号化输入、求解。触发词：angr、符号执行、自动解题、constraint
+capabilities: [symbolic-execution]
 ---
 
 # angr 符号执行（符号化输入 / 自动求解）

@@ -1,6 +1,7 @@
 ---
 name: re-go
 description: Go 二进制逆向：符号保留、字符串表、goroutine。触发词：Go、golang、Go二进制、goroutine、go build
+capabilities: [lang-runtime-analysis]
 ---
 
 # Go 二进制逆向（符号 / 字符串表 / goroutine）

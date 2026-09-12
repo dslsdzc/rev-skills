@@ -7,6 +7,7 @@ description: >
   robustness evaluation（对抗鲁棒性评估）。
   触发词：API模型窃取、黑盒模型复制、模型指纹、成员推断、对抗样本、行为水印、模型安全评估、隐私泄露评估。
 guard: {"require_authorization": true, "forbidden": ["unauthorized_api_testing", "bypass_access_control", "model_theft_against_third_party"]}
+capabilities: [ai-model-analysis]
 ---
 
 # AI 模型安全评估与取证（行为层）

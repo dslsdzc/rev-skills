@@ -3,6 +3,7 @@ name: re-mobile-pack
 description: >
   Android 加固脱壳专项：乐固/360/梆梆/爱加密、DEX 恢复。
   触发词：脱壳、Android加固、DEX脱壳、乐固、梆梆、360加固、爱加密
+capabilities: [unpack]
 ---
 
 # Android 加固脱壳（DEX 恢复）

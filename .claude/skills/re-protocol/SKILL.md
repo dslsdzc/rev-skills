@@ -12,13 +12,13 @@ capabilities: [network-capture, protocol-recovery, crypto-identification, crypto
 
 ## 完整工作流
 
-按顺序执行；每步产物（pcap/密钥/解密脚本/解析脚本）记录证据路径 + sha256，供报告引用（见 [[re-ioc]]）。
+按顺序执行；每步产物（pcap/密钥/解密脚本/解析脚本）记录证据路径 + sha256，供报告引用（见 [[re-ioc]]（能力：`threat-intel`））。
 
-1. **捕获：[[re-netcap]]** —— 先定抓包点（本机/网关/中间人），沙箱内捕获优先（[[re-sandbox]] 网络隔离：INetSim / fake DNS / 断网，防真外联，见 [[platform-tips]] 最高原则）；tcpdump 过滤只留目标流再存盘，HTTPS/TLS 提前用 mitmproxy CA 做准备
-2. **加密识别：[[re-crypto-id]]** —— 判断流量是明文还是密文：熵 >7.0 / 无结构 / 无 ASCII → 密文；再做常量表指纹（AES S-box / CRC 表）、XOR/ROL/ROR 单字节模式、常见算法流程特征
-3. **密钥：[[re-crypto-keys]]** —— 静态优先（strings / 交叉引用找硬编码、资源文件、导入表 Crypt* 附近），静态没有再上动态（[[re-memdump]] 默认转储后搜 16/32 字节熵块与可打印口令），PBKDF 类按派生函数还原
-4. **解密：[[re-crypto-decrypt]]** —— 定位解密函数（交叉引用密文输入点）→ 反编译还原算法 → 重写为独立 python 脚本 → 用已知明文/已知头部验证 → 把捕获的密文流解成明文流量流
-5. **状态机重建：[[re-proto-rev]]** —— 明文流量才做这一步：分组统计与聚类（长度/方向/时序）→ 定位固定头（magic/长度字段）→ 字段推断（类型/长度/CRC）→ Scapy 写解析器 → 状态机推演（握手/心跳/结束）
+1. **捕获：[[re-netcap]]（能力：`network-capture`）** —— 先定抓包点（本机/网关/中间人），沙箱内捕获优先（[[re-sandbox]]（能力：`sandbox-setup`） 网络隔离：INetSim / fake DNS / 断网，防真外联，见 [[platform-tips]] 最高原则）；tcpdump 过滤只留目标流再存盘，HTTPS/TLS 提前用 mitmproxy CA 做准备
+2. **加密识别：[[re-crypto-id]]（能力：`crypto-identification`）** —— 判断流量是明文还是密文：熵 >7.0 / 无结构 / 无 ASCII → 密文；再做常量表指纹（AES S-box / CRC 表）、XOR/ROL/ROR 单字节模式、常见算法流程特征
+3. **密钥：[[re-crypto-keys]]（能力：`key-extraction`）** —— 静态优先（strings / 交叉引用找硬编码、资源文件、导入表 Crypt* 附近），静态没有再上动态（[[re-memdump]]（能力：`memory-dump`） 默认转储后搜 16/32 字节熵块与可打印口令），PBKDF 类按派生函数还原
+4. **解密：[[re-crypto-decrypt]]（能力：`crypto-decryption`）** —— 定位解密函数（交叉引用密文输入点）→ 反编译还原算法 → 重写为独立 python 脚本 → 用已知明文/已知头部验证 → 把捕获的密文流解成明文流量流
+5. **状态机重建：[[re-proto-rev]]（能力：`protocol-recovery`）** —— 明文流量才做这一步：分组统计与聚类（长度/方向/时序）→ 定位固定头（magic/长度字段）→ 字段推断（类型/长度/CRC）→ Scapy 写解析器 → 状态机推演（握手/心跳/结束）
 
 **前置检查**：密文未解密不要进入状态机重建（会拿乱码当结构）；明文流量跳过步骤 2-4。
 
@@ -26,18 +26,18 @@ capabilities: [network-capture, protocol-recovery, crypto-identification, crypto
 
 按输入特征/目标分支：
 
-- **有流量（pcap / 实时抓包）** → [[re-netcap]]（捕获）→ 看是否密文：
-  - 密文（熵高/无结构）→ [[re-crypto-id]] → [[re-crypto-keys]] → [[re-crypto-decrypt]] → 明文后再 [[re-proto-rev]]
-  - 明文 → [[re-proto-rev]] 直接重建状态机
-- **工控/SCADA 协议（Modbus/DNP3/OPC UA，端口 502/20000/4840）** → [[re-ics]]（工控流量解析与点表；安全测试边界见 [[re-sandbox]]）
-- **物联网设备协议（MQTT/CoAP/BLE/Zigbee，1883/5683/2.4GHz 频段）** → [[re-iot-proto]]（设备语义解析 + 固件联动 [[re-firmware]]）
-- **只有二进制样本没有流量**（"协议实现逻辑是什么"）→ 从静态找加密实现 [[re-crypto-id]] → [[re-crypto-keys]] → [[re-crypto-decrypt]]；逻辑深挖转 [[re-binary-core]]（[[re-ghidra]] / [[re-ida]] / [[re-radare2]]）
-- **要理解交互语义**（"客户端和服务端怎么对话""握手过程"）→ [[re-proto-rev]]
-- **只要解密一个已知算法的 blob**（算法/密钥已知）→ 直接 [[re-crypto-decrypt]]
-- **只要找密钥**（"样本里有没有硬编码密钥"）→ [[re-crypto-keys]]（静态优先，见 [[platform-tips]] 最高原则的静态优先思路）
-- **白盒加密**（大段查表代码、无标准库调用、密钥藏在表里）→ [[re-whitebox]]（识别 → 表提取 → 密钥恢复，衔接加密三件套）
-- **流量捕获环境未就绪** → 先 [[re-sandbox]] 网络隔离（INetSim / fake DNS）再回来 [[re-netcap]]
-- **标准 TLS/加密流量深度**（ClientHello 指纹、SSLKEYLOG 解密、TLS 1.2/1.3）→ [[re-tls]]（标准 TLS 栈；自实现加密转 crypto 三件套）
+- **有流量（pcap / 实时抓包）** → [[re-netcap]]（能力：`network-capture`；捕获）→ 看是否密文：
+  - 密文（熵高/无结构）→ [[re-crypto-id]]（能力：`crypto-identification`） → [[re-crypto-keys]]（能力：`key-extraction`） → [[re-crypto-decrypt]]（能力：`crypto-decryption`） → 明文后再 [[re-proto-rev]]（能力：`protocol-recovery`）
+  - 明文 → [[re-proto-rev]]（能力：`protocol-recovery`） 直接重建状态机
+- **工控/SCADA 协议（Modbus/DNP3/OPC UA，端口 502/20000/4840）** → [[re-ics]]（能力：`protocol-recovery`；工控流量解析与点表；安全测试边界见 [[re-sandbox]]（能力：`sandbox-setup`））
+- **物联网设备协议（MQTT/CoAP/BLE/Zigbee，1883/5683/2.4GHz 频段）** → [[re-iot-proto]]（能力：`protocol-recovery`；设备语义解析 + 固件联动 [[re-firmware]]（能力：`firmware-extraction`、`emulation`、`rtos-analysis`、`hardware-interface`、`uefi-analysis`））
+- **只有二进制样本没有流量**（"协议实现逻辑是什么"）→ 从静态找加密实现 [[re-crypto-id]]（能力：`crypto-identification`） → [[re-crypto-keys]]（能力：`key-extraction`） → [[re-crypto-decrypt]]（能力：`crypto-decryption`）；逻辑深挖转 [[re-binary-core]]（能力：`decompilation`、`debugging`、`memory-dump`、`elf-parser`、`pe-parser`、`macho-parser`；[[re-ghidra]]（能力：`decompilation`、`debugging`） / [[re-ida]]（能力：`decompilation`、`debugging`） / [[re-radare2]]（能力：`decompilation`））
+- **要理解交互语义**（"客户端和服务端怎么对话""握手过程"）→ [[re-proto-rev]]（能力：`protocol-recovery`）
+- **只要解密一个已知算法的 blob**（算法/密钥已知）→ 直接 [[re-crypto-decrypt]]（能力：`crypto-decryption`）
+- **只要找密钥**（"样本里有没有硬编码密钥"）→ [[re-crypto-keys]]（能力：`key-extraction`；静态优先，见 [[platform-tips]] 最高原则的静态优先思路）
+- **白盒加密**（大段查表代码、无标准库调用、密钥藏在表里）→ [[re-whitebox]]（能力：`crypto-identification`、`key-extraction`；识别 → 表提取 → 密钥恢复，衔接加密三件套）
+- **流量捕获环境未就绪** → 先 [[re-sandbox]]（能力：`sandbox-setup`） 网络隔离（INetSim / fake DNS）再回来 [[re-netcap]]（能力：`network-capture`）
+- **标准 TLS/加密流量深度**（ClientHello 指纹、SSLKEYLOG 解密、TLS 1.2/1.3）→ [[re-tls]]（能力：`tls-analysis`、`crypto-identification`；标准 TLS 栈；自实现加密转 crypto 三件套）
 
 ## 跨域联合
 

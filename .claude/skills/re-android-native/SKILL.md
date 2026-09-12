@@ -3,6 +3,7 @@ name: re-android-native
 description: >
   Android 原生库 JNI 逆向：so 提取、JNI 注册还原、Native 逻辑分析。
   触发词：JNI、.so、Android native、xhook、IDA so
+capabilities: [jni-analysis]
 ---
 
 # Android 原生库（JNI/.so）逆向

@@ -3,6 +3,7 @@ name: re-radare2
 description: >
   rizin/radare2 工作流：命令行分析、pdf、V 模式。
   触发词：radare2、rizin、rz、r2
+capabilities: [decompilation]
 ---
 
 # rizin/radare2 命令行分析

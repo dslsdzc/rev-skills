@@ -4,6 +4,7 @@ type: atomic
 description: >
   Nim 编译产物逆向：运行时识别、NimString 结构、异常与 GC 路径。
   触发词：Nim逆向、nim、NimString、NimMain、nim 产物。
+capabilities: [lang-runtime-analysis]
 ---
 
 # Nim 逆向

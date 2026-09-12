@@ -4,6 +4,7 @@ type: atomic
 description: >
   Frida 脚本生成方法论：目标特征 → 模板选择 → 改写 → 验证。独立于执行插桩（re-frida）。
   触发词：生成Frida脚本、写hook脚本、frida脚本怎么写、写个hook、脚本生成。
+capabilities: [frida-instrumentation]
 ---
 
 # Frida 脚本生成

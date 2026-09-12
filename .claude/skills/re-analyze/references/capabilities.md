@@ -57,16 +57,47 @@
 - `uefi-analysis` — UEFI/BIOS 固件
 - `mobile-forensics` — 移动设备取证（备份/应用数据）
 
+### 全量标注补录（2026-09-13）
+
+以下标签在全量标注时补入——对应域此前有专门技能却无标签可表达（原 52 个标签偏文件/协议域）：
+
+- `arch-analysis` — 架构相关逆向（ARM/MIPS/RISC-V：调用约定、指令集特性、裸机入口）
+- `lang-runtime-analysis` — 语言运行时产物逆向（Go/Rust/Swift/Zig/Nim/Haskell：符号、ABI、运行时结构）
+- `disk-forensics` — 磁盘/文件系统取证（删除恢复、时间线、未分配空间）
+- `ebpf-analysis` — eBPF 程序逆向（指令集、progs/maps 关联、跟踪与对抗）
+- `electron-analysis` — Electron 桌面应用逆向（asar/主渲染进程/CDP）
+- `hypervisor-analysis` — 虚拟化逆向（VT-x/SVM、VMCS/VMCB、嵌套与检测）
+- `jailbreak-analysis` — iOS 越狱环境与 tweak 分析（检测绕过、Theos/LLDB 远程）
+- `hybrid-app-analysis` — 跨平台框架产物逆向（Flutter/Dart AOT、Hermes/RN）
+- `exploit-development` — 利用开发（ROP/堆利用/载荷构造）
+- `binary-patching` — 二进制补丁（字节级修改、指令重写）
+- `plugin-development` — 逆向工具链扩展（Ghidra/IDA 插件工程化）
+- `sandbox-setup` — 沙箱与隔离环境搭建（动态分析前置）
+
 ## 标注规范
 
 - frontmatter 声明 `capabilities: [tag1, tag2]`（YAML list；单值可写 `capabilities: [tag]`）
 - 语义：本技能**提供**这些能力（一技能可多能力）
 - 网关/入口：声明其聚合能力；不提供分析能力的元技能（如 re-feedback）可省略字段
 - 未知标签、非 list 写法 → validate.mjs 报错
+- **标签不得悬空**：注册表里的标签必须至少被一个技能声明（validate.mjs 检查）——新增标签与声明它的技能同批提交
 - 渐进策略：首批标注网关与高频技能（2026-08-25），其余技能随维护逐步补齐——未标注不阻塞
 
-## 路由改造（后续工作）
+## 能力索引（声明 → 消费的查询表）
 
-- triage/rerouting 从「按领域名」逐步改为「输入特征 → 需要能力 → 提供该能力的技能」
-- 网关选择树标注能力组合（如 Android = dex-parser + jni-analysis + frida-instrumentation + native-analysis）
-- 新技能创建时先声明能力，校验通过后挂载
+- `capability-index.md`：能力 → 技能反查表，**机器生成**（`node bin/capindex.mjs`），含"尚未被声明"清单与覆盖率计数
+- 任何 `capabilities` 声明变更后必须重跑生成并提交，否则 `npm test` 报索引过期
+- 路由/检索按索引反查（不必按领域名猜）；索引同时是可查的覆盖率看板（标签覆盖 + 技能覆盖两个口径）
+
+## 路由改造（2026-09-13 完成）
+
+- ✅ **triage/rerouting 已按能力匹配**：两表都带「需要能力」列，技能列由 `capability-index.md` 反查（不再按领域名硬编码）
+- ✅ **覆盖率**：原子技能 108/108 声明能力；入口 re-analyze 与元网关 re-feedback 按策略省略（发布/编排元技能不提供分析能力）
+- ✅ **CI 防漂移**（4 条）：原子技能必须声明能力｜路由能力列标签须在注册表内｜路由标称能力须被本行技能声明｜索引须与声明同步（另加注册表标签不得悬空）
+- ✅ **网关选择树已标注能力组合**（2026-09-13）：11 个网关的选择树段内技能链接全部带能力标注（336 处），网关内调度可直接读「输入形态 → 技能」（能力：`tag`）
+
+## 网关选择树的能力标注（2026-09-13 起）
+
+- **格式**：`[[re-xxx]]（能力：`tag1`、`tag2`）`——必须带显式「能力：」前缀：无前缀的括号是普通说明（如 `[[re-x64dbg]]（`minidump` 命令）`），两者不可混
+- **范围**：`## 何时用哪个原子技能（选择树）` 段内**所有技能链接强制标注**；完整工作流段同样格式（非强制）
+- **CI 校验**（`npm test`）：选择树内技能链接缺标注 → 失败；标注的能力须在注册表内、且被被标注技能真的声明；非技能链接（references 文档如 [[platform-tips]]）豁免

@@ -1,6 +1,7 @@
 ---
 name: re-dotnet
 description: .NET CIL 逆向：dnSpy/ILSpy 反编译、de4dot 去混淆、ConfuserEx。触发词：.NET、dnSpy、ILSpy、de4dot、CIL、ConfuserEx
+capabilities: [bytecode-parser]
 ---
 
 # .NET CIL 逆向（dnSpy / ILSpy / de4dot）

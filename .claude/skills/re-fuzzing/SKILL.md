@@ -5,6 +5,7 @@ description: >
   afl-fuzz 运行参数、覆盖率(afl-cov)、字典/结构化输入。
   触发词：fuzz、模糊测试、AFL、afl-fuzz、libFuzzer、honggfuzz、
   覆盖率、corpus、语料、dictionary、挖洞、fuzzing。
+capabilities: [fuzzing]
 ---
 
 # 覆盖率引导模糊测试（AFL++ / libFuzzer / honggfuzz）

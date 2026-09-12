@@ -3,6 +3,7 @@ name: re-x64dbg
 description: >
   x64dbg 调试（Windows）：attach、断点、Scylla。
   触发词：x64dbg、Windows调试、Scylla
+capabilities: [debugging]
 ---
 
 # x64dbg 动态调试（Windows）

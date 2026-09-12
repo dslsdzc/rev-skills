@@ -1,6 +1,7 @@
 ---
 name: re-rust
 description: Rust 二进制逆向：符号、monomorphization、所有权模式。触发词：Rust、rust、Rust二进制、cargo
+capabilities: [lang-runtime-analysis]
 ---
 
 # Rust 二进制逆向（符号解译 / monomorphization / 所有权）

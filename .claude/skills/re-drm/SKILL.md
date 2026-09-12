@@ -3,6 +3,7 @@ name: re-drm
 description: >
   DRM 分析：PlayReady/Widevine 实现、许可证流程、解密器还原。
   触发词：DRM、PlayReady、Widevine、许可证、内容保护
+capabilities: [drm-analysis]
 ---
 
 # DRM 分析（PlayReady / Widevine / 许可证流程）

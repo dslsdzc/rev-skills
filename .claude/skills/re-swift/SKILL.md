@@ -4,6 +4,7 @@ type: atomic
 description: >
   Swift 二进制逆向：mangling 解码、协议 witness table、闭包捕获、ObjC 互操作。
   触发词：Swift逆向、swiftc、witness table、swift demangle、闭包捕获、Swift 产物。
+capabilities: [lang-runtime-analysis]
 ---
 
 # Swift 逆向

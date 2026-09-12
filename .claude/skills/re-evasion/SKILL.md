@@ -3,6 +3,7 @@ name: re-evasion
 description: >
   检测规避/EDR 对抗分析：AMSI/ETW 绕过、无文件、lolbin 链。
   触发词：规避、evasion、AMSI、ETW、无文件、lolbin、EDR绕过
+capabilities: [evasion-analysis]
 ---
 
 # 检测规避与 EDR 对抗分析

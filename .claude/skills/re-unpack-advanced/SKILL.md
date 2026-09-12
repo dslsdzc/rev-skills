@@ -1,6 +1,7 @@
 ---
 name: re-unpack-advanced
 description: 强壳脱壳：VMProtect/Themida。触发词：VMProtect、Themida、强壳、虚拟化壳、手动脱壳
+capabilities: [unpack]
 ---
 
 # 脱壳：强壳（VMProtect/Themida）

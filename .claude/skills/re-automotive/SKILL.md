@@ -3,6 +3,7 @@ name: re-automotive
 description: >
   汽车逆向：CAN 总线、ECU 固件。
   触发词：汽车、CAN、ECU、车载、OBD、UDS
+capabilities: [automotive-analysis]
 ---
 
 # 汽车逆向（CAN 总线 / ECU）

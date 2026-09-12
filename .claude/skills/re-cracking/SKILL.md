@@ -18,33 +18,33 @@ capabilities: [license-analysis]
 
 ## 完整工作流
 
-按顺序执行；每步产物（校验点地址 / 算法伪代码 / patch 文件 / keygen 脚本）记录证据路径 + sha256（见 [[re-triage]]），供报告引用。
+按顺序执行；每步产物（校验点地址 / 算法伪代码 / patch 文件 / keygen 脚本）记录证据路径 + sha256（见 [[re-triage]]（能力：`triage`）），供报告引用。
 
-1. **带壳判断与脱壳：[[re-anti-analysis]]** —— 先判壳再动手：[[re-packer-id]] 识别（节名异常 / 熵 >7 / 导入表极小 / EP 指向非首节）。带壳先脱壳（简单壳 [[re-unpack-simple]]、强壳 [[re-unpack-advanced]]，脱壳产物 sha256 存档）；脱壳后仍有花指令 / 平坦化 / 字符串加密 → [[re-deobfuscate]]。**确认无壳才进入授权定位**（在壳代码里找授权函数是白费功夫，见坑 1）
-2. **授权定位：[[re-license]]** —— 字符串 / API 交叉引用找校验函数（注册对话框 / MessageBox / 注册表读取）→ 调用图与成功/失败分支 → 算法还原（对比 / 解密 / 签名验证）→ 区分在线激活与离线校验 → 识别机器码绑定。**产物：全部校验点地址 + 校验算法**（不只第一个，见坑 2）
+1. **带壳判断与脱壳：[[re-anti-analysis]]（能力：`unpack`、`deobfuscation`、`evasion-analysis`）** —— 先判壳再动手：[[re-packer-id]]（能力：`unpack`） 识别（节名异常 / 熵 >7 / 导入表极小 / EP 指向非首节）。带壳先脱壳（简单壳 [[re-unpack-simple]]（能力：`unpack`）、强壳 [[re-unpack-advanced]]（能力：`unpack`），脱壳产物 sha256 存档）；脱壳后仍有花指令 / 平坦化 / 字符串加密 → [[re-deobfuscate]]（能力：`deobfuscation`）。**确认无壳才进入授权定位**（在壳代码里找授权函数是白费功夫，见坑 1）
+2. **授权定位：[[re-license]]（能力：`license-analysis`）** —— 字符串 / API 交叉引用找校验函数（注册对话框 / MessageBox / 注册表读取）→ 调用图与成功/失败分支 → 算法还原（对比 / 解密 / 签名验证）→ 区分在线激活与离线校验 → 识别机器码绑定。**产物：全部校验点地址 + 校验算法**（不只第一个，见坑 2）
 3. **分派**：根据校验算法性质与目标选择路径——
-   - 算法可逆（比较 / 变换 / 查表可逆向）→ **[[re-keygen]]** 写注册机（生成任意合法序列号，不修改目标文件，适合分发）
-   - 算法不可逆（哈希；非对称验签——私钥不可由公开验证过程推导，RSA/ECC 验证本身是公开算法，不可得的是签名生成密钥）→ **[[re-patching]]**（跳过验签 / 改判定分支）；需要从比较链 / 数学关系硬推序列号 → [[re-z3]] 建模可选（见坑 4）
-   - 只想快速绕过（不关心算法）→ **[[re-patching]]**（最小改动：失败跳转改成功跳转）
+   - 算法可逆（比较 / 变换 / 查表可逆向）→ **[[re-keygen]]（能力：`license-analysis`）** 写注册机（生成任意合法序列号，不修改目标文件，适合分发）
+   - 算法不可逆（哈希；非对称验签——私钥不可由公开验证过程推导，RSA/ECC 验证本身是公开算法，不可得的是签名生成密钥）→ **[[re-patching]]（能力：`binary-patching`）**（跳过验签 / 改判定分支）；需要从比较链 / 数学关系硬推序列号 → [[re-z3]]（能力：`constraint-solving`） 建模可选（见坑 4）
+   - 只想快速绕过（不关心算法）→ **[[re-patching]]（能力：`binary-patching`）**（最小改动：失败跳转改成功跳转）
    - 两者可同时做：patch 即时可用，keygen 长期有效
-4. **补丁：[[re-patching]]** —— 定位 patch 点（失败跳转 jz/jnz）→ 字节修改（nop / 跳转重写）→ 校验和 / 自校验处理 → 补丁导出（二进制 diff / patch 文件）→ 多架构适配（ARM 改 B 指令等）
-5. **注册机：[[re-keygen]]** —— 从 [[re-license]] 拿到的校验算法 → 逆推生成算法（正推 / 约束求解）→ python 实现 → 校验码 / 校验位边界处理 → 多平台 CLI 输出
-6. **验证**：沙箱内（[[re-sandbox]]，[[platform-tips]] 最高原则）复跑——补丁版与 keygen 生成的序列号必须通过**全部**校验点（启动 + 功能点，见坑 2）；与未修改样本对比行为一致；产物与证据路径存档
+4. **补丁：[[re-patching]]（能力：`binary-patching`）** —— 定位 patch 点（失败跳转 jz/jnz）→ 字节修改（nop / 跳转重写）→ 校验和 / 自校验处理 → 补丁导出（二进制 diff / patch 文件）→ 多架构适配（ARM 改 B 指令等）
+5. **注册机：[[re-keygen]]（能力：`license-analysis`）** —— 从 [[re-license]]（能力：`license-analysis`） 拿到的校验算法 → 逆推生成算法（正推 / 约束求解）→ python 实现 → 校验码 / 校验位边界处理 → 多平台 CLI 输出
+6. **验证**：沙箱内（[[re-sandbox]]（能力：`sandbox-setup`），[[platform-tips]] 最高原则）复跑——补丁版与 keygen 生成的序列号必须通过**全部**校验点（启动 + 功能点，见坑 2）；与未修改样本对比行为一致；产物与证据路径存档
 
-每步结果按 [[re-triage]] 记录；注册算法指纹 / 补丁字节是 [[re-ioc]] YARA 特征来源。
+每步结果按 [[re-triage]]（能力：`triage`） 记录；注册算法指纹 / 补丁字节是 [[re-ioc]]（能力：`threat-intel`） YARA 特征来源。
 
 ## 何时用哪个原子技能（选择树）
 
 按输入特征 / 目标分支：
 
-- **样本带壳**（节名异常 / 熵高 / 导入表极小）→ 先 [[re-anti-analysis]]（packer-id → unpack-* → 需要时 deobfuscate），脱壳后回到本网关第 2 步
-- **"序列号算法是什么 / 帮我生成注册码"** → [[re-license]] 还原算法 → [[re-keygen]] 生成
-- **"绕过注册验证 / 解锁功能"** → [[re-license]] 定位校验点 → [[re-patching]] 最小改动
-- **校验算法不可逆（哈希；非对称签名——私钥不可由公开验证过程推导）** → [[re-patching]]（跳过验签）；想从比较链硬推 → [[re-z3]] 建模
-- **在线激活**（校验含网络请求）→ [[re-license]] 区分在线 / 离线后转 [[re-protocol]] 抓包分析激活流程，本地侧按离线流程处理（见坑 3）
-- **只要确认注册机制是否存在**（"这程序有授权吗"）→ [[re-license]] 第 1 步即可，不进入后续
-- **确认无授权机制** → 不需要本网关，转 [[re-binary-core]] 正常分析
-- **目标是 DRM 内容保护**（PlayReady / Widevine 许可证、内容解密）→ 非传统授权校验，转 [[re-drm]]（仅授权研究，合规边界见该技能）
+- **样本带壳**（节名异常 / 熵高 / 导入表极小）→ 先 [[re-anti-analysis]]（能力：`unpack`、`deobfuscation`、`evasion-analysis`；packer-id → unpack-* → 需要时 deobfuscate），脱壳后回到本网关第 2 步
+- **"序列号算法是什么 / 帮我生成注册码"** → [[re-license]]（能力：`license-analysis`） 还原算法 → [[re-keygen]]（能力：`license-analysis`） 生成
+- **"绕过注册验证 / 解锁功能"** → [[re-license]]（能力：`license-analysis`） 定位校验点 → [[re-patching]]（能力：`binary-patching`） 最小改动
+- **校验算法不可逆（哈希；非对称签名——私钥不可由公开验证过程推导）** → [[re-patching]]（能力：`binary-patching`；跳过验签）；想从比较链硬推 → [[re-z3]]（能力：`constraint-solving`） 建模
+- **在线激活**（校验含网络请求）→ [[re-license]]（能力：`license-analysis`） 区分在线 / 离线后转 [[re-protocol]]（能力：`network-capture`、`protocol-recovery`、`crypto-identification`、`crypto-decryption`、`key-extraction`、`tls-analysis`） 抓包分析激活流程，本地侧按离线流程处理（见坑 3）
+- **只要确认注册机制是否存在**（"这程序有授权吗"）→ [[re-license]]（能力：`license-analysis`） 第 1 步即可，不进入后续
+- **确认无授权机制** → 不需要本网关，转 [[re-binary-core]]（能力：`decompilation`、`debugging`、`memory-dump`、`elf-parser`、`pe-parser`、`macho-parser`） 正常分析
+- **目标是 DRM 内容保护**（PlayReady / Widevine 许可证、内容解密）→ 非传统授权校验，转 [[re-drm]]（能力：`drm-analysis`；仅授权研究，合规边界见该技能）
 
 ## 跨域联合
 

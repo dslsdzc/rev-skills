@@ -4,6 +4,7 @@ type: atomic
 description: >
   威胁狩猎方法论：假设驱动、遥测源选择、基线对比与验证闭环。
   触发词：威胁狩猎、狩猎、hunting、假设驱动、遥测分析、异常检测。
+capabilities: [threat-intel]
 ---
 
 # 威胁狩猎

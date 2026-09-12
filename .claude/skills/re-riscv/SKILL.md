@@ -3,6 +3,7 @@ name: re-riscv
 description: >
   RISC-V 架构逆向：RV32/RV64、压缩指令（RVC）、gp 相对寻址、ABI 与 ecall 系统调用约定、工具链指纹。
   触发词：RISC-V、riscv、RV32、RV64、RVC、压缩指令、ecall、ESP32-C3、GD32V。
+capabilities: [arch-analysis]
 ---
 
 # RISC-V 架构逆向（RV32/RV64、RVC、gp 相对寻址）

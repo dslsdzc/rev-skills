@@ -3,6 +3,7 @@ name: re-loader
 description: >
   加载器/投放器分析：多层下载、内存加载、模块拼接。
   触发词：加载器、loader、dropper、投放器、内存加载、模块拼接
+capabilities: [malware-behavior]
 ---
 
 # 加载器 / 投放器分析（下载链 / 内存加载 / 模块拼接）

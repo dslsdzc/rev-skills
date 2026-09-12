@@ -4,6 +4,7 @@ type: atomic
 description: >
   现代 C++ 二进制逆向：RTTI/异常/虚表恢复、ABI 识别、mangling 解码。
   触发词：C++逆向、RTTI、虚表恢复、异常处理、C++ ABI、mangling、C++反编译。
+capabilities: [decompilation]
 ---
 
 # 现代 C++ 逆向（RTTI / 异常 / 虚表）

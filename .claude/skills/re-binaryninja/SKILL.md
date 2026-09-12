@@ -2,6 +2,7 @@
 name: re-binaryninja
 description: >
   Binary Ninja 工作流：MLIL、脚本 API。触发词：Binary Ninja、binaryninja、bn、MLIL
+capabilities: [decompilation]
 ---
 
 # Binary Ninja 逆向工作流

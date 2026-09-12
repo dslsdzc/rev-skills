@@ -18,11 +18,11 @@ capabilities: [decompilation, debugging, memory-dump, elf-parser, pe-parser, mac
 ## 完整工作流
 
 1. 环境：探测 + 偏好（若未走 [[re-analyze]] 入口，先补做，读取 `RE_*` 会话变量）
-2. 初勘：[[re-triage]] —— file/hash/熵/strings，确认文件类型与架构
-3. 格式解析：按类型走 [[re-format-pe]] / [[re-format-elf]] / [[re-format-macho]]
-4. 导入导出：[[re-imports]] —— 库指纹、IAT/符号，识别链接了什么
-5. 反编译：按 `RE_DECOMPILER` 走 [[re-ghidra]] / [[re-ida]] / [[re-radare2]]（未装 → 按对应技能「工具准备」安装；默认推荐 Ghidra）
-6. 动态（按需，默认沙箱）：[[re-gdb]] / [[re-x64dbg]] / [[re-lldb]]（按 OS）+ [[re-tracing]] + [[re-memdump]]
+2. 初勘：[[re-triage]]（能力：`triage`） —— file/hash/熵/strings，确认文件类型与架构
+3. 格式解析：按类型走 [[re-format-pe]]（能力：`pe-parser`） / [[re-format-elf]]（能力：`elf-parser`） / [[re-format-macho]]（能力：`macho-parser`）
+4. 导入导出：[[re-imports]]（能力：`pe-parser`、`elf-parser`） —— 库指纹、IAT/符号，识别链接了什么
+5. 反编译：按 `RE_DECOMPILER` 走 [[re-ghidra]]（能力：`decompilation`、`debugging`） / [[re-ida]]（能力：`decompilation`、`debugging`） / [[re-radare2]]（能力：`decompilation`；未装 → 按对应技能「工具准备」安装；默认推荐 Ghidra）
+6. 动态（按需，默认沙箱）：[[re-gdb]]（能力：`debugging`） / [[re-x64dbg]]（能力：`debugging`） / [[re-lldb]]（能力：`debugging`；按 OS）+ [[re-tracing]]（能力：`tracing`） + [[re-memdump]]（能力：`memory-dump`）
 7. 产出：结论 / 报告（按 `RE_REPORT`）
 
 ## 分析方法论
@@ -100,29 +100,29 @@ capabilities: [decompilation, debugging, memory-dump, elf-parser, pe-parser, mac
 
 ## 何时用哪个原子技能（选择树）
 
-- 刚拿到文件，不知是什么 → [[re-triage]]
+- 刚拿到文件，不知是什么 → [[re-triage]]（能力：`triage`）
 - 已知 PE / ELF / Mach-O，要理解结构 → 对应格式技能
-- 要知道程序链接了哪些库/API → [[re-imports]]
-- 要读懂函数逻辑 → 反编译四选一（[[re-ghidra]] 默认；[[re-ida]] / [[re-radare2]] / [[re-binaryninja]]）
-- 要看运行行为、设断点 → 按 OS 选调试器（Linux [[re-gdb]]、Windows [[re-x64dbg]] / [[re-windbg]]、macOS [[re-lldb]]）
-- 要跟踪系统调用/函数调用 → [[re-tracing]]
-- 要读/转储进程内存 → [[re-memdump]]（默认转储优先，见 [[platform-tips]]）
-- 目标是驱动/内核模块/rootkit → [[re-kernel]]（配 [[re-windbg]] 内核调试）
-- 目标是 hypervisor/VMM/虚拟化检测相关 → [[re-hypervisor]]（VT-x/SVM、VMCS/EPT）
-- 目标是反作弊组件（EAC/BattlEye 驱动、内存校验）→ [[re-anti-cheat]]（驱动分析 + 内核调试，注意授权边界）
-- 目标无环境/脱壳辅助，需模拟执行 → [[re-emulation]]
-- 目标是 shellcode（无文件格式头的裸代码 blob：提取/解码循环/模拟执行）→ [[re-shellcode]]
-- 目标是游戏（Unity/Unreal、CE 内存修改）→ [[re-game]]
-- 目标是 Go 二进制（语言专项：符号/字符串表/goroutine）→ [[re-go]]
-- 目标是 Rust 二进制（语言专项：符号解译/泛型展开/所有权）→ [[re-rust]]
-- **目标是 C++（RTTI/异常表密集）** → [[re-cpp-abi]]（RTTI/虚表/异常恢复）
-- **目标是 Swift 产物（$s mangling 特征）** → [[re-swift]]（mangling/witness table/闭包捕获）
-- **目标是 Zig 产物（无 RTTI/异常表、panic 函数特征）** → [[re-zig]]（comptime/错误路径）
-- **目标是 Nim 产物（NimMain/NimString 特征）** → [[re-nim]]（运行时/字符串结构）
-- **目标是 Haskell/OCaml 产物（GHC RTS/OCaml block 特征）** → [[re-fp-runtime]]（闭包/数据流）
-- **补丁/N-day 对比（修复前后/变体关联）** → [[re-variant]]（函数匹配/补丁 diff）
-- 要写 Ghidra/IDA 脚本或插件（批量标注/解密循环/自定义格式解析，脚本→插件工程化）→ [[re-plugin-dev]]
-- 怀疑带壳 → 转 [[re-anti-analysis]]
+- 要知道程序链接了哪些库/API → [[re-imports]]（能力：`pe-parser`、`elf-parser`）
+- 要读懂函数逻辑 → 反编译四选一（[[re-ghidra]]（能力：`decompilation`、`debugging`） 默认；[[re-ida]]（能力：`decompilation`、`debugging`） / [[re-radare2]]（能力：`decompilation`） / [[re-binaryninja]]（能力：`decompilation`））
+- 要看运行行为、设断点 → 按 OS 选调试器（Linux [[re-gdb]]（能力：`debugging`）、Windows [[re-x64dbg]]（能力：`debugging`） / [[re-windbg]]（能力：`debugging`）、macOS [[re-lldb]]（能力：`debugging`））
+- 要跟踪系统调用/函数调用 → [[re-tracing]]（能力：`tracing`）
+- 要读/转储进程内存 → [[re-memdump]]（能力：`memory-dump`；默认转储优先，见 [[platform-tips]]）
+- 目标是驱动/内核模块/rootkit → [[re-kernel]]（能力：`kernel-analysis`；配 [[re-windbg]]（能力：`debugging`） 内核调试）
+- 目标是 hypervisor/VMM/虚拟化检测相关 → [[re-hypervisor]]（能力：`hypervisor-analysis`；VT-x/SVM、VMCS/EPT）
+- 目标是反作弊组件（EAC/BattlEye 驱动、内存校验）→ [[re-anti-cheat]]（能力：`kernel-analysis`；驱动分析 + 内核调试，注意授权边界）
+- 目标无环境/脱壳辅助，需模拟执行 → [[re-emulation]]（能力：`emulation`）
+- 目标是 shellcode（无文件格式头的裸代码 blob：提取/解码循环/模拟执行）→ [[re-shellcode]]（能力：`shellcode-analysis`）
+- 目标是游戏（Unity/Unreal、CE 内存修改）→ [[re-game]]（能力：`game-analysis`）
+- 目标是 Go 二进制（语言专项：符号/字符串表/goroutine）→ [[re-go]]（能力：`lang-runtime-analysis`）
+- 目标是 Rust 二进制（语言专项：符号解译/泛型展开/所有权）→ [[re-rust]]（能力：`lang-runtime-analysis`）
+- **目标是 C++（RTTI/异常表密集）** → [[re-cpp-abi]]（能力：`decompilation`；RTTI/虚表/异常恢复）
+- **目标是 Swift 产物（$s mangling 特征）** → [[re-swift]]（能力：`lang-runtime-analysis`；mangling/witness table/闭包捕获）
+- **目标是 Zig 产物（无 RTTI/异常表、panic 函数特征）** → [[re-zig]]（能力：`lang-runtime-analysis`；comptime/错误路径）
+- **目标是 Nim 产物（NimMain/NimString 特征）** → [[re-nim]]（能力：`lang-runtime-analysis`；运行时/字符串结构）
+- **目标是 Haskell/OCaml 产物（GHC RTS/OCaml block 特征）** → [[re-fp-runtime]]（能力：`lang-runtime-analysis`；闭包/数据流）
+- **补丁/N-day 对比（修复前后/变体关联）** → [[re-variant]]（能力：`binary-diffing`；函数匹配/补丁 diff）
+- 要写 Ghidra/IDA 脚本或插件（批量标注/解密循环/自定义格式解析，脚本→插件工程化）→ [[re-plugin-dev]]（能力：`plugin-development`）
+- 怀疑带壳 → 转 [[re-anti-analysis]]（能力：`unpack`、`deobfuscation`、`evasion-analysis`）
 
 ## 跨域联合
 

@@ -3,6 +3,7 @@ name: re-gdb
 description: >
   GDB/pwndbg/gef 调试：attach、断点、内存读写。
   触发词：gdb、调试、pwndbg、attach
+capabilities: [debugging]
 ---
 
 # GDB/pwndbg/gef 动态调试

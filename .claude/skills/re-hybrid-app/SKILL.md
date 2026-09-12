@@ -3,6 +3,7 @@ name: re-hybrid-app
 description: >
   Flutter/React Native 混合应用逆向。
   触发词：Flutter、React Native、混合应用、dart、libapp.so、Hermes、Hermes 字节码、hbc、RN bundle、index.android.bundle、NativeModules、TurboModule、Metro
+capabilities: [hybrid-app-analysis]
 ---
 
 # 混合应用逆向（Flutter / React Native）

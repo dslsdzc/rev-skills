@@ -3,6 +3,7 @@ name: re-hardware-io
 description: >
   硬件接口：JTAG/UART/flash 读取。
   触发词：JTAG、UART、串口、flash芯片、硬件提取、逻辑分析仪
+capabilities: [hardware-interface]
 ---
 
 # 硬件接口（JTAG / UART / Flash 读取）
