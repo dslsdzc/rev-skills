@@ -83,9 +83,9 @@ description: >
      ```js
      // hook.js —— 记录 App 检查了哪些越狱特征路径
      ['access', 'stat', 'lstat', 'open', 'dlopen'].forEach(function(n) {
-       var f = Module.findExportByName(null, n);
+       var f = Module.findGlobalExportByName(n);      // Frida 17+：旧写法 Module.findExportByName(null, n) 已移除
        if (f) Interceptor.attach(f, { onEnter: function(a) {
-         var p = (n === 'dlopen') ? a[0] : Memory.readCString(a[0]);
+         var p = (n === 'dlopen') ? a[0] : a[0].readCString();   // 读 C 字符串用 NativePointer 实例方法（Memory 下无 readCString）
          if (p && (p.indexOf('Cydia') >= 0 || p.indexOf('/var/jb') >= 0 || p.indexOf('jb') >= 0))
            console.log(n, '->', p, 'ret_pending');
        }});

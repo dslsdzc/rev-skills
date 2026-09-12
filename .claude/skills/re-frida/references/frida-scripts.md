@@ -30,8 +30,8 @@ else {
     console.log(new NativePointer(line).readCString());
   }, 'void', ['pointer', 'pointer']);
   var setKeylog = new NativeFunction(
-    Module.findExportByName('libssl.so', 'SSL_CTX_set_keylog_callback'), 'void', ['pointer', 'pointer']);
-  Interceptor.attach(Module.findExportByName('libssl.so', 'SSL_CTX_new'), {
+    ssl.getExportByName('SSL_CTX_set_keylog_callback'), 'void', ['pointer', 'pointer']);
+  Interceptor.attach(ssl.getExportByName('SSL_CTX_new'), {
     onLeave: function (retval) { setKeylog(new NativePointer(retval), keyLogCallback); }
   });
 }

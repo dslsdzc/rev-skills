@@ -22,7 +22,7 @@ description: angr 符号执行：符号化输入、求解。触发词：angr、�
 ### angr（pip 安装）
 
 - `pip install angr`（Linux / macOS / Windows 均可；Windows 下 pip 装 win32 wheel，WSL 内安装 Linux 版亦可）
-- **Python 版本兼容性（重点）**：按 angr 主版本对号入座（以 PyPI 元数据为准）——**angr 9.2.x 支持 Python 3.8–3.11；angr 9.3.0 起要求 Python 3.12+**（`requires-python >=3.12`）。装前先 `pip index versions angr`（或查 PyPI）确认当前主版本，再按系统 Python 选：
+- **Python 版本兼容性（重点）**：**angr 9.3.0 起要求 Python 3.12+**（`requires-python >=3.12`）；**9.2.x 不是固定区间**——下限随补丁版本抬高（9.2.91 要求 ≥3.8，9.2.203 已要求 ≥3.10），不能按「9.2.x」整线判断。装前以目标版本的 PyPI `requires-python` 为准（`pip index versions angr` 看可用版本），再按系统 Python 选：
   - 系统自带 Python 3.12+（Ubuntu 24.04 默认 3.12）→ 直接 `pip install angr`（最新 9.3.x 线）
   - 系统为 Python 3.11 及以下 → `pip install "angr<9.3"`（9.2.x 线），**别硬装 9.3+**
   - 多版本并存用 venv 隔离：`python3.12 -m venv ~/venvs/angr && source ~/venvs/angr/bin/activate`（或 `brew install python@3.12` / `py -3.12 -m venv angr-venv`）
@@ -119,7 +119,7 @@ description: angr 符号执行：符号化输入、求解。触发词：angr、�
 - **路径爆炸**：现象——`explore` 跑十几分钟状态数飞涨，内存吃满；原因——符号化范围过大（整段程序都符号化）、无关分支（strlen / memcpy 展开、错误处理分支）被逐一探索、长循环不合并；对策——hook 无关系统调用（步骤 4）、`veritesting=True` 合并路径、`num_find=1` 找到即停、缩小符号化输入范围（步骤 1 只符号化校验真正读取的字节）；仍不行就分段探索或转人工分析
 - **复杂校验慢 → 结合人工分析**：现象——一个看似简单的题 angr 几分钟没结果；原因——校验链中夹着查表 / 随机数 / 系统调用副作用，符号执行在这些点低效；对策——先人工反编译定位**关键校验函数**，把符号化入口设到校验函数入口（`blank_state` + 手动设置寄存器 / 内存），跳过前面无关代码；校验是纯等式集合时直接换 [[re-z3]]
 - **未符号化输入 → 无解**：现象——`explore` 秒回 `no path found`，或求解出的值跑原程序不通过；原因——输入没被符号化（读取的是真实 stdin / 文件内容）、符号化字节数 < 实际读取长度（`fgets(buf, 0x40)` 却只符号化 16 字节）、输入含运行时才能确定的量（随机数 / 时间戳）；对策——对照反编译确认读取点与长度（步骤 1），stdin 长度按读取上限符号化；随机值点用 hook 固定（`hook_symbol("rand", ...)`）再符号化
-- **python 版本兼容**：现象——`pip install angr` 报编译错误 / import 即崩（`ImportError` 指向 C 扩展）；原因——angr 9.3.0+ 官方要求 Python 3.12+，9.2.x 线支持 3.8–3.11，在过旧解释器上装新版（或在 3.13 上装无 wheel 的旧依赖）会现场编译甚至失败；对策——先查当前主版本对应的 Python 要求（PyPI `requires-python`），9.2 线用 3.11 及以下、9.3+ 用 3.12+，建独立 venv 安装（工具准备节）；装前 `pip install --upgrade pip setuptools wheel`
+- **python 版本兼容**：现象——`pip install angr` 报编译错误 / import 即崩（`ImportError` 指向 C 扩展）；原因——angr 9.3.0+ 官方要求 Python 3.12+，9.2.x 线下限随补丁版本抬高（9.2.91 要求 ≥3.8、9.2.203 已要求 ≥3.10），在过旧解释器上装新版（或在 3.13 上装无 wheel 的旧依赖）会现场编译甚至失败；对策——查**目标版本**的 Python 要求（PyPI `requires-python`）：9.3+ 用 3.12+，9.2 按具体补丁版的元数据选解释器，建独立 venv 安装（工具准备节）；装前 `pip install --upgrade pip setuptools wheel`
 - **find 地址选错 → 求解出的"flag"跑不通**：现象——求解成功但输出含非打印字符 / 程序不打印 flag；原因——find 设在错误处理循环（失败也经过）、多失败点只 avoid 了一个、符号化长度与程序读取不一致；对策——find 选**校验循环出口**（用反编译确认唯一成功路径），avoid 列全所有失败分支；输出先 `repr()` 检查再原样重放（见步骤 3 验证）；拿多个解逐一跑目标验证
 - **PIE 基址偏移 → find 地址填错**：现象——按 Ghidra 显示的地址（如 `0x00101231`）填 find，angr 永远找不到；原因——PIE 二进制 Ghidra 按 0x100000 基址显示，angr 从 0x400000 装载；对策——地址换算（差 0x300000 之类固定偏移），或先查 angr 内模块实际装载基址再定 find 地址，脚本头部注释标明换算关系
 - **自定义 VM/重度混淆题直接符号执行低效**：现象——校验包在自定义字节码 VM（Tigress 等）里，angr 状态爆炸 / 求解无果；原因——VM 的 dispatch 循环反复符号化 + 混淆路径分支（先消 opaque predicate，见 [[re-deobfuscate]]）；对策——VM handler 用 Unicorn 实例化仿真（angr 只负责外层控制流），或探索到死路径后导出每条路径的 SMT 方程交给 [[re-z3]] 生成输入（Tigress 案例达到 100% 分支覆盖）

@@ -70,7 +70,7 @@ description: >
 3. **改写**：
    - 替换占位符：包名/类名/方法名（精确匹配，Java 全限定名）
    - overload 精确匹配：先 `overloads` 枚举再逐个定义或按参数类型选（见坑 1）
-   - 结构规范：Java 操作包在 `Java.perform`；保存 original 引用、带原 `this` 调用；`Interceptor.attach` 的 onEnter/onLeave 里 `this.context` 读寄存器、`this.returnValue` 改返回值
+   - 结构规范：Java 操作包在 `Java.perform`；保存 original 引用、带原 `this` 调用；`Interceptor.attach` 里 onEnter 用 `this.context` 读寄存器，**改返回值只能在 onLeave 用参数 `retval.replace(...)`**——`this` 上只有 returnAddress/context/errno/lastError/threadId/depth，没有 `this.returnValue`；且 retval 跨调用复用，需留存时先 `ptr(retval.toString())` 复制
    - 输出统一 JSON（可打印 ASCII + hex 双格式）经 `send()` 传出；每个 hook 主体 `try/catch`，错误发消息不静默
    - 同一类多 hook 合并进一个 `.implementation`（缓存静默覆盖，见坑 2）
    - 骨架参考（Java + native 双面最小结构，按目标裁剪）：

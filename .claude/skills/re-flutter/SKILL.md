@@ -111,7 +111,7 @@ description: Flutter/Dart AOT 逆向：libapp.so 快照分区解析、符号还�
 5. **动态侧（受控设备 / 模拟器快照内，[[platform-tips]] 默认沙箱）**：
    - hook Dart VM 类库注册点——libflutter.so 导出的 `Dart_CreateRootLibrary`（root library 注册入口，onEnter 读库 URI）:
      ```js
-     var f = Module.findExportByName("libflutter.so", "Dart_CreateRootLibrary");
+     var f = Process.getModuleByName("libflutter.so").findExportByName("Dart_CreateRootLibrary");
      if (f) Interceptor.attach(f, {
        onEnter: function (args) {
          var uri = args[1].readCString();     // 库 URI（C 字符串）

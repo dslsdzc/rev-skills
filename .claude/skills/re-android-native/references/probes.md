@@ -23,7 +23,7 @@
 ```js
 // hook JNI_OnLoad 后探测 RegisterNatives（槽位动态定位，不硬编码）
 var RegisterNatives = null;
-Interceptor.attach(Module.findExportByName(null, "JNI_OnLoad"), {
+Interceptor.attach(Module.findGlobalExportByName("JNI_OnLoad"), {   // Frida 17+：全局符号静态查找
   onEnter: function () {
     var env = this.context.x0;                    // arm64: JNIEnv* 在 x0（ABI 相关，见下）
     var table = env.readPointer();                // env[0] = JNINativeInterface 函数表

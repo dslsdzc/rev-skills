@@ -23,7 +23,7 @@ capabilities: [address-translation, elf-parser]
 ## 何时使用 / 何时不用
 
 - 用：任何「这个地址对不上」问题——反编译器显示地址 ≠ 运行时地址 ≠ find 到的地址
-- 用：PIE/ASLR 二进制需要换算运行时基址（frida `Module.base` / gdb `info proc mappings` / maps 文件）
+- 用：PIE/ASLR 二进制需要换算运行时基址（frida `Process.getModuleByName(...).base` / gdb `info proc mappings` / maps 文件）
 - 用：RVA/VA 互转、文件偏移与虚拟地址互转、固件加载地址与链接地址差
 - 不用：只是读 ELF 头/节表（走 [[re-format-elf]]）
 - 不用：运行时内存布局细查（走 [[re-memdump]] / [[re-gdb]]）
@@ -69,7 +69,7 @@ capabilities: [address-translation, elf-parser]
    gdb -p <pid> -ex 'info proc mappings' -ex detach   # 或 gdb 侧（跨平台）
    ```
    - **布局差异（separate-code）**：gcc 默认 PIE 下首个 LOAD 是 R-- 段（p_vaddr=0），代码段在其后（p_vaddr=0x1000 起）；老式布局（无 separate-code）首个 LOAD 即 R E（p_vaddr=0）——取加载基址用**首个映射（r--p）起点**；若用首个 r-xp 起点须减去该段自身 p_vaddr，两种布局结果才一致
-   - frida：`Module.findBaseAddress("libtarget.so")` 或 `Process.getModuleByName(...).base`
+   - frida：`Process.getModuleByName("libtarget.so").base`（Frida 17+：静态 `Module.findBaseAddress` / `Module.getBaseAddress` 已移除，旧版本文法见 [[re-frida-script-author]]）
    - **运行时地址 = 链接地址 + load bias**——bias = 运行时基址 - 链接基址；PIE 每次运行 bias 不同（ASLR），脚本必须动态取
    - 换算：`runtime_addr = link_addr + bias`（如链接 0x1000 的符号在运行时 `0x1000 + 0x7f0000000000`）
 
@@ -77,7 +77,7 @@ capabilities: [address-translation, elf-parser]
    - Ghidra：默认按链接基址导入（PIE 程序 Image Base 常为 0）；与运行时地址差 = load bias——`Ghidra 地址 + bias = 运行时地址`
    - angr：`proj.loader.main_object.mapped_base`（rebase 后基址）；重定基址用后端对象的 `obj.rebase(new_base)`（如 `proj.loader.main_object.rebase(...)`，cle Backend.rebase）
    - gdb/frida：以运行时基址为准（步骤 3），反编译器地址需加 bias 才能对齐
-   - 断点对齐：`gdb b *<链接地址> + <bias>` 或 frida `Module.findExportByName + 偏移`
+   - 断点对齐：`gdb b *<链接地址> + <bias>` 或 frida `Process.getModuleByName("libfoo.so").findExportByName("func")` 加偏移
 
 5. **固件 loader offset**：
    - 固件镜像链接地址 vs 实际加载地址（flash 映射/解压后）差 = loader offset——先读固件头部/启动代码确认加载地址（[[re-fw-extract]] / [[re-arm]] 联动）

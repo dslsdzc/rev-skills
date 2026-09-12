@@ -108,7 +108,7 @@ capabilities: [crypto-identification]
      ```
      ```js
      // hook.js: 断在疑似加密函数，打印入参（密文/明文）与返回
-     Interceptor.attach(Module.findExportByName(null, "crypt_fn"), {
+     Interceptor.attach(Module.findGlobalExportByName("crypt_fn"), {   // Frida 17+：旧写法 Module.findExportByName(null, ...) 已移除
        onEnter(args) { console.log("arg0:", hexdump(args[0])); },
        onLeave(ret)  { console.log("ret:", hexdump(ret)); }
      });

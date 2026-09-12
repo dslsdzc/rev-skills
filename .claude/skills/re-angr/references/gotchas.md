@@ -2,7 +2,7 @@
 
 ## 版本与安装坑
 
-- **Python 版本线**：angr 9.2.x 支持 Python 3.8–3.11；**9.3.0 起要求 Python 3.12+**（PyPI `requires-python` 实测）——9.3 装到 3.11 会直接拒绝或编译失败，9.2 装到 3.13 也可能无 wheel；装前 `pip index versions angr` 确认主版本线
+- **Python 版本线**：**9.3.0 起要求 Python 3.12+**（PyPI `requires-python` 实测）；**9.2.x 下限随补丁版本抬高**（9.2.91 要求 ≥3.8、9.2.203 已要求 ≥3.10），不能按「9.2.x」整线判断——装前以目标版本的 PyPI `requires-python` 为准（`pip index versions angr` 看可用版本）；9.3 装到 3.11 会直接拒绝或编译失败，老的 9.2 装到 3.13 也可能无 wheel
 - **主版本间 API 变更**：angr 9.1（迁移文档有专页）改过 `SimState`/`state.posix` 等细节；网上旧教程（8.x 时代）的 `state.mem`、`simprocedures` 写法可能失效——以目标版本 docs 的 "Migrating to angr X" 为准
 - **binutils 依赖**：angr 处理/重写二进制（`angr.Project` 的 back-end 或 `angr.SimProcedure` 无关但 binary rewriting 相关操作）会调 `objcopy`——Linux 装 `binutils`，缺了报 `objcopy: command not found` 类错误
 - **Windows 支持边界**：Windows 下 pip 装 win32 wheel 可用，但部分 cle/ELF 后端与 fork 类操作受限；需要 ELF/arm 目标分析时优先 WSL 内装 Linux 版

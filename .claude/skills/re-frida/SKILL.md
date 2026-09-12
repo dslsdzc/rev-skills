@@ -73,7 +73,7 @@ capabilities: [frida-instrumentation]
    ```sh
    frida -U -f com.target.app -l hook.js
    ```
-   原生函数用 `Interceptor.attach(Module.findExportByName("libfoo.so", "func"), { onEnter: ..., onLeave: ... })` 拦截（onEnter 改参数、onLeave 改返回值）。桌面端同样本：`frida -p <pid> -l hook.js`。
+   原生函数用 `Interceptor.attach(Process.getModuleByName("libfoo.so").findExportByName("func"), { onEnter: ..., onLeave: ... })` 拦截（onEnter 改参数、onLeave 用 `retval.replace()` 改返回值）。桌面端同样本：`frida -p <pid> -l hook.js`。
 
 3. **枚举与调用（enumerateModules / Java.perform）**：
    ```js
@@ -87,7 +87,7 @@ capabilities: [frida-instrumentation]
    ```js
    // 模块与导出枚举（原生层）
    Process.enumerateModules().forEach(function (m) { console.log(m.name + " " + m.base); });
-   Module.enumerateExports("libfoo.so").forEach(function (e) { console.log(e.name); });
+   Process.getModuleByName("libfoo.so").enumerateExports().forEach(function (e) { console.log(e.name); });
    ```
    运行: `frida -U -f com.target.app -l enum.js`。定位到目标后直接主动调用：`Java.use("com.x").method(...)` / 原生导出函数。
 
@@ -110,7 +110,7 @@ capabilities: [frida-instrumentation]
    ```
    ```js
    // iOS 证书绕过：hook SecTrustEvaluateWithError 返回值
-   var SecTrust = Module.findExportByName(null, "SecTrustEvaluateWithError");
+   var SecTrust = Module.findGlobalExportByName("SecTrustEvaluateWithError");   // Frida 17+：全局符号静态查找
    Interceptor.attach(SecTrust, { onLeave: function (r) { this.context.x0 = 0; } }); // arm64 返回寄存器 x0；x86_64 用 rdi 场景先验证
    ```
    现成命令：`objection -g com.target.app explore` → `android sslpinning disable` / `ios sslpinning disable`。
@@ -133,7 +133,7 @@ capabilities: [frida-instrumentation]
 7. **脚本模板与对抗方法论**：常用脚本骨架见 [[frida-scripts]]（TLS keylog / DEX/SO dump / JNI 注册还原 / 加密拦截 / 检测绕过表）；崩溃迭代法与检测面对照表见 [[anti-dynamic-workflow]]——先基线跑看裸崩，再定点 hook，不预置绕过全家桶。
 
 ## 跨域联合
-- [[re-address-space]]：运行时基址换算（Module.base 与链接地址对齐）
+- [[re-address-space]]：运行时基址换算（`Process.getModuleByName(...).base` 与链接地址对齐）
 
 - [[re-mobile]]：工作流第 3 步动态插桩固定调用本技能
 - [[re-apk]] / [[re-ios]]：静态分析后需要运行时行为（解密 / hook / 绕过 / 脱壳执行）时调用本技能
@@ -144,6 +144,7 @@ capabilities: [frida-instrumentation]
 ## 常见坑与陷阱
 
 - **版本不匹配 → 协议错误**：现象——`frida-ps -U` 报 `unable to communicate with the frida server` / 协议错误；原因——主机 frida 与设备 frida-server 版本号不一致；对策——`frida --version` 对照 GitHub release 下载同版本 frida-server（工具准备），或 `pip install -U frida-tools` 升级主机
+- **Frida 17 移除静态 Module 查找/枚举 API**：现象——脚本报 `TypeError: Module.findExportByName is not a function`（或 getExportByName / enumerateExports / findBaseAddress 同类）；原因——17.0.0 起静态查找与枚举 API 全部移除，静态只余 `Module.load` / `Module.findGlobalExportByName` / `Module.getGlobalExportByName`，其余改为**模块实例方法**；对策——先取实例再查：`Process.getModuleByName("libfoo.so").findExportByName("func")`（find 返 null，get 抛异常）、基址用 `.base`、枚举用 `.enumerateExports()`；全局符号（原 `null` 模块参数）改用 `Module.findGlobalExportByName(...)`；注意 `Process.getModuleByName` 在模块未加载时**抛异常**（旧 `Module.findExportByName` 返 null）——不确定时先用 `Process.findModuleByName` 判空再查；动笔前 `frida --version` 确认版本再选写法（迁移清单见 [[re-frida-script-author]] 版本相关组）
 - **spawn 时机晚 → 错过早期逻辑**：现象——attach 后 hook 不触发或早期解密已完成；原因——应用启动即解密 / 校验，attach 时已过；对策——用 `-f` spawn 模式起步即插桩；仍错过则 hook `dlopen` / `ClassLoader.loadClass` 这类更早的执行点
 - **目标检测 frida（端口 / 特征）**：现象——spawn 后应用闪退 / 卡死 / 行为异常；原因——应用扫描 27042 端口、frida-server 路径、`frida` 线程名或 maps 特征；对策——步骤 5 改名 + 换端口；仍检测用 frida-gadget 注入（隐藏于进程内）
 - **root 检测拦插桩**：现象——frida 可连接但 hook 不生效或直接退出；原因——应用先做 root / 越狱检测，检测到环境直接退出；对策——先 hook 检测函数返回值（步骤 5 模板），过了检测再 hook 目标函数

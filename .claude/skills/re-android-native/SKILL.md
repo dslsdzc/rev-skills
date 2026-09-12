@@ -112,7 +112,7 @@ description: >
 5. **与 Java 层交互（native 调用点定位）**：
    - Java 侧（[[re-apk]] / jadx）：`System.loadLibrary("target")` 与 `native` 方法声明所在的类——`Java_包名_类名_*` 命名即从这里来
    - jadx 里对每个 `native` 方法找调用点（谁在什么业务路径上触发它），与步骤 3 的对照表对齐，形成 `Java 调用点 ↔ native 函数` 映射
-   - 动态验证：frida `Java.perform` 里直接调用 native 方法（`Java.use("com.x.Cls").method(...)`）观察参数与返回；或用 xhook / PLT hook 思路（[[re-frida]] 的 `Interceptor.attach(Module.findExportByName(...))`）观察 native 内部对外部库（libc / 系统库）的调用链
+   - 动态验证：frida `Java.perform` 里直接调用 native 方法（`Java.use("com.x.Cls").method(...)`）观察参数与返回；或用 xhook / PLT hook 思路（[[re-frida]] 的 `Interceptor.attach(Process.getModuleByName(...).findExportByName(...))`）观察 native 内部对外部库（libc / 系统库）的调用链
    - 闭环：Java 触发点 → 参数来源 → native 处理逻辑 → 输出回 Java 层
 
 ## 跨域联合

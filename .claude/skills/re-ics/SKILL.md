@@ -84,7 +84,7 @@ description: >
    - 构造测试报文（发给测试床 PLC 前必须确认授权与隔离，见步骤 5）：
      ```python
      from scapy.contrib.modbus import ModbusPDU03ReadHoldingRegistersRequest
-     req = ModbusADURequest() / ModbusPDU03ReadHoldingRegistersRequest(start_addr=0, quantity=10)
+     req = ModbusADURequest() / ModbusPDU03ReadHoldingRegistersRequest(startAddr=0, quantity=10)   # 字段名是 camelCase startAddr（scapy 定义），不是 start_addr
      ```
 
 5. **授权范围与安全测试边界**：
