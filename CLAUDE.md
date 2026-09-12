@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 仓库性质
 
-通用逆向工程 AI 技能库（121 个技能），发布形态有三个：npm 包（`bin/install.mjs` 安装器）、Claude Code 插件市场（`.claude-plugin/marketplace.json`）、以及可被任意 Agent Skills 兼容运行时读取的 `.claude/skills/` 目录。
+通用逆向工程 AI 技能库（122 个技能），发布形态有三个：npm 包（`bin/install.mjs` 安装器）、Claude Code 插件市场（`.claude-plugin/marketplace.json`）、以及可被任意 Agent Skills 兼容运行时读取的 `.claude/skills/` 目录。
 
 内容主体是 Markdown 技能文档，工具代码是零依赖 Node.js（>=18，ESM）。**没有构建步骤**——技能即目录，改完跑校验即可。
 
@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 npm test                                        # 全量：结构校验 + 单元测试
-node validate.mjs                               # 只跑结构校验，输出 OK: 121 skills validated
+node validate.mjs                               # 只跑结构校验，输出 OK: 122 skills validated
 node --test tests/validate.test.mjs             # 单跑一个测试文件
 node --test --test-name-pattern="good-skill" tests/*.test.mjs   # 按用例名过滤
 
@@ -38,7 +38,7 @@ node bin/wxsource.mjs wechat <文章URL> [--md]
 re-analyze（entry，唯一入口）
   └─ 12 个大类网关（type: gateway）：re-binary-core / re-malware / re-firmware / re-protocol /
      re-mobile / re-anti-analysis / re-cracking / re-vuln / re-ctf / re-managed / re-forensics / re-feedback
-        └─ 原子技能（type: atomic，108 个）
+        └─ 原子技能（type: atomic，109 个）
 ```
 
 **这不是调用链，是状态转移**：`triage → route → skill 执行 → 产出证据 → 再路由（循环）`。每个技能执行后产出新证据，证据决定下一跳。技能之间靠 `[[技能名]]` 链接互引，靠会话变量（`RE_OS`/`RE_TOOLS`/`RE_GOAL`/`RE_DECOMPILER`/`RE_DEPTH`/`RE_REPORT`/`RE_AUTH`/`RE_VISITED`）传状态。
@@ -72,7 +72,7 @@ frontmatter 解析的唯一实现在 `lib/frontmatter.mjs`（`validate.mjs` 与 
 - `description` 必须**同时含 CJK 与拉丁字母**（中英触发词约定——英文环境也要能命中该技能）
 - `type` 只认 `atomic` / `entry` / `gateway`（缺省视为 atomic）
 - **原子技能且是叶子目录**（无子技能目录）必须含 `## 工具准备` 章节；入口/网关豁免
-- 正文所有 `[[xxx]]` 必须解析到已存在的技能名或某个 `references/*.md` 的文件名——**先建文件再加链接**，否则断链
+- 正文所有 `[[xxx]]` 必须解析：技能链接 `[[re-xxx]]` 指向技能；**裸 references 链接 `[[文件名]]` 必须落在本技能自己的 `references/` 内**；跨技能引用别人的 references 必须限定前缀 `[[re-xxx/文件名]]`——**先建文件再加链接**，否则断链（同名 references 普遍：`gotchas.md` 33 个、`decision-tree.md` 13 个）
 - `capabilities` 必须是非空 YAML 内联 list，且每个标签在 `capabilities.md` 注册表内（新标签要先注册）
 - `guard` 必须严格是 `{"require_authorization": <bool>, "forbidden": [<非空字符串>]}`，否则报错
 
@@ -83,7 +83,13 @@ frontmatter 解析的唯一实现在 `lib/frontmatter.mjs`（`validate.mjs` 与 
 1. 按 `docs/skill-template.md` 建 `.claude/skills/re-xxx/SKILL.md`（知识/操作分离：机制原理留正文，易变参数如槽位索引/offset 放 `references/probes.md` 探针层）
 2. **挂载**（缺一即孤儿技能）：网关 SKILL.md 的子技能清单 + `triage.md` 路由表；若是「看到某证据就该触发」的技能，还要挂 `rerouting.md` A 表
 3. 声明 `capabilities`（新标签先加进 `capabilities.md` 注册表）；敏感技能加 `guard`
-4. **同步计数与导航**（5 处）：`README.md`、`README_EN.md`、`AGENTS.md`、`package.json` 的 description、`.claude-plugin/marketplace.json` 的 description，以及 README 的「技能导航」清单
+4. **同步计数与导航**——计数散落多处，**按清单逐处核对**（曾因只改"记得的几处"漏过 5 处）：
+   - `README.md`：技能总数（首段）、「技能导航（N）」标题、前言「12 大类网关 → N 原子技能」、对应网关的技能行
+   - `README_EN.md`：同上 4 处（`## Skill map (N)`、`N atomic skills`）
+   - `AGENTS.md`：技能总数、原子技能数
+   - `package.json` / `.claude-plugin/marketplace.json`：description 里的技能数
+   - `CLAUDE.md`：技能总数（仓库性质段）、`OK: N skills validated` 示例、架构图里的原子技能数
+   - 自查方式：`grep -rln "<旧数>\|<旧原子数>" --include="*.md" --include="*.json" .`，**逐个候选文件人工核**（不要用"旧数+单位"的复合模式，全角括号/措辞差异会造成假阴性）；`TODO.md`、`docs/audit/`、历史注释里的旧值是当时事实，保留不动
 5. `npm test` 必须输出 `OK: N skills validated` 且 N 与实际目录数一致
 
 ## 开发工作流：spec → plan → 波次 → 审查波

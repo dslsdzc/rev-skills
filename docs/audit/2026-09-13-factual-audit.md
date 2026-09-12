@@ -143,6 +143,65 @@
 - **过程中修正的检查器缺陷 2 处**：① 括号嵌套时把内层 `[[子技能]]（能力：…）` 的标签算到外层（改为只取链接括号**开头**的连续标签段）；② references 链接被误要求能力标注（改为只校验技能链接）
 - **结果**：`npm test` 40 项通过（+1：选择树标注一致性）；`OK: 121 skills validated`
 
+### 批 3 补充 7：新增 re-sample-acquire（#44，用户要求，已落地）
+
+- **缺口**（用户发现）："只有现象描述、没有样本"时缺一个采集环节——现有零件都以前提"样本已在手"开头（[[re-memdump]] 需已知 PID、[[re-netcap]] 需能抓包、[[re-fileless]] / [[re-loader]] 需已有样本、[[re-triage]] 需已有文件）；入口输入类型表也无"现象描述/无样本"这一档
+- **形态**：新增原子技能 `re-sample-acquire`（能力标签 `sample-acquisition`；原子 108→109，总数 121→122）= SKILL.md（141 行）+ 4 份平台分支 `references/platform-{windows,linux,macos,sel4}.md`（共 248 行）
+- **核心方法论**（用户提供 + 社区实践核验）：
+  - CORE RULE：**不猜进程名、不依赖"用了哪个注入 API"**——找「异常执行内存 + 到达该内存的执行上下文」；先问 provenance（这块可执行内存是谁创建的、经什么路径进来）
+  - 两特征 + 一补充：内存被改成可执行（W→X / RWX）；无背书区域在执行；线程起点/RIP/调用栈归属
+  - **漏检点**（本轮重点补的）：只查 `MEM_PRIVATE` 会漏 module stomping（`MEM_IMAGE` + COW，需查 Working Set `.Shared` 位）；只看线程起点会漏 trampoline / `SetThreadContext` / `jmp rcx` / Win11 `_beginthreadex` 等绕过（要 PC + 调用栈一起看）；只按 MZ/PE 头找载荷会漏**擦头 implant**（保存整区再分类）；JIT/Wine/浏览器/安全软件本身就产生同类 artifact →**评分制而非二元判定**
+  - trigger 与 ground truth 分工：事件源只回答"**何时** dump"，内存扫描回答"**dump 什么**"（直系统调用/共享段/覆盖已有 RX 区都能绕过用户态 hook）
+- **四平台观测模型不同（用户要求不得机械翻译）**：
+  - **Windows**：VAD/region + 线程 + 模块链；Sysmon 8/10/25、ETW-TI、内核回调三件套
+  - **Linux**：VMA（`/proc/<pid>/maps`，perms/pathname 语义；**6.11+ `PROCMAP_QUERY` ioctl**）；tracepoint/kprobe 与 **BPF LSM**（内核 BPF LSM 文档即以 `file_mprotect` 为示例，`SEC("lsm/file_mprotect")`）；`process_vm_readv`/ptrace 读取（受 ptrace access check）
+  - **macOS**：Mach task + VM region（`vm_region_recurse_64`/`mach_vm_region*`、`mach_vm_read*`）；**Endpoint Security**（`NOTIFY_MMAP`/`NOTIFY_MPROTECT`/`NOTIFY_REMOTE_THREAD_CREATE`/`NOTIFY_GET_TASK`，`AUTH_*` 可拦截）；**权限现实**——SIP 下 `task_for_pid` 对受保护进程 EPERM、Hardened Runtime 默认吊销内存读取、`get-task-allow` 可恢复（"不是 root 就能读"）
+  - **seL4**：capability 制，**不存在"root 全读"模型**；路线是构造期由 monitor 记录 provenance（TCB/frame/VSpace caps → execution provenance graph），TCB debug API 与 fault endpoint 作事件源；提问从"代码藏在哪个进程"改为"**哪个 capability flow 授予了 executable authority**"
+- **挂载**：入口输入类型表 + triage 路由行 + rerouting A 表 2 行 + re-malware 网关（子技能清单与选择树）；re-memdump 跨域反向指向（"未定转什么"时先走采集）
+- **核验**：各平台事实逐条对上游（内核 `proc.rst` / `bpf_lsm.rst`、Apple ES 与 SIP/Hardened Runtime 文档、seL4 debug API、PE-sieve 选项与 wiki）；`npm test` 40 项通过；`OK: 122 skills validated`；计数五处 + README 导航同步
+- **备注**：本技能是新的审查面（监控下一轮会按同样标准核验其 API/命令/判据）；采集动作本身留痕，技能内已写明授权边界与停止条件
+
+### 批 3 补充 8：内核覆盖扩到跨平台（#45，用户要求，已落地）
+
+- **缺口**（用户发现）：内核态载荷覆盖**只有 Windows**——`re-kernel` 标题/触发词写死 Windows，且「何时不用」原文把 Linux 推给零散技能；全库关键词扫描 `LKM` / `System Extension` / `kmod` / `insmod` **0 命中**，`kext` 仅 2 处顺带提及
+- **形态**：`re-kernel` 重构为跨平台 = SKILL.md（92 行主干）+ 4 份平台分支（windows-kernel 76 / linux-kernel 74 / macos-kernel 55 / android-kernel 42）；原 Windows 内容**原样迁入** windows-kernel.md；两个纯 Windows 的旧 references 更名（`gotchas.md`→`windows-gotchas.md`、`decision-tree.md`→`windows-decision-tree.md`，`git mv` 保留历史）以免与新范围混淆
+- **结构核心**（按用户要求）：**失败模式决策表**——六类症状（struct offset 全错 / 符号解析怪异 / 文件与运行行为不一致 / 模块"消失" / driver IPC 调不通 / 异常 ELF section）→ 优先怀疑项（按顺序）→ 处理方向。要点是"观察与预期冲突时先怀疑什么"，而不是工具清单
+- **macOS 按要求拆两代**：KEXT（`Info.plist` 先行 → selector map 优先 → **AuxKC 版本坑** → codeless kext → arm64e PAC）与 System Extension / DriverKit（**用户态进程模型**、激活与 entitlement 排错顺序：activated? → service? → entitlement/Team ID/sandbox → 才轮到 selector）
+- **Linux 收录失败模式**：`.ko` 是 ET_REL（relocation 即信息）；四类"看着像坏"的合法形态（签名尾 / BTF 与 split BTF+`.BTF.base` / RANDSTRUCT / livepatch `.klp.rela`）；**5.7 起 `kallsyms_lookup_name()` 不再导出给模块**；rootkit **cross-view**（`lsmod` 干净 ≠ 没有 + hook 落点不止 syscall table）
+- **Android**：GKI vs vendor module、protected symbol（KMI 白名单：构建期检查 `check_buildtime_symbol_protection.py` + 运行期拒绝加载）、**KMI 分支不可互换**（`android12-5.10` ≠ `android13-5.10`）、模块位置与 `modules.load` 计划
+- **采集侧同步**（[[re-sample-acquire]]）：Linux 分支加"内核态载荷采集"（cross-view、内核 text 与磁盘副本 diff、hook 落点、采集时机、授权边界）；macOS 分支加"KEXT/DEXT 采集"（DEXT 按用户态进程处理、kext 先对齐 AuxKC 运行版本、内核内存读取的 SIP 现实）
+- **核验（8 项上游）**：kprobes 文档（"通常由 kernel module 注册"）、5.7 unexport 提交、`CONFIG_DEBUG_INFO_BTF_MODULES` 与 distilled `.BTF.base`（仅外置模块生成）、`TAINT_RANDSTRUCT` 与配置名、livepatch 节格式与 `SHN_LIVEPATCH`、AuxKC 与 LocalPolicy 字段、Android protected symbol/KMI 分支、dext 安装路径与 userclient entitlement。**两处口径修正**：① 5.7 的变化是"停止导出"而非 kallsyms 格式变更；② RANDSTRUCT 的**配置名**是 `CONFIG_GCC_PLUGIN_RANDSTRUCT`（`T` 是 taint 字符）
+- **结果**：`npm test` 40 项通过；`OK: 122 skills validated`
+- **顺带发现（系统性问题，未修）**：references **同名文件普遍**——`gotchas.md` 33 个、`decision-tree.md` 13 个，导致 `[[gotchas]]` 一类链接在多技能间**歧义**（validate 只检查"存在"不检查"唯一"）。候选规则：references basename 全局唯一，或链接限定技能前缀——待定
+
+### 批 3 补充 9：seL4 分析分支（#46，用户提供，已落地）
+
+- **背景**：用户指出 seL4 的经验更特殊——核心**不是"内核模块怎么逆"，而是"如何不把 capability 系统的行为误判成普通 OS 行为"**；此前 seL4 只落在采集侧（[[re-sample-acquire]] 的 monitor 视角），分析侧无覆盖
+- **形态**：`re-kernel` 新增第五个平台分支 `references/sel4-kernel.md`（**201 行，五个分支中最大**，印证"特殊情况密度可能高于 Linux LKM"）；SKILL.md 平台差异表加 seL4 行、失败模式决策表加 3 行（CPtr 本地地址 / MCS 卡住 / IRQ 只来一次）；[[re-sample-acquire]] 的 platform-sel4.md 加"方法侧入口"互链
+- **内容**（16 节 + 压缩决策树）：先识别运行模型（root task / 裸 libsel4 app / capDL / CAmkES / MCS / VM）→ **CPtr 是 CSpace 本地地址不是全局 ID**（跨 component 必须按 **kernel object** 对齐）→ capDL-loaded 不照搬 root-task slot 语义 → CAmkES glue 折叠 → badge（身份 vs bit 聚合事件）→ CSpace guard/depth 与 FailedLookup 四分类 → **错误码即诊断**（DeleteFirst=目标非空 / RevokeFirst=有派生 / FailedLookup=index·depth·类型）→ Untyped 非 malloc（2^n 对齐、Revoke 父 untyped 才可重用）→ **device untyped 只能变 Frame** → IRQ 走用户态（未 ack 不再送）→ **DMA 旁路不在 isolation proof 内** → fault 是 IPC（反复同一 fault = handler 没修）→ MCS（SC/budget/passive server/reply object/捐赠链被打断）→ capDL snapshot cross-view → capability 图必须带 rights
+- **核验（上游）**：seL4 manual（CSpace 与 CNode guard/depth 语义、错误码定义、**"device untyped 只能 retype 成 frame 或子 untyped"** 及附加限制）；MCS 发布说明与提交（SC = budget/period、passive server 依赖 client 捐赠、reply object 取代 `SaveCaller` 并跟踪捐赠、timeout fault、**链中 reply object 被撤销则 SC 回不到发起者**）；debug API（`seL4_DebugSnapshot` 输出 capDL、`seL4_DebugCapIdentify` 返回 cap 类型号）；capDL loader 与 root task 初始环境（slot 2/3 语义、初始 CNode guard 恰好解析 32 位）
+- **核验中的三处精化**：① `seL4_DebugSnapshot` 据 devel 列表是**二进制命令/响应协议**（等命令字 0xa0–0xff、回传二进制），不是人类可读文本转储；② device untyped 的限制**不止**"只能变 Frame"——device frame 还不能作 IPC buffer、不能建 ASID pool、ARM 上不能做可执行 frame，且 device 属性会被子 untyped 继承；③ Linux 侧同批核验中确认 5.7 的变化是 `kallsyms_lookup_name()` 停止导出（非格式变更）
+- **结果**：`npm test` 40 项通过；`OK: 122 skills validated`
+
+### 批 3 补充 10：references 同名歧义治理（#47，用户决策，已落地）
+
+- **决策**：`[[gotchas]]` 这类跨技能裸链有歧义（`gotchas.md` 33 个、`decision-tree.md` 13 个）——用户在"basename 全局唯一"与"链接限技能前缀"之间选了**后者**
+- **规则**：技能链接 `[[re-xxx]]`；**裸 references 链接 `[[文件名]]` 必须落在本技能 `references/` 内**；跨技能引用必须写 `[[re-xxx/文件名]]`（validate.mjs 强制，**references 文件内同样校验**——此前只查 SKILL.md 正文）
+- **迁移**：**471 处**跨技能裸引用加前缀（`platform-tips` 347、`analysis-contract` 104、`anti-dynamic-workflow` 10、`frida-scripts` 8、`rerouting` 1、`sel4-kernel` 1）；**287 处**本技能内引用保持裸链；2 处重命名遗留（re-kernel 的 gotchas/decision-tree）改为指向同技能新名
+- **校验器改动**：链接检查重写为三态判别（技能 / 跨技能 references / 本技能 references），并把校验范围从 SKILL.md 正文**扩展到 `references/*.md`**（跨技能引用多在这边）
+- **占位符约定**：文档里写示例用尖括号形式 `[[re-<技能名>]]` / `[[<文件名>]]`——不会被解析成真链接（改动过程中 capabilities.md 的格式说明自己触发过一次断链报错，即此问题）
+- **反向验证**：在 `re-kernel/references/windows-gotchas.md` 里写裸 `[[platform-tips]]` → `FAIL: re-kernel/references/windows-gotchas.md: broken [[platform-tips]] link（裸 references 链接须在本技能 references/ 内；跨技能请写 [[re-xxx/platform-tips]]）`；还原后 OK
+- **结果**：`npm test` **41 项**通过（改 1 条链接规则用例 + 新增 1 条跨技能限定用例）；`OK: 122 skills validated`
+
+### 批 3 补充 11：技能计数同步不完整（#48，用户发现，已修）
+
+- **现象**：新增 `re-sample-acquire` 后，计数只在"记得的 5 处"同步（README/README_EN/AGENTS/package.json/marketplace.json + README 网关行），**漏了 5 处**：`CLAUDE.md` 3 处（技能总数、`OK: 121 skills validated` 示例、架构图"原子技能 108 个"）、README/README_EN 前言"12 大类网关 → **108** 原子技能"
+- **根因**：① 同步清单本身是记忆产物，没有"计数出现点"的全量来源；② 自查 grep 用了"旧数+单位"的复合模式，对全角括号与措辞差异过敏 → **首轮扫描报"零命中"的假阴性**（真正的发现来自换用"数词散扫 + 逐文件人工核"）
+- **修法**：5 处改为 122/109；历史记录（`TODO.md`、`docs/audit/`、`lib/frontmatter.mjs` 注释里的"104/121"等）保留原值——它们是当时事实
+- **固化**：`CLAUDE.md` 的「新增/修改技能的标准流程」第 4 步从"同步 5 处"改为**逐处清单**（README 4 处 / README_EN 4 处 / AGENTS 2 处 / package.json / marketplace.json / CLAUDE.md 3 处），并写明自查方式与"不要用复合模式"的教训
+- **核对**：实际结构 **122 = 1 entry + 12 gateway + 109 atomic**，与文档现值一致
+- **结果**：`npm test` 41 项通过；`OK: 122 skills validated`
+
 ## 需澄清（非误报，但审查表述需修正）
 
 1. **candump `-f` 确实存在**：上游 can-utils 当前版本有 `-f <fname>`（写日志文件），Debian bookworm 打包的 manpage（can-utils 2020.11.0）尚未收录该选项——核验时以源码为准。#10 的结论（原命令会写文件而非过滤）成立。

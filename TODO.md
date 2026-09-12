@@ -20,6 +20,10 @@
   - [x] 能力层部分闭环（#40，用户报告）：悬空标签清零（标签 52/52 有声明，补 14 个技能）+ 能力索引生成与过期检查（`bin/capindex.mjs`）+ 悬空检查（2026-09-13）
   - [x] 能力层剩余缺口闭环（#42，用户要求）：① 技能覆盖 119/121（原子 108/108 全声明；路由暴露的标签缺口补 12 个，52→64）② triage/rerouting 改为按能力匹配（两表加「需要能力」列 + 索引反查 + 4 条 CI 防漂移检查）（2026-09-13）
   - [x] 网关选择树能力标注（#43，用户要求）：11 个网关选择树 + 完整工作流段共 336 处链接标注（能力：`tag`），选择树 100% 覆盖；约定加显式「能力：」前缀消歧；CI 校验标注与声明一致（2026-09-13）
+  - [x] seL4 分析分支（#46，用户提供）：re-kernel 第五平台分支 `sel4-kernel.md`（capability 系统：CPtr 本地地址/capDL·CAmkES/badge 与 rights/错误码即诊断/device untyped/用户态 IRQ 与 DMA 旁路/fault IPC/MCS/capDL snapshot）（2026-09-13）
+  - [x] 内核覆盖跨平台化（#45，用户要求）：re-kernel 重构为「失败模式决策表 + 四平台分支」（Windows/Linux LKM/macOS KEXT 与 DEXT/Android GKI）；采集侧同步内核段（2026-09-13）
+  - [x] references 同名歧义治理（#47，用户决策「限定技能前缀」）：471 处跨技能裸引用加 `[[re-xxx/文件名]]` 前缀；validate 扩到 references 文件内校验；占位符改用尖括号形式（2026-09-13）
+  - [x] 新增 re-sample-acquire（#44，用户要求）：补现场采集环节（只有现象、没有样本）——SKILL.md + 四平台分支（Windows VAD/线程、Linux VMA/BPF LSM、macOS Mach VM/Endpoint Security、seL4 capability provenance）；能力标签 `sample-acquisition`；计数 121→122（2026-09-13）
   - [x] 数据契约去文件域化（#41，用户报告）：analysis-contract 改为「核心字段 + 10 个域扩展字段」两层（SDR/CAN/AI 模型/TEE/取证等域各有字段组），上下文清单按域展开，消费侧 2 处同步（2026-09-13）
   - [ ] 复核后回填状态（fixed → verified），本批结果作为「增量审查机制」首批记录
   - [ ] 待定：是否给全部 27 个历史文档统一加头部横幅（当前只标注了含已知错误的 2 个）

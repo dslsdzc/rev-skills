@@ -4,7 +4,7 @@
 
 [中文版](README.md) | English
 
-121 reverse engineering skills covering malware analysis, software reversing, firmware/embedded, protocol reversing, mobile apps, packing/obfuscation, cracking, vulnerability research, managed code, forensics/threat intel, and CTF. **General-purpose and distributable**: no tool is assumed to be installed — every skill ships with cross-OS installation guidance.
+122 reverse engineering skills covering malware analysis, software reversing, firmware/embedded, protocol reversing, mobile apps, packing/obfuscation, cracking, vulnerability research, managed code, forensics/threat intel, and CTF. **General-purpose and distributable**: no tool is assumed to be installed — every skill ships with cross-OS installation guidance.
 
 > **Usage boundary**: This library is intended **only for security research and authorized analysis**. Obtain authorization from the target owner before use; unauthorized reversing, cracking, bypassing protections, or malicious activity is prohibited. The legality of reverse engineering varies by jurisdiction (e.g., the US DMCA anti-circumvention provisions, regional software protection laws). Users are responsible for complying with local law and for any consequences of misuse. This library contains general methodology and targets no specific entity.
 
@@ -62,13 +62,13 @@ This repo ships its own `.claude-plugin/marketplace.json` and can be added as a 
 | GitHub Copilot | `--target copilot` → `.github/copilot-instructions.md` | rule aggregation |
 | Windsurf | `--target windsurf` → `.windsurf/rules/*.md` | rule aggregation |
 
-## Skill map (121)
+## Skill map (122)
 
-Entry → 12 category gateways → 108 atomic skills. See `.claude/skills/` and `docs/skill-template.md` for details. Quick index:
+Entry → 12 category gateways → 109 atomic skills. See `.claude/skills/` and `docs/skill-template.md` for details. Quick index:
 
 - **re-analyze**: entry point (probe → preference → identification → orchestration)
 - **re-binary-core**: re-address-space (address translation), re-triage, re-format-pe/elf/macho, re-imports, re-ghidra, re-ida, re-radare2, re-gdb, re-x64dbg, re-lldb, re-tracing, re-memdump, re-windbg, re-binaryninja, re-emulation, re-shellcode, re-kernel, re-ebpf, re-game, re-console, re-go, re-rust, re-plugin-dev, re-hypervisor, re-anti-cheat, re-cpp-abi, re-swift, re-zig, re-nim, re-fp-runtime, re-variant, re-mips, re-arm, re-riscv
-- **re-malware**: re-sandbox, re-behavior, re-ioc, re-ransomware, re-loader, re-fileless, re-doc-malware
+- **re-malware**: re-sandbox, re-behavior, re-ioc, re-ransomware, re-loader, re-fileless, re-doc-malware, re-sample-acquire
 - **re-firmware**: re-fw-extract, re-fw-rootfs, re-fw-emulate, re-hardware-io, re-automotive, re-uefi, re-rtos, re-tee
 - **re-protocol**: re-netcap, re-proto-rev, re-crypto-id, re-crypto-keys, re-crypto-decrypt, re-ics, re-iot-proto, re-whitebox, re-tls
 - **re-mobile**: re-apk, re-ios, re-frida, re-frida-script-author, re-mobile-pack, re-hybrid-app, re-android-native, re-android-crypto (crypto audit), re-ios-jb, re-flutter, re-harmonyos
