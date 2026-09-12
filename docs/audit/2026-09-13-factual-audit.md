@@ -8,7 +8,7 @@
 
 **核验方法**：本库原文 grep 定位（确认审查引文与文件一致）+ 上游权威源比对（AOSP 源码 / onnx.proto / can-utils 源码 / QEMU 源码 / HF safetensors 规范 / PyPI 元数据）。只有"原文与权威源直接冲突"才记为确认；术语与措辞类问题按"是否会导致错误推理"定级。
 
-**结论汇总**：批 1 高 11 / 中 5，批 2 高 1 / 中 4，共 21 项**全部确认，误报 0**；需澄清 2 点（见文末）。**21 项已全部修复**（状态 fixed，待复核——见文末修复记录）。
+**结论汇总**：批 1（高 11 / 中 5）、批 2（高 1 / 中 4）、批 3（高 9 / 中-高 2 / 中 5）累计 37 项 finding——**35 项技能缺陷 + 1 项工程性问题（历史文档污染）确认，1 项误报**（见批 3 #37）；需澄清 2 点（见文末）。已确认缺陷**全部修复**（状态 fixed，待复核——见文末修复记录）。
 
 ---
 
@@ -54,6 +54,36 @@
 
 **说明**：re-frida-script-author 的 gotchas.md 与 SKILL.md 坑节此前已正确记载 Frida 17 迁移写法——说明问题不在知识缺失，而在"迁移只写进了说明、没落到示例"；本次修复即把示例与说明对齐。
 
+## 批 3（2026-09-13，独立监控第二轮）
+
+覆盖 8 个技能，16 项——**15 项确认并修复，1 项误报**（#37）。
+
+| # | 严重度 | 技能 | 位置 | 现状（原文） | 问题 | 修正方向 | 核验依据 |
+|---|---|---|---|---|---|---|---|
+| 22 | 高 | re-automotive | SKILL.md:96 | `candump -c can0  # 每 ID 帧计数` | **`-c` 是颜色模式**（increment color mode level），不计数——照抄得到彩色输出而非统计 | 改 `candump can0 \| awk '{print $2}' \| sort \| uniq -c`；坑节同步 | can-utils 源码 `candump.c` usage |
+| 23 | 中 | re-automotive | SKILL.md:87 | "落盘日志（自动轮转…）" | **无轮转**：源码只一次 `fopen(logname,"w")`，无大小/时间触发；默认文件名带时间戳 | 改述为"默认文件名带时间戳；无轮转，需要轮转交给 logrotate/外部脚本" | can-utils 源码 `candump.c` 日志处理段 |
+| 24 | 高 | re-disk-forensics | SKILL.md:89 | `tsk_recover -e …  # 批量恢复全部已删除文件` | **语义反了**：默认行为才是只导未分配（已删除）文件；`-e` 是已分配+未分配**全部文件**（`-a` 只导已分配） | 默认命令去掉 `-e`；`-e` 单列一行注明"全部文件" | sleuthkit `tsk_recover(1)` man page |
+| 25 | 中-高 | re-disk-forensics | SKILL.md:115 | `dd … skip=<A_end> count=<B_start-A_end>` | **off-by-one**：mmls 的 End 是含端点的末扇区（源码 `part->start + part->len - 1`，即 Length=End-Start+1）；真正的 gap 从 A_end+1 起 | 改 `skip=$((A_end+1)) count=$((B_start-A_end-1))`；提示直接用 mmls 的 Unallocated 项 Start/Length | sleuthkit 源码 `tools/vstools/mmls.cpp`（printf 与算术） |
+| 26 | 高 | re-format-pe | SKILL.md:102 | `for cid, count, off in rh['values']:` | **必然报错**：pefile 的 `values` 是扁平整数数组 `[compid, count, …]`（源码 `headervalues += [.., ..]`），无三元组、无 `off`，且已按 key 解密 | 改 `vals=rh['values']; zip(vals[0::2], vals[1::2])` | 本地装 pefile 读 `parse_rich_header` 源码 |
+| 27 | 高 | re-format-pe | SKILL.md:86 | `ptr_size = 8 if pe.FILE_HEADER.Machine == 0x8664 else 4` | **判据错**：位宽由 Optional Header Magic 决定（0x10b=PE32 / 0x20b=PE32+）；ARM64(0xAA64) 也是 PE32+，会被按 4 字节读 | 改按 `pe.OPTIONAL_HEADER.Magic == 0x20b` 判定 | PE/COFF 规范（Machine 与 Magic 语义分离） |
+| 28 | 高 | re-format-elf | SKILL.md:91 | "`DT_BIND_NOW`/FLAGS 出现 = 全 RELRO、GOT 只读" | **把两个独立条件写成等价**：BIND_NOW 只表示启动时完成绑定；只读重定位区由 `PT_GNU_RELRO` 建立 | 全 RELRO = `PT_GNU_RELRO` + BIND_NOW；仅 RELRO = Partial；仅 BIND_NOW 推不出 RELRO | GNU ld 文档（`-z now` 与 `-z relro` 分列定义） |
+| 29 | 中 | re-format-elf | SKILL.md:73 | `objdump -d -j .init_array` "逐条反汇编回调地址" | **-d 不处理数据节**：.init_array 是函数指针数组，-d 只反汇编被标记为指令的节，实际无输出 | 改 `objdump -s` 取指针，再按指针地址反汇编目标函数 | objdump 语义（节标志决定 -d 范围） |
+| 30 | 高 | re-format-elf/references/layout.md | :32,:34,:132 | e_phnum/e_shnum 扩展编号写成同一套（"同上 PN_XNUM 溢出处理"） | **混了三套独立规则**：e_phnum==PN_XNUM → `shdr[0].sh_info`；e_shnum==0 → `shdr[0].sh_size`；e_shstrndx==SHN_XINDEX → `shdr[0].sh_link` | 三条分别写清，并建议配 parser fixture 验证 | ELF 规范（扩展编号三规则） |
+| 31 | 中 | re-format-elf/references/layout.md | :29 | e_flags "MIPS 的字节序/ABI 位" | **无字节序位**：MIPS e_flags 是 ABI/ISA/PIC/NaN 等；字节序始终由 `e_ident[EI_DATA]` 决定 | 改述为 ABI/ISA/PIC/NaN，并注明字节序看 EI_DATA | ELF/LLVM 的 EF_MIPS_* 定义 |
+| 32 | 高 | re-format-macho | SKILL.md:70,:130；references/layout.md:89 | `__LINKEDIT` "无映射内容""运行时不可访问" | **错**：它是正常段（有 vmaddr/vmsize），通常映射为只读区域（vmmap 可见）；只是 shared cache 场景链接元数据驻留方式不同 | 改述为"只读映射段；shared cache 影响驻留方式"，并提示按 LC_SYMTAB 用 nm/dyldinfo 定位而非照抄文件偏移 | Mach-O 段语义 + dyld shared cache 行为 |
+| 33 | 中 | re-macos | SKILL.md:56 | "看 `com.apple.quarantine`（…来源 URL）" | quarantine 记录隔离标志/时间戳/责任方，**不含来源 URL**；来源信息在 Spotlight 属性 | 来源改用 `mdls -name kMDItemWhereFroms` | Apple quarantine 与 kMDItemWhereFroms 语义 |
+| 34 | 中 | re-address-space | SKILL.md:55 | "PIE = 0（所有地址是相对偏移）"当不变量 | **格式无此要求**：ET_DYN 的最低 p_vaddr 不必为 0；load_bias 应按最低 PT_LOAD p_vaddr 与运行时映射求差 | 改为"取最低 PT_LOAD 的 p_vaddr，别假设 PIE 必为 0" | ELF GABI（base / load bias 定义） |
+| 35 | 高 | re-hypervisor | SKILL.md:68 | VMCS 编码"索引在 bits 9:0" | **漏 bit0 语义**：bit0=访问类型（full/high），索引在 bits 9:1（9 位）；类型 bits 11:10、宽度 bits 14:13 | 写全四段位域并给解码式 `index=(enc>>1)&0x1ff` 等 | Intel SDM VMCS 字段编码（示例 0x400C/0x681E 复核通过） |
+| 36 | 高 | re-hypervisor | SKILL.md:87 | `echo 1 \| sudo tee /sys/module/kvm_intel/parameters/nested` | **当前内核写不进去**：`module_param(nested, bool, 0444)` 只读，sysfs 写入失败 | 改 `modprobe -r kvm_intel && modprobe kvm_intel nested=1`，`/etc/modprobe.d` 持久化，读参数验证 | 内核 commit 801d3424（`module_param(nested, bool, S_IRUGO)`，S_IRUGO=0444 只读）+ RHEL/Fedora/SUSE 文档均以 modprobe 重新加载开启 |
+| 37 | 误报 | re-uefi | —— | 监控称仓库有 `uefifind fw.bin all list <GUID>` 并把 GUID 文本当 pattern | **仓库不存在该写法**：`uefifind` 全文仅 2 处且都正确（位置参数语法 + 紧邻一行已指向 UEFIExtract 的 GUID 模式） | 不修；记录为误报 | 全仓 grep + `uefifind(1)` man page 复核 |
+
+### 工程性问题：历史文档污染（本轮记录，已缓解）
+
+- **现象**：`docs/superpowers/{plans,specs}/` 是历史存档、不随技能修订同步——grep 确认 2 处保留已修正的旧错误（`plans/2026-08-18-six-skills.md:239` 的 `SecKeyCreateWithData`；`plans/2026-08-18-six-skills-v2.md:449` 的"内容哈希 + manifest.plist 映射"）
+- **风险**：不在人读，而在 Agent/RAG 全仓检索时把已修错误重新召回
+- **缓解（已实施）**：① 新增 `docs/superpowers/README.md` 声明本目录为历史存档、当前事实以 `.claude/skills/` 为准；② 两处旧错误就地标注"已于 2026-09-13 修正 + 现文位置"（保留原文，不重写历史）；③ `CLAUDE.md` 开发工作流节加注：历史存档不得当现行指引检索
+- **待定**：是否给全部 27 个历史文档统一加头部横幅（当前只处理了含已知错误的 2 个文件）
+
 ## 需澄清（非误报，但审查表述需修正）
 
 1. **candump `-f` 确实存在**：上游 can-utils 当前版本有 `-f <fname>`（写日志文件），Debian bookworm 打包的 manpage（can-utils 2020.11.0）尚未收录该选项——核验时以源码为准。#10 的结论（原命令会写文件而非过滤）成立。
@@ -84,9 +114,9 @@
 
 ## 修复记录（2026-09-13）
 
-批 1（#1–#16）与批 2（#17–#21）共 21 项**已全部修复**，状态 **fixed（待复核）**。
+批 1（#1–#16）、批 2（#17–#21）、批 3（#22–#36）共 36 项**已全部修复**，状态 **fixed（待复核）**；#37 为误报未改；工程性问题（历史文档污染）已按上述三层缓解处理。
 
-- 涉及文件 28 个（技能 SKILL.md 21 + references 7），其中 Frida 17 横向迁移覆盖 9 个文件
+- 涉及文件 28 个（技能 SKILL.md 21 + references 7），其中 Frida 17 横向迁移覆盖 9 个文件（批 1+2）；批 3 另改 10 个技能文件（含 2 个 references）+ 历史存档 2 处 + `docs/superpowers/README.md` + `CLAUDE.md`
 - 校验：`npm test` 通过（`OK: 121 skills validated` + 25 项单测）；grep 复核确认已移除 API 无残留（保留的"旧写法"文字均为迁移说明性注释）
 - 复核入口（后续波次）：按状态机 fixed → verified 逐项复核；重点复核两处语义选择——① Frida 迁移中 `find*`（返 null）与 `get*`（抛异常）在各示例语境下是否选得恰当；② re-forensics 转储分流的表述是否与实际 [[re-mem-forensics]] / [[re-memdump]] 边界完全一致
 

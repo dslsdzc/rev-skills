@@ -13,7 +13,10 @@
   - [x] 高严重度 11 项：已修复（2026-09-13）
   - [x] 中严重度 5 项：已随所属技能一并修（2026-09-13）
   - [x] 批 2（监控新增 4 项 + 自查 1 项：Frida 17 迁移 9 文件 / `retval.replace` / scapy `startAddr` / angr 版本线 / `Memory.readCString`）：已修复（2026-09-13）
+  - [x] 批 3（监控第二轮 16 项：15 确认已修——candump/tsk_recover/mmls gap/Rich Header/TLS 位宽/RELRO/扩展编号/__LINKEDIT/VMCS/KVM nested 等；1 误报未改）：已修复（2026-09-13）
+  - [x] 工程性问题：历史文档污染——`docs/superpowers/README.md` 存档声明 + 2 处旧错误就地标注 + CLAUDE.md 加注（2026-09-13）
   - [ ] 复核后回填状态（fixed → verified），本批结果作为「增量审查机制」首批记录
+  - [ ] 待定：是否给全部 27 个历史文档统一加头部横幅（当前只标注了含已知错误的 2 个）
 
 - [ ] **增量审查机制**（2026-08-29 记录，来源：aiskillstore skill-report.json 机制调研）
 

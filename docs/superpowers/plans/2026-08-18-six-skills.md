@@ -237,6 +237,7 @@ description: >
 4. **钥匙串与 Secure Enclave**：
    - 钥匙串条目类型（通用密码/互联网密码/密钥）与 ACL（`kSecAttrAccess` 可访问性类：非锁定/首次解锁/此设备）
    - Secure Enclave 密钥：`SecKeyCreateWithData` 带 `kSecAttrTokenIDSecureEnclave` —— 私钥**不可提取**（等价 Android Keystore 硬件背书，见 [[re-android-native]] Keystore 审计）
+     （注：本行 API 用法已于 2026-09-13 修正——SE 密钥须用 `SecKeyCreateRandomKey`，`SecKeyCreateWithData` 是外部数据导入；现文见 `.claude/skills/re-macos/SKILL.md`，核验记录见 `docs/audit/`）
    - 分析：目标读哪些钥匙串条目（SecItemCopyMatching 调用点）、密钥是否 Secure Enclave 绑定（不可提取 → 记录用途而非字节）
 
 5. **dyld 加载链**：
