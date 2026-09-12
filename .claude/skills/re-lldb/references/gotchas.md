@@ -35,6 +35,6 @@
 
 ## 使用注意
 
-- 全部在沙箱内执行（[[platform-tips]] 最高原则）；attach 需 Developer Tools 授权
+- 全部在沙箱内执行（[[re-analyze/platform-tips]] 最高原则）；attach 需 Developer Tools 授权
 - 目标为恶意样本时先静态初勘（[[re-triage]] 哈希/[[re-format-macho]] 结构）再动态
-- 结论写 [[analysis-contract]]；符号/地址证据与 [[re-triage]] 初勘值对照
+- 结论写 [[re-analyze/analysis-contract]]；符号/地址证据与 [[re-triage]] 初勘值对照

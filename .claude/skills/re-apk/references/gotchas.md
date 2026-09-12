@@ -36,6 +36,6 @@
 
 ## 使用注意
 
-- 纯静态可免沙箱（[[platform-tips]] 最高原则）；重打包/安装/运行验证样本按沙箱分支执行
-- 补丁产物与原始样本 sha256 对照存证（[[re-triage]]）；分析结论写 [[analysis-contract]]
+- 纯静态可免沙箱（[[re-analyze/platform-tips]] 最高原则）；重打包/安装/运行验证样本按沙箱分支执行
+- 补丁产物与原始样本 sha256 对照存证（[[re-triage]]）；分析结论写 [[re-analyze/analysis-contract]]
 - 版本相关行为（apktool 回编译细节、jadx 反编译质量）以目标版本实际表现为准

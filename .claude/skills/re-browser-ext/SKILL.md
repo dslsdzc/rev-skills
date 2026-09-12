@@ -15,7 +15,7 @@ capabilities: [browser-extension]
 - 用：判断扩展是否过度授权、远程代码、更新投毒（首版干净后续版本恶意）
 - 不用：网页 JS 混淆（[[re-script-deob]] 覆盖纯脚本）
 - 不用：Chrome/Edge 浏览器本身的漏洞利用（扩展与浏览器漏洞是两个对象）
-- 注意：动态加载扩展跑恶意行为属执行未知代码——沙箱内进行（[[re-sandbox]]，[[platform-tips]] 最高原则）
+- 注意：动态加载扩展跑恶意行为属执行未知代码——沙箱内进行（[[re-sandbox]]，[[re-analyze/platform-tips]] 最高原则）
 
 ## 工具准备
 

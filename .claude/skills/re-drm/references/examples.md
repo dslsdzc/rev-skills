@@ -135,5 +135,5 @@ readelf -s libwidevinecdm.so | grep -E 'Initialize|CreateSession|UpdateSession|D
 
 ## 使用注意
 
-- 所有步骤限授权范围与受控环境（[[platform-tips]] 最高原则）；密钥材料不进报告
+- 所有步骤限授权范围与受控环境（[[re-analyze/platform-tips]] 最高原则）；密钥材料不进报告
 - 与 [[re-protocol]]、[[re-crypto-id]]、[[re-netcap]] 配合；本文件示例不含真实密钥材料

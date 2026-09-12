@@ -16,7 +16,7 @@ capabilities: [tls-analysis, crypto-identification]
 - 不用：只抓包不深入（那是 [[re-netcap]]）
 - 不用：流量已解密、无 TLS 层（直接 [[re-proto-rev]] 重建状态机）
 - 不用：非标准 TLS 的自定义加密（走 [[re-crypto-id]] → [[re-crypto-keys]] → [[re-crypto-decrypt]]）
-- 注意：本技能处理流量与密钥文件，不运行样本，默认可免沙箱；抓包环节按 [[re-netcap]] 在隔离环境进行（[[platform-tips]] 最高原则）
+- 注意：本技能处理流量与密钥文件，不运行样本，默认可免沙箱；抓包环节按 [[re-netcap]] 在隔离环境进行（[[re-analyze/platform-tips]] 最高原则）
 
 ## 工具准备
 
@@ -124,8 +124,8 @@ capabilities: [tls-analysis, crypto-identification]
 - [[re-crypto-id]] / [[re-crypto-keys]] / [[re-crypto-decrypt]]：非标准/自实现加密链路（TLS 指纹与解密失败时的转场）
 - [[re-malware]]：恶意 C2 的 TLS 特征判定（回连流量分析的第 4 步细化）
 - [[re-frida]]：证书固定绕过（坑 4）——hook 校验函数配合 mitmproxy
-- [[re-sandbox]]：抓包环境隔离与基线流量采集（[[platform-tips]] 最高原则）
-- 引用 [[platform-tips]] 静态优先思路与沙箱网络隔离分支
+- [[re-sandbox]]：抓包环境隔离与基线流量采集（[[re-analyze/platform-tips]] 最高原则）
+- 引用 [[re-analyze/platform-tips]] 静态优先思路与沙箱网络隔离分支
 
 ## 常见坑与陷阱
 

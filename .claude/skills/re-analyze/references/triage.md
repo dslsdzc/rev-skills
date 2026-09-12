@@ -25,6 +25,7 @@
 | 目标（用户描述） | 需要能力 | 编排路径（按顺序） |
 |---|---|---|
 | 判定恶意行为 / 会不会回连 | `malware-behavior`、`network-capture` | re-malware 网关 → re-sandbox → re-behavior → re-protocol（re-netcap / re-proto-rev / re-crypto-*）→ re-ioc |
+| 只有现象、没有样本（不落盘 / 内存驻留 / 寄生在别的进程） | `sample-acquisition`、`malware-behavior` | re-sample-acquire → re-triage → re-fileless / re-malware → re-ioc |
 | 勒索加密 / 文件被加密 / 勒索信 | `malware-behavior`、`crypto-identification`、`crypto-decryption` | re-malware → re-sandbox → re-ransomware → re-crypto-id / re-crypto-decrypt → re-ioc |
 | 无文件样本 / PowerShell 链 / 内存执行 | `malware-behavior`、`deobfuscation` | re-malware → re-fileless → re-script-deob → re-behavior → re-ioc |
 | 样本带壳 / 脱壳 | `unpack` | re-anti-analysis → re-packer-id → re-unpack-simple / re-unpack-advanced → 验证 |

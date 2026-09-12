@@ -74,5 +74,5 @@ DeviceIoControl 调用点（用户态样本）
 
 ## 使用注意
 
-- 全部动态环节在沙箱调试 VM 内（[[re-sandbox]]，[[platform-tips]] 最高原则）；测试签名只开在分析 VM（见 [[gotchas]]）
+- 全部动态环节在沙箱调试 VM 内（[[re-sandbox]]，[[re-analyze/platform-tips]] 最高原则）；测试签名只开在分析 VM（见 [[windows-gotchas]]）
 - 内核分析结论涉及系统完整性（rootkit 手法），报告限定在授权分析范围，不提供可用做真实环境对抗的完整载荷

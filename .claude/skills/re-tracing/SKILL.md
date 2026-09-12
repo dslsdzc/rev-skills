@@ -16,7 +16,7 @@ capabilities: [tracing]
 
 ## 工具准备
 
-参考 [[platform-tips]] 最高原则——跟踪即动态执行，默认在沙箱内进行，网络隔离。
+参考 [[re-analyze/platform-tips]] 最高原则——跟踪即动态执行，默认在沙箱内进行，网络隔离。
 
 ### strace（Linux）
 
@@ -98,7 +98,7 @@ capabilities: [tracing]
 - **QEMU 插件**：`-plugin` 加载指令级 trace 插件（insn 粒度、call/ret 路径、guest 代码块事件）；用途——脱壳后真实路径还原、反混淆（静态混淆无法隐藏实际执行）
 - **Intel PT**：硬件 trace（`perf record -e intel_pt`）→ 解码（`perf script` 或第三方解析）→ 分支流还原；用途——无插桩开销的完整执行路径
 - **trace 分析**：热点（执行频次排序）、路径还原（调用链重建）、与 [[re-deobfuscate]] 衔接（按真实路径过滤死代码）
-- **输出**：指令级执行流摘要（供 [[analysis-contract]] 证据存档）
+- **输出**：指令级执行流摘要（供 [[re-analyze/analysis-contract]] 证据存档）
 
 ## 跨域联合
 

@@ -72,7 +72,7 @@ capabilities: [lang-runtime-analysis]
 4. **分析策略（数据流优先）**：
    - 控制流打散：惰性求值导致求值顺序不可预测——静态控制流分析价值低
    - 数据流线索：闭包字段初始化点（构造器参数）、模式匹配分支（构造器标签分发）、字符串/常量引用
-   - 产出：数据流图（构造器 → 字段 → 使用点）替代控制流图（与 [[analysis-contract]] 数据契约衔接）
+   - 产出：数据流图（构造器 → 字段 → 使用点）替代控制流图（与 [[re-analyze/analysis-contract]] 数据契约衔接）
    - 模式匹配还原：分支按构造器 tag 分发（OCaml）或 info 表指针比较（GHC）——tag/指针值 → 构造器序号；还原出构造器集合即还原出数据类型
    - 产出格式（供分析报告与下一环节消费）：
      ```
@@ -93,7 +93,7 @@ capabilities: [lang-runtime-analysis]
 ## 跨域联合
 
 - [[re-binary-core]] 网关：本技能归属（选择树「Haskell/OCaml 产物」分支）
-- [[analysis-contract]]：数据流图按数据契约传递
+- [[re-analyze/analysis-contract]]：数据流图按数据契约传递
 - [[re-cpp-abi]]：vtable/info table 对照思路（表指针分派同构）
 
 ## 常见坑与陷阱

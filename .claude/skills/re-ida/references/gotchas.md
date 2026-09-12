@@ -39,5 +39,5 @@
 
 ## 使用注意
 
-- 全部在沙箱内执行（[[platform-tips]] 最高原则）；动态调试按默认沙箱
+- 全部在沙箱内执行（[[re-analyze/platform-tips]] 最高原则）；动态调试按默认沙箱
 - 脚本/插件/数据库与 IDA 版本强绑定——换版本先跑 `File > Script command` 的 `idaapi.IDA_SDK_VERSION` 确认

@@ -19,7 +19,7 @@ capabilities: [crypto-identification, key-extraction]
 
 ## 工具准备
 
-静态为主（免沙箱）；涉及"表加密运行时解密"时需动态取表（默认沙箱，[[platform-tips]] 最高原则）。所有工具先验证再使用。
+静态为主（免沙箱）；涉及"表加密运行时解密"时需动态取表（默认沙箱，[[re-analyze/platform-tips]] 最高原则）。所有工具先验证再使用。
 
 ### python3 —— 表提取与密钥推导脚本
 
@@ -38,7 +38,7 @@ capabilities: [crypto-identification, key-extraction]
 
 ### [[re-memdump]] —— 表加密（运行时解密）时动态取表
 
-- 默认转储优先（gcore，见 [[platform-tips]]「直读 vs 转储」决策表）
+- 默认转储优先（gcore，见 [[re-analyze/platform-tips]]「直读 vs 转储」决策表）
 - 验证见 [[re-memdump]] 工具准备
 
 ## 操作步骤
@@ -100,7 +100,7 @@ capabilities: [crypto-identification, key-extraction]
 - [[re-deobfuscate]]：白盒 + 混淆组合时先还原控制流（坑 2）
 - [[re-memdump]]：表加密（运行时解密）时动态取表（坑 3）
 - [[re-malware]]：恶意样本通信加密/勒索的白盒实现分析
-- 引用 [[platform-tips]] 静态优先原则与「直读 vs 转储」决策表（动态取表时机）
+- 引用 [[re-analyze/platform-tips]] 静态优先原则与「直读 vs 转储」决策表（动态取表时机）
 
 ## 常见坑与陷阱
 

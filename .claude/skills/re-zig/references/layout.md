@@ -74,4 +74,4 @@ _start (GLOBAL)           ← 链接器入口（用户代码不可见）
 ## 使用注意
 
 - 静态分析无需沙箱；跨架构 Zig 产物（ARM/RISC-V）布局规则同（错误码 u16 不变），槽位尺寸按指针宽度
-- 与 [[analysis-contract]]（符号表传递）、[[re-cpp-abi]]（C++ 判别）配合使用
+- 与 [[re-analyze/analysis-contract]]（符号表传递）、[[re-cpp-abi]]（C++ 判别）配合使用

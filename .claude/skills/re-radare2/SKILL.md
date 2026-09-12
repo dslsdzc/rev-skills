@@ -18,7 +18,7 @@ capabilities: [decompilation]
 
 ## 工具准备
 
-参考 [[platform-tips]]——命令行工具适配远程/低内存环境；平台分支的 Wine/QEMU 用户态仿真经验同样适用。
+参考 [[re-analyze/platform-tips]]——命令行工具适配远程/低内存环境；平台分支的 Wine/QEMU 用户态仿真经验同样适用。
 
 ### rizin（radare2 的活跃分支）
 

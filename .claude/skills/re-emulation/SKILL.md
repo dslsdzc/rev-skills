@@ -13,11 +13,11 @@ capabilities: [emulation]
 - 用：不需要完整 OS 语义（无进程/线程/网络栈依赖）的确定性任务
 - 不用：需要完整 OS 环境（多线程、网络栈、完整 API 语义）→ 用 QEMU 全系统（[[re-fw-emulate]]）或沙箱实跑（[[re-sandbox]]）
 - 不用：只需动态调试（[[re-gdb]] / [[re-x64dbg]] / [[re-windbg]]）
-- 不用：目标在本机就能跑——沙箱内直接跑更真实（[[platform-tips]] 最高原则），模拟留给出不来环境的场景
+- 不用：目标在本机就能跑——沙箱内直接跑更真实（[[re-analyze/platform-tips]] 最高原则），模拟留给出不来环境的场景
 
 ## 工具准备
 
-模拟执行属动态执行，默认沙箱 + 网络隔离（[[platform-tips]] 最高原则）；本技能三件套均为 pip 包，Linux/macOS/Windows 通用，WSL 内可直接用（[[platform-tips]] WSL 分支）。
+模拟执行属动态执行，默认沙箱 + 网络隔离（[[re-analyze/platform-tips]] 最高原则）；本技能三件套均为 pip 包，Linux/macOS/Windows 通用，WSL 内可直接用（[[re-analyze/platform-tips]] WSL 分支）。
 
 ### unicorn
 
@@ -95,7 +95,7 @@ capabilities: [emulation]
 - [[re-anti-analysis]]：脱壳辅助（解密例程模拟执行）固定场景
 - [[re-binary-core]]：反编译产物/单函数逻辑的模拟验证
 - [[re-fw-emulate]]：需完整 OS/固件启动 → QEMU 全系统；本技能只管单程序/单代码段模拟，不抢该域
-- [[re-sandbox]]：模拟属动态执行，默认沙箱内进行（[[platform-tips]] 最高原则）
+- [[re-sandbox]]：模拟属动态执行，默认沙箱内进行（[[re-analyze/platform-tips]] 最高原则）
 - [[re-deobfuscate]]：反混淆结果模拟执行验证
 - [[re-crypto-decrypt]]：解密算法用模拟执行求值代替手写脚本
 - [[re-memdump]]：模拟器内存快照的落盘与后续分析

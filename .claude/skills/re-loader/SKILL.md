@@ -15,7 +15,7 @@ capabilities: [malware-behavior]
 - 用：反射式加载 / 进程空洞 / 模块拼接类投递技术分析
 - 不用：样本本身就是完整载荷（静态可看到全部功能，走 [[re-triage]] / [[re-binary-core]]）
 - 不用：只做静态字符串提取（先 [[re-triage]] 初勘，下载器特征不明显时静态先行）
-- 注意：动态分析强制前置（[[re-sandbox]]，[[platform-tips]] 最高原则）——下载器必须运行才能观察下载链；网络隔离下分析
+- 注意：动态分析强制前置（[[re-sandbox]]，[[re-analyze/platform-tips]] 最高原则）——下载器必须运行才能观察下载链；网络隔离下分析
 
 ## 工具准备
 
@@ -96,19 +96,19 @@ capabilities: [malware-behavior]
 
 ## 跨域联合
 
-- [[re-sandbox]] / [[re-behavior]]：动态环境（强制前置，[[platform-tips]] 最高原则）与注入/进程树检测——本技能由 [[re-malware]] 网关引用，沙箱是工作流第 1 步
+- [[re-sandbox]] / [[re-behavior]]：动态环境（强制前置，[[re-analyze/platform-tips]] 最高原则）与注入/进程树检测——本技能由 [[re-malware]] 网关引用，沙箱是工作流第 1 步
 - [[re-tracing]]：下载/解压链跟踪（strace / ProcMon），步骤 2
-- [[re-memdump]]：内存载荷提取（默认转储优先，[[platform-tips]] 关键经验: 等 OEP 解密后转储），步骤 3
+- [[re-memdump]]：内存载荷提取（默认转储优先，[[re-analyze/platform-tips]] 关键经验: 等 OEP 解密后转储），步骤 3
 - [[re-anti-analysis]]：载荷加壳处理与反沙箱绕过（[[re-packer-id]] / [[re-unpack-*]]），步骤 5
 - [[re-protocol]]：下载协议/C2 交互分析（netcap / proto-rev / crypto-*）
 - [[re-ioc]]：每层 hash / URL / 文件路径出 IOC 与报告
 - [[re-malware]]：最终载荷行为分析、勒索场景转 [[re-ransomware]]
-- [[platform-tips]] 相关分支：默认沙箱、静态优先、直读 vs 转储（OEP 后转储）、Linux/Windows 平台分支（strace vs ProcMon）
+- [[re-analyze/platform-tips]] 相关分支：默认沙箱、静态优先、直读 vs 转储（OEP 后转储）、Linux/Windows 平台分支（strace vs ProcMon）
 
 ## 常见坑与陷阱
 
 - **多层网络下载（断网导致拿不到后续）**：现象——严格断网跑下载器，只见第 1 层行为，后续载荷永远拿不到，链分析中断；原因——载荷全在远程，下载失败使链断在第 1 层；对策——两阶段：先在受控环境（INetSim/fake DNS）识别下载 URL，再把录制字节作为模拟响应回放喂料，逐层获取；每层响应字节与 sha256 存档（步骤 2）
-- **内存载荷转储时机**：现象——`gcore` 转储太早（载荷未解密/未映射到可执行状态）或太晚（已执行完毕被清理），提取出的模块残缺/全零；原因——内存载荷只在落地窗口期完整存在；对策——按跟踪日志定位落地点（网络接收 → 写入内存 → 创建线程），在反射入口/线程创建前转储（[[platform-tips]] 关键经验: 等 OEP 解密后 dump）；配合断点暂停进程再转储；多转几次对比
+- **内存载荷转储时机**：现象——`gcore` 转储太早（载荷未解密/未映射到可执行状态）或太晚（已执行完毕被清理），提取出的模块残缺/全零；原因——内存载荷只在落地窗口期完整存在；对策——按跟踪日志定位落地点（网络接收 → 写入内存 → 创建线程），在反射入口/线程创建前转储（[[re-analyze/platform-tips]] 关键经验: 等 OEP 解密后 dump）；配合断点暂停进程再转储；多转几次对比
 - **反沙箱延迟下载**：现象——样本检测到沙箱特征后 sleep 数十秒~数小时，或等待鼠标/键盘交互才触发下载，短观察窗口只看到"没动静"；原因——反沙箱延迟与交互检测（ATT&CK T1497.003 时间逃逸 / T1497.002 用户活动检测，见 [[re-sandbox]] 时间/交互检测坑）；对策——[[re-sandbox]] 环境伪装（真实时钟、交互模拟、资源充足）+ [[re-behavior]] 拉长观察窗口；必要时 patch 检测点（[[re-anti-analysis]] 域）
 - **加密载荷需先解密**：现象——下载到的"载荷"熵 >7.0 全是随机字节，静态分析无从下手；原因——传输/落地时加密（XOR/自定义），loader 运行时才在内存解密；对策——[[re-crypto-id]] / [[re-crypto-keys]] 从 loader 静态还原算法与密钥，或直接 [[re-memdump]] 提取内存中的解密后形态（跳过磁盘形态），而不是对着密文硬分析
 - **伪装后缀的自解压加载器**：现象——readelf 报错无法解析；原因——PHDR 被故意填充损坏（干扰解析）；对策——忽略损坏的 PHDR 只看有效 LOAD 段；识别标准模式：入口 → 解压函数 → mmap(RW) → 解压 → mprotect(RX) → 跳转

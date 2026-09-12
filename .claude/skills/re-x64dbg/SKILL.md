@@ -11,14 +11,14 @@ capabilities: [debugging]
 ## 何时使用 / 何时不用
 
 - 用：Windows 原生目标（PE）动态调试；attach/启动/断点/内存搜索；脱壳后 Scylla 修复 IAT
-- 不用：Linux 目标（走 [[re-gdb]]）；macOS 目标（[[re-lldb]]）；WSL 内分析（跨边界不可 attach，见 [[platform-tips]] WSL 分支）
-- 不用：只读内存不交互（Windows 侧用 procdump/DumpIt + Volatility，见 [[platform-tips]] Windows 分支）
+- 不用：Linux 目标（走 [[re-gdb]]）；macOS 目标（[[re-lldb]]）；WSL 内分析（跨边界不可 attach，见 [[re-analyze/platform-tips]] WSL 分支）
+- 不用：只读内存不交互（Windows 侧用 procdump/DumpIt + Volatility，见 [[re-analyze/platform-tips]] Windows 分支）
 - 不用：无 UI 的自动化跑批/大量脚本操作（重活交给命令框与脚本，见 [[commands]]）
-- 用：需要寄存器/内存级证据链的验证场景（授权校验路径、解密时刻、调用参数），动态结论落 [[analysis-contract]]
+- 用：需要寄存器/内存级证据链的验证场景（授权校验路径、解密时刻、调用参数），动态结论落 [[re-analyze/analysis-contract]]
 
 ## 工具准备
 
-参考 [[platform-tips]] Windows 分支——attach 需要管理员权限；内存转储工具链 procdump/DumpIt。
+参考 [[re-analyze/platform-tips]] Windows 分支——attach 需要管理员权限；内存转储工具链 procdump/DumpIt。
 
 ### x64dbg
 
@@ -94,7 +94,7 @@ capabilities: [debugging]
    - `Ctrl+E` 改字节或 `Space` 原地汇编 → `View > Patches`（Ctrl+P）查看修改列表 → `Save file` 写回磁盘成新 exe / `Save patch` 导出 `.1337` 补丁文件（可分发复用）
    - 补丁前先记录原始字节，回滚用 `Undo selection`（Ctrl+Backspace）；补丁定位方法论见 [[re-patching]]
 
-9. **证据核对（收尾）**：断点命中记录/寄存器与内存证据（`Ctrl+E` 查看后存档）、`savedata`/`minidump` 导出产物、Scylla 修复文件 sha256——全部对照 [[re-triage]] 初勘值入档，结论写 [[analysis-contract]]
+9. **证据核对（收尾）**：断点命中记录/寄存器与内存证据（`Ctrl+E` 查看后存档）、`savedata`/`minidump` 导出产物、Scylla 修复文件 sha256——全部对照 [[re-triage]] 初勘值入档，结论写 [[re-analyze/analysis-contract]]
 
 ## 跨域联合
 
@@ -104,7 +104,7 @@ capabilities: [debugging]
 - [[re-imports]]：Scylla 修复后的 IAT 完整性对照
 - [[re-patching]]：调试确认校验点后做持久化补丁
 - [[re-triage]]：样本哈希/初勘先行，调试结论与其对照
-- 与 [[re-memdump]]（Windows 侧 procdump 兜底）互补，见 [[platform-tips]]
+- 与 [[re-memdump]]（Windows 侧 procdump 兜底）互补，见 [[re-analyze/platform-tips]]
 
 ## 常见坑与陷阱
 
@@ -112,7 +112,7 @@ capabilities: [debugging]
 - **反调试/反 attach**：`ThreadHideFromDebugger`/`NtSetInformationThread` 或断网检测——用 ScyllaHide 插件隐藏调试痕迹，或先静态 patch 自检点
 - **PPL 进程无法附加**（Protected Process Light，如部分 EDR/系统进程）——x64dbg 无驱动无法附加，换内核调试或放弃该目标
 - **位数匹配**：64 位目标必须 x64dbg（x32dbg 只支持 32 位）；混用会加载失败/崩溃
-- **attach 失败先区分权限与 PPL/保护进程**：现象——以管理员运行 x64dbg 仍 attach 失败；原因——普通权限限制管理员可解决，PPL（Protected Process Light）取决于 Signer Level 等级（EDR 常见 PPL-Windows TCB/Antimalware），非对应级别无法附加；对策——先确认目标是否 PPL（Process Explorer 的 Protection 列）及其 Signer Level，再按级别准备对应调试能力（同级别驱动/内核调试），见 [[platform-tips]] Windows 分支
+- **attach 失败先区分权限与 PPL/保护进程**：现象——以管理员运行 x64dbg 仍 attach 失败；原因——普通权限限制管理员可解决，PPL（Protected Process Light）取决于 Signer Level 等级（EDR 常见 PPL-Windows TCB/Antimalware），非对应级别无法附加；对策——先确认目标是否 PPL（Process Explorer 的 Protection 列）及其 Signer Level，再按级别准备对应调试能力（同级别驱动/内核调试），见 [[re-analyze/platform-tips]] Windows 分支
 - **程序只在 x64dbg 下崩 → 查调试器特征检测**：现象——样本原生环境正常、换其他调试器也正常，唯独 x64dbg 加载/附加后崩溃或行为跳变；原因——样本检测调试器特征（x64dbg 模块/窗口类/DLL 名称/内存特征），识别到 x64dbg 后故意崩溃或切换逻辑；对策——先静态找特征字符串/窗口类名/模块名（[[re-ida]] / [[re-format-pe]]），patch 特征检测点或隐藏 x64dbg 痕迹（ScyllaHide），再重新加载（见 [[re-anti-analysis]] 反调试方法论 AD31）
 - **硬件断点被检测（DR 寄存器）**：现象——下硬件断点/内存断点后进程即退出，或断点不触发；原因——样本读取调试寄存器（DR0-DR3/DR6/DR7）检测硬件断点；对策——ScyllaHide 注入方式隐藏（HookLibrary/InjectorCLI），或改用逻辑断点避开 DR 痕迹，必要时先静态 patch DR 检测点再 attach（见 [[re-anti-analysis]] 反调试方法论 AD15）
 - **断点设了不命中**：先 `Alt+E` 确认模块已加载、地址落在加载后基址上；代码段被改写（壳解密）会覆盖 INT3——解密完成后重新下断

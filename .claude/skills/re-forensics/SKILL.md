@@ -12,9 +12,9 @@ capabilities: [memory-forensics, threat-intel, mobile-forensics]
 
 ## 完整工作流
 
-1. 转储来源：默认转储优先——先确认有没有现成 dump。**按取证层级分流**：整机镜像（LiME/AVML/崩溃转储等，Volatility 可解析）→ 内存取证分支；进程级 `gcore` 产物是单进程 ELF core（无内核结构，Volatility 整机插件不可解析）→ 只走进程级复盘（gdb/`eu-stack`，见 [[re-memdump]]（能力：`memory-dump`） 步骤 3），不进 [[re-mem-forensics]]（能力：`memory-forensics`）。转储按 [[re-memdump]]（能力：`memory-dump`） 执行（脱壳样本须等 OEP 解密后，转储前按 `/proc/<pid>/maps` 过滤 `[vsyscall]`/`[vdso]`，见 [[platform-tips]]「直读 vs 转储」决策表与 Linux 内存转储极端段）
+1. 转储来源：默认转储优先——先确认有没有现成 dump。**按取证层级分流**：整机镜像（LiME/AVML/崩溃转储等，Volatility 可解析）→ 内存取证分支；进程级 `gcore` 产物是单进程 ELF core（无内核结构，Volatility 整机插件不可解析）→ 只走进程级复盘（gdb/`eu-stack`，见 [[re-memdump]]（能力：`memory-dump`） 步骤 3），不进 [[re-mem-forensics]]（能力：`memory-forensics`）。转储按 [[re-memdump]]（能力：`memory-dump`） 执行（脱壳样本须等 OEP 解密后，转储前按 `/proc/<pid>/maps` 过滤 `[vsyscall]`/`[vdso]`，见 [[re-analyze/platform-tips]]「直读 vs 转储」决策表与 Linux 内存转储极端段）
 2. 内存取证：[[re-mem-forensics]]（能力：`memory-forensics`） —— 确认 dump 来源与架构 → 进程列表（pslist）→ 网络连接（netscan）→ 注入/异常（dlllist/malfind）→ 凭据线索（hashdump/lsadump）与可疑对象提取
-3. 线索提取：从内存取证产物里整理线索——可疑进程/注入地址/网络回连/凭据哈希/提取出的对象（模块、shellcode、明文密钥），每项记证据路径与时间戳（取证要求可追溯，见 [[platform-tips]]）
+3. 线索提取：从内存取证产物里整理线索——可疑进程/注入地址/网络回连/凭据哈希/提取出的对象（模块、shellcode、明文密钥），每项记证据路径与时间戳（取证要求可追溯，见 [[re-analyze/platform-tips]]）
 4. 情报关联：[[re-ti]]（能力：`threat-intel`） —— 用线索中的哈希/域名/IP 查 VirusTotal / Any.run / hybrid-analysis，家族与团伙关联，结果进 [[re-ioc]]（能力：`threat-intel`） 的 IOC 列表与报告
 
 每步产物（dump、插件输出、提取对象）按 sha256 + 路径存档，供报告与 [[re-ioc]]（能力：`threat-intel`） 引用。
@@ -42,14 +42,14 @@ capabilities: [memory-forensics, threat-intel, mobile-forensics]
 
 - 本网关被 [[re-malware]] 深度分析路径引用——行为分析后需查内存残留（注入、内存中的载荷、凭据）时转 [[re-forensics]]；情报关联结果回传 [[re-malware]] 佐证家族判定
 - 磁盘侧取证 [[re-disk-forensics]] 与内存侧 [[re-mem-forensics]] 并列——磁盘证据（删除文件/时间线）与内存证据（进程/网络/凭据）互相佐证
-- 转储产物来自 [[re-memdump]]（默认转储优先，见 [[platform-tips]]）
+- 转储产物来自 [[re-memdump]]（默认转储优先，见 [[re-analyze/platform-tips]]）
 - 情报衔接 [[re-ioc]]——[[re-ti]] 的查询结果与 [[re-mem-forensics]] 的线索汇总成 IOC 列表与报告
 - 可疑对象（提取的模块/shellcode）深挖 → [[re-binary-core]]（[[re-ghidra]] / [[re-ida]] 反编译）
 - 本网关被 [[re-analyze]] 的 triage「内存取证 / 情报查询」路径调用
 
 ## 常见坑与陷阱
 
-- 跳过转储来源确认直接跑分析 → 工具与 dump 架构不匹配全错——先 [[re-memdump]] 确认来源，按 [[platform-tips]] 默认转储优先取完整 dump
-- dump 被 vsyscall/vdso 垃圾页污染 → 分析结果偏差——转储前必须过滤极端段（[[platform-tips]] Linux 内存转储极端段）
+- 跳过转储来源确认直接跑分析 → 工具与 dump 架构不匹配全错——先 [[re-memdump]] 确认来源，按 [[re-analyze/platform-tips]] 默认转储优先取完整 dump
+- dump 被 vsyscall/vdso 垃圾页污染 → 分析结果偏差——转储前必须过滤极端段（[[re-analyze/platform-tips]] Linux 内存转储极端段）
 - 取证结果不留证据链 → 报告不可复现——每步产物存档（路径 + sha256 + 时间戳）
 - 内存线索不上报验证就下结论 → 误判——可疑对象先静态深挖（[[re-binary-core]]），背景查证走 [[re-ti]] 多重确认

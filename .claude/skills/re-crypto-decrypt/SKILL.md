@@ -19,7 +19,7 @@ capabilities: [crypto-decryption]
 
 ## 工具准备
 
-所有工具先验证再使用。本技能处理的是转储/反编译产物与密文数据，运行样本环节在 [[re-sandbox]] 内（[[platform-tips]] 最高原则）。
+所有工具先验证再使用。本技能处理的是转储/反编译产物与密文数据，运行样本环节在 [[re-sandbox]] 内（[[re-analyze/platform-tips]] 最高原则）。
 
 ### python3 + pycryptodome —— 解密脚本主力
 

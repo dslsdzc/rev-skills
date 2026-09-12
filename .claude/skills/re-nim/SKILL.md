@@ -96,7 +96,7 @@ capabilities: [lang-runtime-analysis]
 ## 跨域联合
 
 - [[re-binary-core]] 网关：本技能归属（选择树「Nim 产物」分支）
-- [[analysis-contract]]：符号表按数据契约传递
+- [[re-analyze/analysis-contract]]：符号表按数据契约传递
 - [[re-cpp-abi]]：C 混合侧与无 RTTI 判别参考
 - [[re-triage]]：初勘兜底（strip 产物按特征串识别）
 

@@ -13,11 +13,11 @@ capabilities: [debugging]
 - 用：时间旅行调试（TTD）——`ttd.exe` 录制 .run 轨迹后任意回放，适合「复现一次慢慢查」的校验/解密逻辑（见 [[commands]] TTD 节）
 - 不用：Linux 目标（走 [[re-gdb]]）；macOS 目标（[[re-lldb]]）；只需轻量 GUI 调试（[[re-x64dbg]] 更快）
 - 不用：只做静态分析/反编译（[[re-ida]] / [[re-ghidra]] / [[re-binaryninja]]）；无需与运行态互动的纯静态流程不需要调试器
-- 不用：WSL 内跨边界 attach Windows 进程（[[platform-tips]] WSL 分支：跨边界走 Windows 侧工具）
+- 不用：WSL 内跨边界 attach Windows 进程（[[re-analyze/platform-tips]] WSL 分支：跨边界走 Windows 侧工具）
 
 ## 工具准备
 
-参考 [[platform-tips]] Windows 分支——attach 需要管理员权限；调试属动态执行，默认沙箱内进行（[[platform-tips]] 最高原则）。
+参考 [[re-analyze/platform-tips]] Windows 分支——attach 需要管理员权限；调试属动态执行，默认沙箱内进行（[[re-analyze/platform-tips]] 最高原则）。
 
 ### WinDbg（微软商店版 / Windows SDK / WDK）
 

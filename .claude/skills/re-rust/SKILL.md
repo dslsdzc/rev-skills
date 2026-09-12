@@ -12,11 +12,11 @@ capabilities: [lang-runtime-analysis]
 - 用：恶意 Rust 样本（[[re-malware]] 静态还原——Rust 重写的木马/勒索增多）
 - 不用：非 Rust 原生程序（C/C++/Go 直接 [[re-binary-core]]；Go 走 [[re-go]]）
 - 不用：确认带壳先走 [[re-anti-analysis]]（Rust 二进制普遍无壳，但体积大）
-- 注意：动态步骤默认沙箱（[[platform-tips]] 最高原则）；静态优先（大型样本原则）
+- 注意：动态步骤默认沙箱（[[re-analyze/platform-tips]] 最高原则）；静态优先（大型样本原则）
 
 ## 工具准备
 
-参考 [[platform-tips]]——反编译/符号为静态步骤，免沙箱；Rust 二进制通常 1-10MB+，静态定位先行。
+参考 [[re-analyze/platform-tips]]——反编译/符号为静态步骤，免沙箱；Rust 二进制通常 1-10MB+，静态定位先行。
 
 ### Rust 工具链（rustc/cargo——装符号工具用，可选）
 
@@ -110,7 +110,7 @@ capabilities: [lang-runtime-analysis]
 - [[re-ghidra]]：11+ 内置 Rust demangler 优先；[[re-ida]]：Rust demangler 插件或 rustfilt 预处理
 - [[re-emulation]]：no_std/嵌入式 Rust 固件无运行环境时可模拟执行辅助
 - 恶意场景：Rust 恶意样本（勒索/木马重写版多）静态按本技能 → 行为分析转 [[re-malware]]
-- [[platform-tips]] 相关分支：静态优先（大型样本）、动态默认沙箱、跨平台样本的 Wine/QEMU 分支
+- [[re-analyze/platform-tips]] 相关分支：静态优先（大型样本）、动态默认沙箱、跨平台样本的 Wine/QEMU 分支
 
 ## 常见坑与陷阱
 

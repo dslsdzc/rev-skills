@@ -37,5 +37,5 @@
 
 ## 使用注意
 
-- 全部在沙箱内执行（[[platform-tips]] 最高原则）
-- 捕获产物 sha256 与路径入档；过滤与统计结论记入分析笔记（[[re-triage]] / [[analysis-contract]]）
+- 全部在沙箱内执行（[[re-analyze/platform-tips]] 最高原则）
+- 捕获产物 sha256 与路径入档；过滤与统计结论记入分析笔记（[[re-triage]] / [[re-analyze/analysis-contract]]）

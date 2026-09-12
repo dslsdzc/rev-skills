@@ -22,7 +22,7 @@ capabilities: [threat-intel]
 
 ### 关联查询工具（Passive DNS / 证书透明 / Whois）
 
-- whois CLI（注册信息/ASN 归属）：Linux `apt install whois` / `dnf install whois`；macOS `brew install whois`；Windows 用 WSL 分支（见 [[platform-tips]]）
+- whois CLI（注册信息/ASN 归属）：Linux `apt install whois` / `dnf install whois`；macOS `brew install whois`；Windows 用 WSL 分支（见 [[re-analyze/platform-tips]]）
 - python-whois（Python 模块）：多平台 `pip install python-whois`；验证: `python3 -c "import whois"`
 - dnsx（DNS 枚举）：官方渠道为 Go 二进制——GitHub `projectdiscovery/dnsx` releases 或 `go install github.com/projectdiscovery/dnsx/cmd/dnsx@latest`；验证 `dnsx -version`（PyPI 同名包与官方工具无关，别混用）
 - 证书透明日志：crt.sh 网页查询（公开服务，按域名/证书指纹检索）
@@ -92,7 +92,7 @@ capabilities: [threat-intel]
      - 反证/未决项：时间线缺口；注册信息匿名（GDPR）
      - 方法边界：未验证 C2 行为；无法判定项清单
      ```
-   - 结论与证据对照 [[analysis-contract]] 复核格式存档（结论/证据/置信度）
+   - 结论与证据对照 [[re-analyze/analysis-contract]] 复核格式存档（结论/证据/置信度）
    - 脱敏：不公开受害者身份/真实组织名（用代号），不发表过度归因声明；对外口径与内部结论分开（分层输出）
    - 脱敏检查清单：受害者身份/组织名/域名/IP 全替换代号；截图中的主机名/用户名打码；引用原始情报前重查一遍
 
@@ -104,7 +104,7 @@ capabilities: [threat-intel]
 - [[re-protocol]]：C2 协议分析（基础设施特征）
 - [[re-hunting]]：归因假设可转狩猎假设（「如果同一活动方进入环境，会在遥测中出现什么」）
 - [[re-feedback]]：归因案例经验沉淀（脱敏后）
-- [[analysis-contract]]：结论交付格式
+- [[re-analyze/analysis-contract]]：结论交付格式
 
 ## 常见坑与陷阱
 

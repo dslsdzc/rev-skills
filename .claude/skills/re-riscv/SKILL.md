@@ -19,7 +19,7 @@ capabilities: [arch-analysis]
 
 ## 工具准备
 
-所有工具先验证再使用。静态分析可免沙箱；qemu 动态执行默认沙箱 + 网络隔离（[[platform-tips]] 最高原则）。
+所有工具先验证再使用。静态分析可免沙箱；qemu 动态执行默认沙箱 + 网络隔离（[[re-analyze/platform-tips]] 最高原则）。
 
 ### 反编译器（Ghidra / IDA 任选其一）
 
@@ -54,7 +54,7 @@ capabilities: [arch-analysis]
 ### gdb-multiarch —— 交叉调试
 
 - Linux: Debian/Ubuntu `apt install gdb-multiarch`（riscv32/riscv64 目标内置）；Fedora `dnf install gdb`（官方 gdb 支持多目标）；Arch `pacman -S gdb`（内置 multiarch）
-- macOS: `brew install gdb`（需 Developer Tools 授权，见 [[platform-tips]] macOS 分支）或 WSL 内 Linux 版；Windows/WSL: WSL 内 Linux 版
+- macOS: `brew install gdb`（需 Developer Tools 授权，见 [[re-analyze/platform-tips]] macOS 分支）或 WSL 内 Linux 版；Windows/WSL: WSL 内 Linux 版
 - 验证: Debian/Ubuntu `gdb-multiarch --version`；Fedora/Arch `gdb --version`；载入固件后 `set architecture riscv:rv64`（或 riscv:rv32）再 `info registers` 确认
 
 ## 操作步骤
@@ -120,7 +120,7 @@ capabilities: [arch-analysis]
 - [[re-cpp-abi]]：RISC-V 上 C++ 产物 RTTI/异常/虚表恢复
 - [[re-variant]]：固件多版本对比与补丁 diff
 - [[re-tracing]]：qemu -strace / strace 系统调用跟踪验证 ecall 边界
-- [[re-sandbox]]：一切动态执行强制前置（[[platform-tips]] 默认沙箱原则）
+- [[re-sandbox]]：一切动态执行强制前置（[[re-analyze/platform-tips]] 默认沙箱原则）
 - 配套：[[re-patching]]（RVC 感知的字节补丁）、[[re-triage]]（初勘/架构识别前置）
 
 ## 常见坑与陷阱

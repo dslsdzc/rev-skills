@@ -16,11 +16,11 @@ capabilities: [hybrid-app-analysis]
 - 不用：纯原生 iOS App（无 App.framework，走 [[re-ios]]）
 - 不用：Flutter Web（产物是 JS/WASM 而非快照，走 [[re-wasm]]）
 - 不用：引擎层本身（libflutter.so / Flutter.framework 内部逻辑，见步骤 4）
-- 注意：动态步骤在受控设备 / 模拟器快照内执行（[[platform-tips]] 最高原则）；静态优先（大型样本原则）
+- 注意：动态步骤在受控设备 / 模拟器快照内执行（[[re-analyze/platform-tips]] 最高原则）；静态优先（大型样本原则）
 
 ## 工具准备
 
-参考 [[platform-tips]]——Flutter 产物大（libapp.so 数十 MB 起），遵循「静态优先（大型样本）」：先静态定位、动态按需补充；动态（运行 / 重打包 App）默认在受控设备 / 模拟器快照内。
+参考 [[re-analyze/platform-tips]]——Flutter 产物大（libapp.so 数十 MB 起），遵循「静态优先（大型样本）」：先静态定位、动态按需补充；动态（运行 / 重打包 App）默认在受控设备 / 模拟器快照内。
 
 ### python3（快照头部 / 分区解析主力）
 
@@ -109,7 +109,7 @@ capabilities: [hybrid-app-analysis]
    - `_kDartVmSnapshot*`（VM 快照 / 标准库）≠ `_kDartIsolateSnapshot*`（业务）：业务字符串与类名只在 isolate 快照
    - 原生插件与 MethodChannel 原生端在业务 so 之外，走 [[re-binary-core]]
 
-5. **动态侧（受控设备 / 模拟器快照内，[[platform-tips]] 默认沙箱）**：
+5. **动态侧（受控设备 / 模拟器快照内，[[re-analyze/platform-tips]] 默认沙箱）**：
    - hook Dart VM 类库注册点——libflutter.so 导出的 `Dart_CreateRootLibrary`（root library 注册入口，onEnter 读库 URI）:
      ```js
      var f = Process.getModuleByName("libflutter.so").findExportByName("Dart_CreateRootLibrary");

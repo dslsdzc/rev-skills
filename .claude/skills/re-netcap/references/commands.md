@@ -108,6 +108,6 @@ tshark -r f.pcap -Y '<协议过滤>' -T fields -e <字段> -E header=y -E separa
 
 ## 使用注意
 
-- 全部在沙箱内执行（[[platform-tips]] 最高原则）；抓包前确认网络隔离就绪
-- 产物（pcap 路径 + sha256）入档（[[re-triage]] 惯例）；结论写 [[analysis-contract]]
+- 全部在沙箱内执行（[[re-analyze/platform-tips]] 最高原则）；抓包前确认网络隔离就绪
+- 产物（pcap 路径 + sha256）入档（[[re-triage]] 惯例）；结论写 [[re-analyze/analysis-contract]]
 - 版本相关行为（显示过滤语法、字段名）以本机 Wireshark 版本为准（见 [[gotchas]]）

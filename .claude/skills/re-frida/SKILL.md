@@ -18,7 +18,7 @@ capabilities: [frida-instrumentation]
 
 ## 工具准备
 
-动态分析按 [[platform-tips]] 最高原则：移动端在受控设备 / 模拟器快照内执行，桌面端插桩前确认沙箱环境。所有工具先验证再使用。
+动态分析按 [[re-analyze/platform-tips]] 最高原则：移动端在受控设备 / 模拟器快照内执行，桌面端插桩前确认沙箱环境。所有工具先验证再使用。
 
 ### frida-tools —— 主机侧命令行工具
 
@@ -130,7 +130,7 @@ capabilities: [frida-instrumentation]
    - root 检测对抗：先 hook 检测函数改返回值再插桩目标：`Java.use("com.target.rootcheck").isRooted.implementation = function () { return false; };`
    - 仍被检测 → frida-gadget 注入 App 进程（gadget listen（interactive）模式），配合 [[re-apk]] 的 smali 补丁加载 libgadget.so
 
-7. **脚本模板与对抗方法论**：常用脚本骨架见 [[frida-scripts]]（TLS keylog / DEX/SO dump / JNI 注册还原 / 加密拦截 / 检测绕过表）；崩溃迭代法与检测面对照表见 [[anti-dynamic-workflow]]——先基线跑看裸崩，再定点 hook，不预置绕过全家桶。
+7. **脚本模板与对抗方法论**：常用脚本骨架见 [[frida-scripts]]（TLS keylog / DEX/SO dump / JNI 注册还原 / 加密拦截 / 检测绕过表）；崩溃迭代法与检测面对照表见 [[re-analyze/anti-dynamic-workflow]]——先基线跑看裸崩，再定点 hook，不预置绕过全家桶。
 
 ## 跨域联合
 - [[re-address-space]]：运行时基址换算（`Process.getModuleByName(...).base` 与链接地址对齐）

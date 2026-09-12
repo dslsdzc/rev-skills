@@ -49,7 +49,7 @@ capabilities: [binary-diffing]
 
 ## 操作步骤
 
-按顺序执行，每步产物存档（路径 + sha256，见 [[re-triage]]）；最终差异清单按 [[analysis-contract]] 数据契约传递。
+按顺序执行，每步产物存档（路径 + sha256，见 [[re-triage]]）；最终差异清单按 [[re-analyze/analysis-contract]] 数据契约传递。
 
 1. **配对准备（先确认可比性再对比）**：
    - 记录基线：两样本的 sha256、架构（x86_64/ARM 等）、位数、编译器指纹（版本字符串/导入库集合，[[re-imports]]）
@@ -90,7 +90,7 @@ capabilities: [binary-diffing]
 
 5. **输出差异清单与核查**：
    - 格式：变更函数表（函数名/地址/变更类型/相似度）+ 结论
-   - 按 [[analysis-contract]] 数据契约传递（下游消费）
+   - 按 [[re-analyze/analysis-contract]] 数据契约传递（下游消费）
    - 防误报核查：排除共享库代码（[[re-imports]] 依赖清单对照）、异编译器复检（同源码不同编译差异）、跨工具交叉验证（[[decision-tree]] 分级）
    - 报告可复现：差异清单附工具与版本、相似度阈值、排除规则；重要结论存匹配导出文件 + 反编译人工复核记录
 
@@ -102,7 +102,7 @@ capabilities: [binary-diffing]
 - [[re-imports]]：导入表/工具链指纹（配对可比性与共享库排除）
 - [[re-cpp-abi]]：符号语义还原（语义级对比前置）
 - [[re-packer-id]] / [[re-unpack-simple]]：加壳样本先脱壳再对比（壳代码污染匹配）
-- [[analysis-contract]]：差异清单按数据契约传递
+- [[re-analyze/analysis-contract]]：差异清单按数据契约传递
 
 ## 常见坑与陷阱
 

@@ -65,5 +65,5 @@ API 查询
 ## 使用注意
 
 - 仅授权评估场景（授权边界见 SKILL.md 红线与 [[gotchas]]）
-- 结论按 [[analysis-contract]] 交付；攻击代码不部署到生产环境
+- 结论按 [[re-analyze/analysis-contract]] 交付；攻击代码不部署到生产环境
 - 防御侧参考（对抗训练/输出裁剪）只作评估结论的旁注，不展开

@@ -102,5 +102,5 @@ ticnd "RAX==0 && [401000]==0x90", 1000000
 
 ## 使用注意
 
-- 全部在沙箱内执行（见 [[platform-tips]] 最高原则）；管理员权限是 attach 前置
-- Scylla 输出修复 exe 后与原始样本 sha256 对照存证（见 [[re-triage]]）；分析结论写入 [[analysis-contract]] 数据契约
+- 全部在沙箱内执行（见 [[re-analyze/platform-tips]] 最高原则）；管理员权限是 attach 前置
+- Scylla 输出修复 exe 后与原始样本 sha256 对照存证（见 [[re-triage]]）；分析结论写入 [[re-analyze/analysis-contract]] 数据契约

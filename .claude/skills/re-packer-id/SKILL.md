@@ -16,7 +16,7 @@ capabilities: [unpack]
 
 ## 工具准备
 
-静态识别可免沙箱（[[platform-tips]] 最高原则：静态分析可免沙箱）；工具先验证再使用。
+静态识别可免沙箱（[[re-analyze/platform-tips]] 最高原则：静态分析可免沙箱）；工具先验证再使用。
 
 ### Detect It Easy（DIE，跨平台主力）
 

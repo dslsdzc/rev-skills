@@ -1,120 +1,99 @@
 ---
 name: re-kernel
 description: >
-  内核逆向：Windows 驱动/内核模块/rootkit。触发词：内核、驱动、.sys、rootkit、内核模块、IRP
+  内核逆向（跨平台）：Windows 驱动（.sys/IRP/SSDT）、Linux 内核模块（.ko/ET_REL/LKM/rootkit）、
+  macOS KEXT 与 System Extension/DriverKit、Android GKI/vendor module、seL4（capability 系统）。
+  触发词：内核、驱动、.sys、.ko、LKM、kext、dext、rootkit、内核模块、IRP、GKI、内核扩展、
+  seL4、capability、CSpace、CNode、capDL、CAmkES、MCS。
+  English triggers: kernel module, driver reversing, LKM, kext, rootkit, GKI, seL4, capability system, capDL.
 capabilities: [kernel-analysis]
 ---
 
-# 内核逆向（Windows 驱动 / rootkit）
+# 内核逆向（跨平台）
+
+<CORE RULE>
+**内核态分析的难点不是"用什么工具反编译"，而是"观察与预期冲突时先怀疑什么"。**
+各平台形态不同（PE / ET_REL / Mach-O / 模块集合），但共性是：**构建与加载模型决定你能看到什么**——版本、符号解析方式、结构随机化、签名、加载阶段、缓存集合，都会让"看起来一样"的两份东西实际不同。
+所以顺序永远是：**先确认"我在看的这份是不是正在运行/被加载的那份"，再谈逻辑。**
+</CORE RULE>
+
+## 平台差异（不是同义替换）
+
+| 平台 | 单元形态 | 加载与签名模型 | 类型信息来源 | 主要观测面 |
+|---|---|---|---|---|
+| Windows | `.sys`（PE；DRIVER_OBJECT / IRP） | SCM 注册 + 驱动签名（测试签名 / 生产签名） | PDB、WDK / `ntddk.h` 类型 | WinDbg 内核调试、`!drvobj`/`!process`、Volatility |
+| Linux | `.ko`（**ET_REL** 可重定位目标） | `insmod`/modprobe + vermagic / symbol CRC / 签名尾 | BTF（含 split BTF 与 `.BTF.base`）、vmlinux、源码 | `/proc/kallsyms`、`/sys/module/*/sections/`、kprobe/ftrace、内存 cross-view |
+| macOS | **两代**：KEXT（Mach-O kext）与 DEXT（**用户态**） | AuxKC（启动时加载）/ System Extension 激活审批 | 符号、Mach-O、`Info.plist` | IORegistry、`kmutil`、lldb；dext 走用户态分析 |
+| Android | GKI module / vendor module | GKI 签名 + **KMI 符号白名单** | BTF、KMI symbol list、`Module.symvers` | 模块所在分区、`modules.load` 计划 |
+| seL4（微内核） | **capability 系统**：对象（TCB/Endpoint/CNode/Frame/Untyped/SC）+ cap 分布 | **无 capability 即无访问权**；对象在构造期由 spec/loader 创建 | capDL spec（`.cdl`）、CAmkES ADL、ELF | capDL snapshot（`seL4_DebugSnapshot`）、`seL4_DebugCapIdentify`、QEMU 仿真 |
+
+## 失败模式决策表（本技能的主入口）
+
+**当反编译结果或运行观察与预期冲突时，按这张表先怀疑、再排除**：
+
+| 症状 | 优先怀疑（按顺序） | 处理方向 |
+|---|---|---|
+| struct offset 全错 | ① BTF 与目标是否匹配 ② kernel build 是否匹配 ③ **RANDSTRUCT**（`CONFIG_GCC_PLUGIN_RANDSTRUCT`；此类内核带 taint `T`） | 优先级：目标 BTF > exact build debug info > exact seed+config > 动态验证 > 猜 offset（最差） |
+| symbol resolution 怪异 | ① **MODVERSIONS**（CRC）② **Android KMI** ③ **livepatch**（`.klp.rela`/`.klp.sym`）④ split BTF | 各按对应分支核对，别当"文件损坏" |
+| 文件与运行行为不一致 | ① Linux 运行时 relocation / init-only 段已消失 ② **macOS AuxKC 仍在跑旧版本** ③ Android 实际加载的是另一分区的同名模块 | 记录"磁盘版本 / 运行版本 / boot 时间"，别只看磁盘 |
+| 模块"消失" | ① built-in（本就没有模块文件）② **rootkit 摘链**（module list unlink）③ macOS Kernel Collection ④ Android 另一分区或另一 boot stage | cross-view 交叉比对，别用单一视图下结论 |
+| driver IPC 调不通 | ① selector/ABI ② **entitlement** ③ sandbox ④ Team ID（macOS）⑤ service 根本没 activate | 从"能不能连"排到"连上之后怎么调"，而不是直接猜 selector |
+| 看见异常 ELF section | ① 签名尾（附加在 ELF 末尾）② livepatch `.klp.rela` ③ BTF/`.BTF.base` ④ ORC unwind ⑤ 架构/工具链元数据 | 先分类再处理；**不要为了"修好"去 truncate/strip** |
+| 相同 CPtr 数值被当作同一对象 | **CPtr 是各 CSpace 的本地地址**，不是全局 ID（seL4） | 先恢复各自 CSpace 映射，按 **kernel object** 对齐 |
+| 线程/服务"卡住"或像"配置损坏" | ① MCS：SC 未绑定 / budget 耗尽 / passive server 本就没有 SC ② fault handler 没修复 fault | 按 MCS 语义排查（SC / budget / 捐赠链），**别套 POSIX 死锁** |
+| IRQ 只来一次 | 没有 Ack（seL4：未 ack 内核不再送后续中断） | 查 IRQ 处理循环里的 `seL4_IRQHandler_Ack` |
+
+## 通用主线
+
+1. **确认身份**：这是哪一份（磁盘 / 运行 / 加载集合中的版本）、什么构建（vermagic / CRC / KMI / 签名）、什么形态（PE / ET_REL / Mach-O / 用户态 dext）
+2. **类型与符号**：优先官方类型来源（PDB / BTF / 符号表 / KMI list），其次精确构建信息，最后才是推断
+3. **功能骨架**：从 imports/exports 与内核 API 调用关系切分功能——闭源或 stripped 时这一步尤其有效
+4. **hook 与隐藏**：枚举 hook 落点（表项 / inline text / 回调数组 / operation 结构）+ **cross-view 交叉**（用户态视图 vs 内核真实对象与内存）
+5. **验证与收尾**：运行时核对（调试器 / kprobe / IORegistry / 内存侧），结论与证据按 [[re-analyze/analysis-contract]] 入档
+
+## 平台分支（references）
+
+- [[windows-kernel]] —— DriverEntry / IRP 分发表 / 设备对象、SCM 加载链、SSDT 与 inline hook、minifilter、WinDbg 验证、Volatility 对照
+- [[linux-kernel]] —— `.ko`（ET_REL）分析路径、四类"看着像坏"的合法形态（签名尾 / BTF 与 split BTF / RANDSTRUCT / livepatch）、5.7 起的符号解析变化、rootkit cross-view
+- [[macos-kernel]] —— KEXT（`Info.plist` 先行、selector map、AuxKC 版本坑、codeless kext、arm64e PAC）与 System Extension / DriverKit（用户态模型、激活与 entitlement 排错）
+- [[android-kernel]] —— GKI vs vendor module、protected symbol 与 KMI 白名单、KMI 分支不可互换、模块位置与加载计划
+- [[sel4-kernel]] —— **capability 系统**：CPtr 是本地地址不是全局 ID、capDL/CAmkES 语义、badge 与 rights、CSpace guard/depth、错误码即诊断、Untyped 与 device untyped、用户态驱动的 IRQ 与 DMA 旁路、fault IPC、MCS（SC/budget/passive server/reply object）、capDL snapshot cross-view
 
 ## 何时使用 / 何时不用
 
-- 用：.sys 驱动/内核模块静态逆向（DriverEntry、IRP 分派、设备对象）；rootkit 特征分析（SSDT hook / inline hook / 隐藏进程）；用户态⇄驱动交互（DeviceIoControl）还原
-- 用：与 [[re-windbg]] 内核调试配合做运行时验证
-- 用：驱动型恶意样本（加载器/反作弊/EDR 对抗）的驱动侧还原
-- 不用：只需内核运行时调试/崩溃 dump 定位（`!analyze -v` 直接走 [[re-windbg]]）
-- 不用：Linux 内核模块（本技能以 Windows 为对象；Linux 侧走 [[re-format-elf]] + [[re-gdb]]/kprobes 思路另行处理）
-- 不用：UEFI/引导阶段（bootkit）——固件侧走 [[re-uefi]]
+- 用：各平台内核态载荷与驱动（恶意驱动 / rootkit / 反作弊 / EDR 对抗 / 闭源驱动）的静态逆向与运行时验证
+- 用：**capability 系统**（seL4 等微内核）的对象图 / capability 分布 / IPC 拓扑恢复，以及"行为为何与普通 OS 不同"的判定
+- 用：需要判断"内存里/内核里这份代码是什么、从哪来、是否被改过"
+- 不用：UEFI / 引导阶段（bootkit）→ [[re-uefi]]；RTOS 内核对象 → [[re-rtos]]；eBPF 程序（BPF-64 指令集、progs/maps）→ [[re-ebpf]]；TEE / TrustZone → [[re-tee]]；仅内核调试与崩溃定位 → [[re-windbg]] / [[re-lldb]]
+- 不用：只需要采集内存里的载荷（不分析内核结构）→ [[re-sample-acquire]]
 
-## 工具准备
+## 工具准备（按平台，细节见各分支）
 
-参考 [[platform-tips]]——驱动加载/内核调试属动态执行，默认沙箱（调试机 VM）内进行；分析产物静态部分免沙箱。
-
-### 反编译产物（驱动结构插件）
-
-- [[re-ghidra]]（默认）：导入 .sys 后自动分析，Data Type Manager 导入 Windows 内核类型（`ntddk.h` 相关头文件或内置 WDK 类型）——结构字段名直接参与反编译，质量远高于裸偏移
-- [[re-ida]]：FLIRT 内核签名 + 类型库；idapython 批量标注
-- 验证: 导入 .sys 后 DriverEntry 能反编译出带参数签名的函数（x64: `DriverEntry(PDRIVER_OBJECT, PUNICODE_STRING)`）
-
-### WinDbg 内核调试（[[re-windbg]]）
-
-- 双机/VM 串口（COM Named Pipe）或 KDNET（NET），配置见 [[re-windbg]]「工具准备」
-- 验证: 内核会话 `lm` 能看到目标驱动模块，`.reload /f <驱动名>` 加载符号
-
-### 符号
-
-- Microsoft 公共符号: `srv*C:\symbols*https://msdl.microsoft.com/download/symbols`
-- 驱动自带 PDB: 与 .sys 同名放符号路径，`.reload /f` 生效
-- 验证: `!process 0 0` 输出带 `nt!` 符号前缀函数名
-
-### 测试签名（VM 内加载驱动）
-
-- 目标机（调试 VM）管理员：`bcdedit /set testsigning on` 重启生效（需关闭 Secure Boot）——测试签名驱动才能加载
-- 验证: `bcdedit /enum {current}` 里 testsigning 为 Yes；`!drvobj` 能看到加载的驱动
-- 注意: 生产机/加固环境不开测试签名；分析只在调试 VM 内做（见 [[gotchas]]）
-
-## 操作步骤
-
-按顺序执行，每步存档（驱动 sha256、IRP 表截图/笔记，[[re-triage]] 存证）。
-
-1. **驱动入口 DriverEntry 定位**：
-   - PE 入口（AddressOfEntryPoint）= 链接器入口，.sys 通常即 DriverEntry（或 EP 处 stub 一跳进入，见坑 5）
-   - 签名特征: `DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath)`（x64 参数 rcx/rdx）；返回 STATUS_SUCCESS 才加载成功，失败路径常含 IoDeleteDevice 清理
-   - DriverEntry 还常注册 `DriverUnload`（卸载时清理/撤销 IOCTL）——恶意驱动常留空实现防卸载
-   - 从 DriverEntry 追踪: `IoCreateDevice` 调用、注册 MajorFunction 的数组赋值循环——这就是分发表的来源
-
-2. **IRP 分发表（MajorFunction）**：
-   - DriverObject->MajorFunction 是 28 项的函数指针数组（IRP_MJ_* 0x00-0x1B；x64 偏移 0x70，用符号字段名即可）——DriverEntry 里逐项赋值或整段 `RtlCopyMemory`
-   - 对每项非默认 handler 反编译（签名 `NTSTATUS (*)(PDEVICE_OBJECT, PIRP)`）
-   - 关注顺序: `IRP_MJ_DEVICE_CONTROL`（0x0E，用户态交互）、`IRP_MJ_INTERNAL_DEVICE_CONTROL`（0x0F）、`IRP_MJ_CREATE`（0x00）/`IRP_MJ_CLOSE`（0x02）、`IRP_MJ_READ`（0x03）/`IRP_MJ_WRITE`（0x04）
-   - 每个 handler 里看: `IoGetCurrentIrpStackLocation(irp)` 取参数 → 分支处理（IOCTL 码分派）
-   - handler 内先看参数校验（InputBufferLength/OutputBufferLength 检查）——长度校验缺失是驱动类漏洞常见成因（漏洞面分析转 [[re-vuln]] 思路）
-
-3. **设备对象 / 符号链接**：
-   - `IoCreateDevice` 参数: DeviceName（`\Device\MyDriver`）；`IoCreateSymbolicLink` 参数: SymbolicLinkName（`\DosDevices\MyDriver` → 用户态 `\\.\MyDriver`）
-   - 由符号链接名字推断用户态入口点；没有符号链接时用户态可用 `DeviceIoControl` 直接打 `\\.\` 名（或无符号名时只能内部引用）
-   - 动态核对: `!drvobj <驱动名>` 看设备对象链、`!devobj <设备>` 看设备名与 AttachedDevice——与静态字符串对照，确认设备名没有在运行期被改
-   - 多层设备栈（filter 驱动）：`IoAttachDevice`/`IoAttachDeviceToDeviceStack` 挂到既有设备上——看到这两个 API 即为拦截型驱动（文件/键盘过滤等）
-
-4. **服务注册与加载入口**：
-   - SCM 注册: `CreateServiceW`（Type=SERVICE_KERNEL_DRIVER 1、Start=2 自动/3 手动/0 引导）或 INF 安装——恶意加载器常用 `Start=3` + 手动启动
-   - 注册表: `HKLM\SYSTEM\CurrentControlSet\Services\<驱动名>` 的 ImagePath 指向 .sys
-   - 服务启动失败码速查: 577 = 签名错误、1275 = 未签名驱动被拒（x64）——先查测试签名状态再查代码
-   - 由用户态样本（[[re-binary-core]]）的创建服务调用反推驱动名，与静态 .sys 对应——确认加载链
-
-5. **rootkit 特征**：
-   - **SSDT hook**: 内核调试 `!ssdt` 输出对照正常表（模块归属异常的地址即嫌疑）；静态侧: 搜 `.data` 区对 `KeServiceDescriptorTable` 相关地址的引用与写入（Win8 起该符号不再导出，hook 落点常在按索引改表；且 x64 PatchGuard 检测此类修改，见坑 7）
-   - **inline hook（内联钩子）**: 函数头指令被改写（典型 `mov rax, <hook地址>; jmp rax`，或 5 字节 `jmp rel32`）——函数地址本身不变，必须逐字节比函数头（≥16 字节）与原始内核镜像（`lmv m nt` 拿 ntoskrnl.exe 路径 → 从原始镜像文件读取对应字节对照）
-   - **隐藏进程/驱动**: 摘链表（DKOM）——内核调试 `!process 0 0` 与任务管理器/`sc query` 枚举结果对比，差集即隐藏项；驱动隐藏看 `!drvobj` 与 SCM 列表差异；对应内存取证插件对照见步骤 8
-   - **回调滥用**: `PsSetCreateProcessNotifyRoutine` / `PsSetLoadImageNotifyRoutine` 回调数组里的非常规地址（内核调试 `!pcr` 区段或符号内核对）；注册表回调 `CmRegisterCallbackEx`、句柄回调 `ObRegisterCallbacks` 同理
-   - **minifilter（文件系统过滤）**: `FltRegisterFilter` + FLT_REGISTRATION 结构——文件隐藏/篡改的现代手法，静态特征在 `Flt*` 导入与注册表 `\Registry\Machine\System\CurrentControlSet\Services\<名>\Instances` 配置
-
-6. **与用户态交互（DeviceIoControl）**：
-   - 用户态: `CreateFile("\\.\MyDriver")` → `DeviceIoControl(h, IOCTL_CODE, inbuf, insize, outbuf, outsize, ...)`
-   - 驱动侧 handler: `IoGetCurrentIrpStackLocation(irp)->Parameters.DeviceIoControl` 取 `IoControlCode`/`InputBufferLength`/`OutputBufferLength`；`METHOD_BUFFERED` 用 `irp->AssociatedIrp.SystemBuffer`，`METHOD_NEITHER` 用 `Type3InputBuffer`
-   - IOCTL 码解码: bit0-1 方法（0=BUFFERED、1=IN_DIRECT、2=OUT_DIRECT、3=NEITHER）、bit14-15 访问权限、bit2-13 功能号、高 16 位设备类型（`FILE_DEVICE_UNKNOWN`=0x22 常见）——由用户态样本的 DeviceIoControl 参数反推驱动期望的输入结构布局
-   - 闭环: 用户态样本拿 IOCTL + 输入结构 → 驱动对应 handler 分析处理逻辑 → 数据结构逐字段对齐（结构体在 Ghidra/IDA 中定义后类型传播复核）
-
-7. **内核调试验证**（沙箱调试 VM）：
-   - 断点: `bu nt!<函数>`（未解析模块符号可等加载）、`bp <模块>!<函数>`、`ba e1 <地址>`（硬件断点）；`bd/be` 禁用/启用
-   - 验证交互闭环: 用户态触发 DeviceIoControl → 内核断点命中 handler → 看参数与返回
-   - 崩溃定位: `!analyze -v`；驱动问题蓝屏后 `!drvobj <名>`/`!devobj` 确认对象状态
-
-8. **内存取证对照**（rootkit 检测复核）：
-   - 调试机内存转储 → [[re-mem-forensics]]（Volatility）：`psxview`/`modules`/`driverscan`/`callbacks`/`ssdt` 插件输出与步骤 5 的调试会话观察对照
-   - 对照点: 隐藏进程差集、异常回调地址、SSDT/驱动表差异——取证结论与调试证据互相印证
-
-9. **证据核对（收尾）**：驱动 sha256、IRP 表、IOCTL 清单、rootkit 特征证据（hook 点字节对照）、调试日志——全部入档 [[analysis-contract]]，结论写 [[re-malware]] 衔接报告
+- **Windows**：[[re-ghidra]] / [[re-ida]]（导入 WDK 内核类型）、[[re-windbg]]（双机 / KDNET 内核调试）、Microsoft 公共符号；测试签名仅在调试 VM 内开启（`bcdedit /set testsigning on`，需关 Secure Boot）
+- **Linux**：`readelf`/`objdump -r`（ET_REL 与 relocation）、`modinfo`（vermagic/依赖/签名/livepatch）、`pahole`/`bpftool`（BTF）、`bpftrace`/`perf probe`（kprobe）、`ftrace`
+- **macOS**：`otool`/`vmmap`/`ioreg`/`kmutil`/`codesign -d --entitlements`/`lldb`（[[re-lldb]]、[[re-format-macho]]）
+- **Android**：`modinfo`/`readelf` + 目标分支的 KMI symbol list 与 `Module.symvers` 比对
 
 ## 跨域联合
 
-- [[re-windbg]]：内核调试、`!analyze -v`、驱动运行时验证（本技能固定依赖）
-- [[re-binary-core]]：驱动静态初勘底座（[[re-format-pe]] 解析 .sys 头、[[re-imports]] 看 ntoskrnl 导出依赖）
-- [[re-malware]]：rootkit/驱动型恶意样本深度分析环节引用本技能
-- [[re-anti-analysis]]：驱动加壳/混淆对抗（驱动壳先脱壳）
-- [[re-sandbox]]：驱动加载测试环境隔离（VM + 快照，[[platform-tips]] 最高原则）
-- [[re-emulation]]：摘出的驱动关键函数可模拟执行验证
-- [[re-mem-forensics]]：rootkit 取证对照（步骤 8）
-- [[re-ebpf]]：eBPF 程序逆向（BPF-64 指令集、progs/maps、xlated）——非 .ko 形态的内核代码走本技能
-- 反编译工具选型: [[re-ghidra]] / [[re-ida]] / [[re-binaryninja]] 三选一
+- [[re-windbg]] / [[re-lldb]] / [[re-gdb]]：各平台内核调试与运行时验证
+- [[re-binary-core]]：静态初勘底座（PE/ELF/Mach-O 解析、导入导出）
+- [[re-malware]]：rootkit / 驱动型恶意样本的深度分析环节引用本技能
+- [[re-anti-analysis]]：驱动加壳与混淆对抗
+- [[re-sandbox]]：驱动加载与调试环境隔离（VM + 快照，[[re-analyze/platform-tips]] 最高原则）
+- [[re-emulation]]：摘出的关键函数可模拟执行验证
+- [[re-mem-forensics]]：rootkit 取证对照（cross-view 的离线侧）
+- [[re-sample-acquire]]：内核态载荷的现场采集（异常执行区与执行上下文归属）
+- [[re-ebpf]]：eBPF 程序（非 `.ko` 形态的内核代码）走那边
+- [[re-rtos]] / [[re-uefi]] / [[re-tee]]：嵌入式内核、引导阶段与可信执行的分工
+- 反编译工具选型：[[re-ghidra]] / [[re-ida]] / [[re-binaryninja]] 三选一
 
-## 常见坑与陷阱
+## 常见坑与陷阱（跨平台共性）
 
-- **内核结构随版本变化**：现象——按旧版本文档的偏移（如 EPROCESS/DRIVER_OBJECT 内部字段）读新版系统数据全错；原因——Windows 各版本结构布局不同；对策——有符号用符号字段名（最稳），无符号时按 `ntddk.h` 公开结构手工布局并标注目标版本（Win10/11 差异大），别跨版本复用偏移
-- **无符号时靠逆向结构**：现象——驱动无 PDB 且符号服务器不可达，`k`/反编译全裸偏移；原因——符号缺失；对策——头文件导入（Ghidra Data Type Manager 载入 ntddk.h 系结构定义）、按 `Io*` API 调用参数反推类型、与公开符号版本的结构定义对照手工标注
-- **inline hook 检测只看函数地址**：现象——`!ssdt` 显示的地址正常但函数行为被改；原因——inline hook 不改表项地址、改写函数头指令（5 字节 jmp 或 `mov rax;jmp rax`）；对策——必须逐字节比对函数开头（≥16 字节）与原始内核镜像文件；指令解码用 capstone（[[re-emulation]] 思路）
-- **内核崩溃 = 蓝屏**：现象——驱动加载/触发时目标机蓝屏（bugcheck）；原因——内核态错误无进程隔离，直接宕机；对策——所有加载/触发在调试 VM 内做（宿主 WinDbg 连接），操作前打快照（[[re-sandbox]] + [[platform-tips]] 最高原则），崩溃后 `!analyze -v` 定位再回滚快照重试
-- **DriverEntry 不在入口点**：现象——EP 处只有一小段 stub 或壳代码；原因——驱动加壳/EP 重定向；对策——跟踪 EP stub 跳转找真 DriverEntry，壳驱动先走 [[re-anti-analysis]] 脱壳再分析
-- **驱动加载失败先查签名与测试模式**：现象——sc start 报错 577（签名）或 1275（未签名被拒）；原因——x64 强制驱动签名；对策——调试 VM 开测试签名（bcdedit，需关 Secure Boot），生产机不加载分析
-- **PatchGuard 拦截经典 hook**：现象——SSDT/inline hook 上线后系统随机 bugcheck 0x109（CRITICAL_STRUCTURE_CORRUPTION）；原因——x64 PatchGuard（KPP）校验被保护结构与代码；对策——分析时区分"历史手法"（Win7 时代有效）与"当前可用"：SSDT/关键函数 inline hook 在 x64 新版即触发 PatchGuard，别在真实环境验证此类行为（见 [[gotchas]]）
-- 更多边界（测试签名限制、取证对照、VM 环境）见 [[gotchas]] 与 [[decision-tree]]
+- **只看磁盘版本就下结论**：Linux 的 init-only 段在运行时已消失、macOS 的 AuxKC 可能还在跑旧版本、Android 可能加载的是另一分区的同名模块——**先对齐"磁盘 / 运行 / 加载集合"三份身份**
+- **把"看着像坏"的合法形态当损坏**：Linux 的签名尾、livepatch 节、split BTF 都不是损坏（见 [[linux-kernel]] 的四类形态）
+- **用同版本假设解释 offset 或符号错误**：RANDSTRUCT、MODVERSIONS、KMI 分支都会让"同版本"实际不同
+- **单一视图判定"没有 hook / 没有隐藏模块"**：`lsmod`、syscall table、`/sys/module` 任一为干净都不构成结论——必须 cross-view，且**视图矛盾时优先信离线内存取证**
+- **hook 手法只盯着老几样**：现代落点包括 operation 结构、ftrace、kprobes、inline text——"syscall table 没被 hook"不等于内核干净
+- **内核态操作没有隔离**：加载/触发内核代码可能直接宕机（Windows 蓝屏）；一切在调试 VM + 快照内做（[[re-sandbox]] 最高原则）
+- 各平台特有的坑见对应分支（[[windows-kernel]] / [[linux-kernel]] / [[macos-kernel]] / [[android-kernel]]）

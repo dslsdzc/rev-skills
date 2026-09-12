@@ -40,5 +40,5 @@
 
 ## 使用注意
 
-- 动态执行在沙箱内（[[re-sandbox]]，[[platform-tips]] 最高原则）
+- 动态执行在沙箱内（[[re-sandbox]]，[[re-analyze/platform-tips]] 最高原则）
 - TCC/钥匙串只读不导出（红线）；结论按 [[decision-tree]] 分级标注，签名维度与行为维度分开

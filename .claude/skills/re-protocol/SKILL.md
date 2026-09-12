@@ -14,7 +14,7 @@ capabilities: [network-capture, protocol-recovery, crypto-identification, crypto
 
 按顺序执行；每步产物（pcap/密钥/解密脚本/解析脚本）记录证据路径 + sha256，供报告引用（见 [[re-ioc]]（能力：`threat-intel`））。
 
-1. **捕获：[[re-netcap]]（能力：`network-capture`）** —— 先定抓包点（本机/网关/中间人），沙箱内捕获优先（[[re-sandbox]]（能力：`sandbox-setup`） 网络隔离：INetSim / fake DNS / 断网，防真外联，见 [[platform-tips]] 最高原则）；tcpdump 过滤只留目标流再存盘，HTTPS/TLS 提前用 mitmproxy CA 做准备
+1. **捕获：[[re-netcap]]（能力：`network-capture`）** —— 先定抓包点（本机/网关/中间人），沙箱内捕获优先（[[re-sandbox]]（能力：`sandbox-setup`） 网络隔离：INetSim / fake DNS / 断网，防真外联，见 [[re-analyze/platform-tips]] 最高原则）；tcpdump 过滤只留目标流再存盘，HTTPS/TLS 提前用 mitmproxy CA 做准备
 2. **加密识别：[[re-crypto-id]]（能力：`crypto-identification`）** —— 判断流量是明文还是密文：熵 >7.0 / 无结构 / 无 ASCII → 密文；再做常量表指纹（AES S-box / CRC 表）、XOR/ROL/ROR 单字节模式、常见算法流程特征
 3. **密钥：[[re-crypto-keys]]（能力：`key-extraction`）** —— 静态优先（strings / 交叉引用找硬编码、资源文件、导入表 Crypt* 附近），静态没有再上动态（[[re-memdump]]（能力：`memory-dump`） 默认转储后搜 16/32 字节熵块与可打印口令），PBKDF 类按派生函数还原
 4. **解密：[[re-crypto-decrypt]]（能力：`crypto-decryption`）** —— 定位解密函数（交叉引用密文输入点）→ 反编译还原算法 → 重写为独立 python 脚本 → 用已知明文/已知头部验证 → 把捕获的密文流解成明文流量流
@@ -34,7 +34,7 @@ capabilities: [network-capture, protocol-recovery, crypto-identification, crypto
 - **只有二进制样本没有流量**（"协议实现逻辑是什么"）→ 从静态找加密实现 [[re-crypto-id]]（能力：`crypto-identification`） → [[re-crypto-keys]]（能力：`key-extraction`） → [[re-crypto-decrypt]]（能力：`crypto-decryption`）；逻辑深挖转 [[re-binary-core]]（能力：`decompilation`、`debugging`、`memory-dump`、`elf-parser`、`pe-parser`、`macho-parser`；[[re-ghidra]]（能力：`decompilation`、`debugging`） / [[re-ida]]（能力：`decompilation`、`debugging`） / [[re-radare2]]（能力：`decompilation`））
 - **要理解交互语义**（"客户端和服务端怎么对话""握手过程"）→ [[re-proto-rev]]（能力：`protocol-recovery`）
 - **只要解密一个已知算法的 blob**（算法/密钥已知）→ 直接 [[re-crypto-decrypt]]（能力：`crypto-decryption`）
-- **只要找密钥**（"样本里有没有硬编码密钥"）→ [[re-crypto-keys]]（能力：`key-extraction`；静态优先，见 [[platform-tips]] 最高原则的静态优先思路）
+- **只要找密钥**（"样本里有没有硬编码密钥"）→ [[re-crypto-keys]]（能力：`key-extraction`；静态优先，见 [[re-analyze/platform-tips]] 最高原则的静态优先思路）
 - **白盒加密**（大段查表代码、无标准库调用、密钥藏在表里）→ [[re-whitebox]]（能力：`crypto-identification`、`key-extraction`；识别 → 表提取 → 密钥恢复，衔接加密三件套）
 - **流量捕获环境未就绪** → 先 [[re-sandbox]]（能力：`sandbox-setup`） 网络隔离（INetSim / fake DNS）再回来 [[re-netcap]]（能力：`network-capture`）
 - **标准 TLS/加密流量深度**（ClientHello 指纹、SSLKEYLOG 解密、TLS 1.2/1.3）→ [[re-tls]]（能力：`tls-analysis`、`crypto-identification`；标准 TLS 栈；自实现加密转 crypto 三件套）
@@ -52,7 +52,7 @@ capabilities: [network-capture, protocol-recovery, crypto-identification, crypto
 
 ## 常见坑与陷阱
 
-- **沙箱网络未隔离就抓包 → 真外联**：现象——样本真实访问了外网 C2，抓到的流量无法区分恶意回连与正常外联；原因——跳过 [[re-sandbox]] 网络隔离（INetSim / fake DNS / 断网）直接联网跑；对策——任何运行样本前先隔离网络（[[platform-tips]] 最高原则），捕获点选在隔离环境内
+- **沙箱网络未隔离就抓包 → 真外联**：现象——样本真实访问了外网 C2，抓到的流量无法区分恶意回连与正常外联；原因——跳过 [[re-sandbox]] 网络隔离（INetSim / fake DNS / 断网）直接联网跑；对策——任何运行样本前先隔离网络（[[re-analyze/platform-tips]] 最高原则），捕获点选在隔离环境内
 - **密文当明文直接重建状态机**：现象——proto-rev 聚类/字段推断结果全乱，解析器解出的"结构"都是随机字节；原因——流量带加密层（熵 >7.0）未先识别；对策——步骤 2 [[re-crypto-id]] 先确认密文，走解密链路后再 [[re-proto-rev]]
 - **跳过密钥提取硬写解密脚本**：现象——解密脚本对捕获流量解不出明文或解一半；原因——密钥是动态生成/每会话变化，硬编码假设失效；对策——按 [[re-crypto-keys]] 从内存转储（[[re-memdump]]）或密钥派生处取真实密钥，脚本里留密钥参数化
 - **解密结果不验证就当结论**：现象——报告里写的"明文"实际是错误解（填充错位/IV 错）；原因——没有用已知明文对照（协议头 magic、可读字符串、已知字段值）；对策——步骤 4 必须用已知明文/头部验证，解出的明文再做一次可读性检查

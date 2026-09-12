@@ -36,5 +36,5 @@
 
 ## 使用注意
 
-- 全部动态验证在沙箱内（[[re-sandbox]]，[[platform-tips]] 最高原则）；授权绕过类操作只用于授权范围（自有软件/测试/研究），不提供具体软件破解流程
-- 结论按 [[decision-tree]] 证据分级入档（[[analysis-contract]]）：动态确认 A / 静态推断 B / 候选 C 分开标注，交付下游时级别透明
+- 全部动态验证在沙箱内（[[re-sandbox]]，[[re-analyze/platform-tips]] 最高原则）；授权绕过类操作只用于授权范围（自有软件/测试/研究），不提供具体软件破解流程
+- 结论按 [[decision-tree]] 证据分级入档（[[re-analyze/analysis-contract]]）：动态确认 A / 静态推断 B / 候选 C 分开标注，交付下游时级别透明

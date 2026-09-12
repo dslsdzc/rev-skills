@@ -30,5 +30,5 @@
 ## 使用注意
 
 - 授权与范围确认先行（环境、数据源、时间窗）
-- 产物存档（查询、证据、结论，路径 + 时间 + sha256，见 [[re-triage]]）；结论按 [[analysis-contract]] 交付
+- 产物存档（查询、证据、结论，路径 + 时间 + sha256，见 [[re-triage]]）；结论按 [[re-analyze/analysis-contract]] 交付
 - 命中样本深挖转 [[re-behavior]]；指标沉淀转 [[re-ioc]]

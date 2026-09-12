@@ -3,7 +3,7 @@
 > 生成：`node bin/capindex.mjs`｜校验：`npm test`（过期即失败）
 > 用途：路由与检索按能力反查技能——能力层的查询表（声明侧见 capabilities.md）
 
-## 已声明能力（标签 64/64｜技能 119/121）
+## 已声明能力（标签 65/65｜技能 120/122）
 
 | 能力 | 说明 | 提供技能 |
 |---|---|---|
@@ -58,6 +58,7 @@
 | `protocol-recovery` | 协议状态机重建 | re-ics, re-iot-proto, re-proto-rev, re-protocol |
 | `rf-analysis` | 射频信号采集与解调 | re-sdr |
 | `rtos-analysis` | RTOS 任务表/内核对象还原 | re-firmware, re-rtos |
+| `sample-acquisition` | 现场样本采集（异常执行内存定位、运行时捕获与提取，跨 OS 观测模型） | re-sample-acquire |
 | `sandbox-setup` | 沙箱与隔离环境搭建（动态分析前置） | re-sandbox |
 | `sdr-analysis` | 软件无线电协议恢复 | re-sdr |
 | `shellcode-analysis` | Shellcode 提取与解码 | re-ctf, re-shellcode |

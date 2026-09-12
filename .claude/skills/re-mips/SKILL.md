@@ -20,7 +20,7 @@ capabilities: [arch-analysis]
 
 ## 工具准备
 
-所有工具先验证再使用。静态分析可免沙箱；qemu-user 动态执行默认沙箱 + 网络隔离（[[platform-tips]] 最高原则）。
+所有工具先验证再使用。静态分析可免沙箱；qemu-user 动态执行默认沙箱 + 网络隔离（[[re-analyze/platform-tips]] 最高原则）。
 
 ### 反编译器（Ghidra / IDA 任选其一）
 
@@ -103,7 +103,7 @@ capabilities: [arch-analysis]
 - [[re-fw-extract]] / [[re-fw-rootfs]]：固件解包与文件系统/配置分析前置
 - [[re-binary-core]]：MIPS ELF 通用初勘/反编译/调试底座（[[re-ghidra]]、[[re-gdb]] 等子技能照常使用）
 - [[re-vuln]]：web 认证绕过/命令注入的漏洞确认与利用验证
-- [[re-sandbox]]：一切动态执行强制前置（[[platform-tips]] 默认沙箱原则）
+- [[re-sandbox]]：一切动态执行强制前置（[[re-analyze/platform-tips]] 默认沙箱原则）
 - 配套：[[re-emulation]]（无 qemu 场景用 Unicorn 模拟执行 MIPS 指令）、[[re-fw-emulate]]（需要整体启动固件）、[[re-crypto-keys]]（配置/固件中硬编码密钥）、[[re-patching]]（延迟槽感知的字节补丁）
 
 ## 常见坑与陷阱

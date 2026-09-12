@@ -137,5 +137,5 @@ hook 无关调用（sleep/memset/rand）→ simgr(veritesting=True)
 
 ## 使用注意
 
-- 求解过程在进程内仿真器完成，无需沙箱；**用求解结果运行目标验证时默认沙箱**（[[platform-tips]] 最高原则）
-- 结果（地址/约束/求解脚本/flag）存档 sha256 + 路径（[[re-triage]] 证据链）；结论入 [[analysis-contract]]
+- 求解过程在进程内仿真器完成，无需沙箱；**用求解结果运行目标验证时默认沙箱**（[[re-analyze/platform-tips]] 最高原则）
+- 结果（地址/约束/求解脚本/flag）存档 sha256 + 路径（[[re-triage]] 证据链）；结论入 [[re-analyze/analysis-contract]]

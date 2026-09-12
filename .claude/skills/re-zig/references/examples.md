@@ -117,4 +117,4 @@ $ readelf -s hello | grep -E '_start|probe'
 ## 使用注意
 
 - 本机 0.17.0-dev 实测；用户产物以自身版本为准（panic 链命名与错误联合细节随版本变，见 [[layout]] 版本差异）
-- 与 [[re-cpp-abi]]（C++ 判别）、[[analysis-contract]]（符号表传递）配合使用
+- 与 [[re-cpp-abi]]（C++ 判别）、[[re-analyze/analysis-contract]]（符号表传递）配合使用

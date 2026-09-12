@@ -10,14 +10,14 @@ capabilities: [sandbox-setup]
 
 ## 何时使用 / 何时不用
 
-- 用：任何涉及运行样本的动态分析（行为分析、回连观察、脱壳验证、动态 API 监控）——动态分析强制前置，默认沙箱为最高原则（见 [[platform-tips]]）
+- 用：任何涉及运行样本的动态分析（行为分析、回连观察、脱壳验证、动态 API 监控）——动态分析强制前置，默认沙箱为最高原则（见 [[re-analyze/platform-tips]]）
 - 用：需要干净、可回滚的隔离环境执行不可信程序
 - 不用：纯静态分析（[[re-triage]] / [[re-format-pe]] / [[re-ghidra]] 等）可免沙箱
 - 不用：样本已有可信运行环境且用户明确要求本机运行（仍应先说明风险）
 
 ## 工具准备
 
-所有工具先验证再使用。本技能是 [[platform-tips]] 最高原则（默认沙箱，动态执行强制前置）的执行者——所有工具只为让"运行样本"更安全可控。
+所有工具先验证再使用。本技能是 [[re-analyze/platform-tips]] 最高原则（默认沙箱，动态执行强制前置）的执行者——所有工具只为让"运行样本"更安全可控。
 
 ### firejail —— 轻量应用沙箱（最低隔离级别，仅 Linux）
 
@@ -113,7 +113,7 @@ capabilities: [sandbox-setup]
 
 ## 跨域联合
 
-- [[re-malware]]：本网关工作流第 1 步强制前置——默认沙箱最高原则（[[platform-tips]]），恶意样本动态分析全部从这里开始
+- [[re-malware]]：本网关工作流第 1 步强制前置——默认沙箱最高原则（[[re-analyze/platform-tips]]），恶意样本动态分析全部从这里开始
 - [[re-anti-analysis]]：脱壳产物的动态验证必须在沙箱内复跑（判定壳是否脱干净）
 - [[re-protocol]]：C2 流量捕获依赖本技能的 INetSim / fake DNS 网络隔离环境
 - [[re-binary-core]]：其动态环节（[[re-tracing]] / [[re-gdb]] / [[re-x64dbg]] / [[re-memdump]]）引用本技能作为运行前置
@@ -127,7 +127,7 @@ capabilities: [sandbox-setup]
 - **样本逃逸检测 VM 环境**：现象——样本检测到 VM 特征（Guest Additions、vmware 进程、虚拟网卡名）后休眠/退出，行为分析拿不到结果；原因——反分析技术（见 [[re-anti-analysis]] 域）；对策——禁用 Guest Additions、改虚拟硬件指纹、与 [[re-behavior]] 的延迟/交互检查对策配合延长观察
 - **时间检测（RDTSC / Sleep 加速）**：现象——样本睡 30 秒后直接退出或行为异常，或 RDTSC 计时发现"时间不对"；原因——沙箱常 hook/加速计时 API（Sleep/GetTickCount），样本用 RDTSC（配 CPUID 强制 VM exit）、`Sleep`+`GetTickCount` 对比、`GetSystemTimeAdjustment` 等发现异常；对策——识别时间检测点（xref RDTSC/GetTickCount/NtDelayExecution），沙箱保持真实时钟或 patch 检测点后继续（[[re-anti-analysis]] 域），需要长等待时用真实等待而非加速时钟
 - **环境命名与资源阈值检测**：现象——样本在 `sample.exe`/`malware` 目录下不触发恶意行为，改名或调资源后行为差异巨大；原因——检测分析文件名/路径、CPU 核数/内存/磁盘容量阈值、鼠标键盘交互缺失（ATT&CK T1497.001）；对策——样本命名规范化（避免 sample/sandbox/恶意 字样）、沙箱资源充足（≥2 核、≥2GB 内存、正常磁盘容量），配合交互模拟（鼠标移动）与 [[re-behavior]] 的延迟观察
-- **沙箱隔离≠分析环境伪装**：现象——样本在隔离环境内安全跑通，但仍因时间/硬件/输入类环境指纹检测改变行为；原因——隔离≠伪装：时间/硬件/输入检测是环境指纹，完整 VM 也会被检测；对策——把"隔离"与"环境伪装"分开处理，按指纹类别逐个定位检测点（时间/硬件/输入）再针对性应对（[[re-anti-analysis]] 域），参考 [[platform-tips]] 沙箱分支
+- **沙箱隔离≠分析环境伪装**：现象——样本在隔离环境内安全跑通，但仍因时间/硬件/输入类环境指纹检测改变行为；原因——隔离≠伪装：时间/硬件/输入检测是环境指纹，完整 VM 也会被检测；对策——把"隔离"与"环境伪装"分开处理，按指纹类别逐个定位检测点（时间/硬件/输入）再针对性应对（[[re-anti-analysis]] 域），参考 [[re-analyze/platform-tips]] 沙箱分支
 - **简单交互模拟被统计检测识破**：现象——模拟了鼠标移动/输入事件，样本仍判定"非人类"不触发载荷；原因——Rhadamanthys 等新样本对交互做统计级校验：30ms 采样 1500 次光标/前景窗口/时间戳，要求光标移动 ≥30 次且 ≥2 个不同前景窗口（其一非桌面进程），再用光标轨迹欧氏距离判别"非人类"移动模式，观测期长达 45s+；对策——按人类行为分布模拟（随机间隔、非线性轨迹、真实窗口切换）而非固定像素移动，对照样本采样参数（光标/前台窗口/时间戳）逐个满足，拉长观察窗口（CAPE/VMRay 已内置该级交互模拟）
 - **firejail 清理选项被讹传（--clean 不存在）**：现象——按旧文档执行 `firejail --clean` 报 `invalid --clean command line option`；原因——官方 man 页（0.9.72 起）与 0.9.80 实测均无该选项，教程间互相转抄讹传；对策——沙箱清单 `firejail --list` 查 name/pid，用 `firejail --shutdown=<name|pid>` 关停；临时目录靠 `--private` 退出自动清理
 - **样本借道白名单进程执行（brokered execution）**：现象——沙箱里样本自身进程行为几乎干净，恶意动作全发生在 rundll32/mshta/PowerShell/WMI 等进程里；原因——样本通过 IPC（ALPC/RPC/COM/命名管道）或 LOLBin 把敏感动作"外包"给已放行的进程——监控只盯样本进程就漏掉真实行为；对策——按"样本派生的整条进程链"观察（父→子树，Sysmon 1 进程创建关联），procmon/sysdig 过滤按根进程而非单进程，内核侧（ETW/bpftrace）补用户态监控盲区

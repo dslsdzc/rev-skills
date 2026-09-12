@@ -16,11 +16,11 @@ capabilities: [exploit-development]
 - 不用：复杂 ROP 链工程化 / 堆利用（fastbin / tcache）→ [[re-exploit]]
 - 不用：纯逆向题（还原算法找 flag）→ [[re-ctf]] 的逆向分支（[[re-binary-core]]）
 - 不用：Windows 目标（[[re-x64dbg]] / [[re-windbg]]）；macOS 目标（[[re-lldb]]）
-- 注意：利用验证是动态执行，默认在沙箱内跑（[[platform-tips]] 最高原则，见 [[re-sandbox]]）；沙箱内本地验证通过，再考虑连远程（坑 4）
+- 注意：利用验证是动态执行，默认在沙箱内跑（[[re-analyze/platform-tips]] 最高原则，见 [[re-sandbox]]）；沙箱内本地验证通过，再考虑连远程（坑 4）
 
 ## 工具准备
 
-参考 [[platform-tips]]——利用验证默认沙箱；先静态分析（反汇编 / checksec）再动态调试，符合「静态优先」思路。
+参考 [[re-analyze/platform-tips]]——利用验证默认沙箱；先静态分析（反汇编 / checksec）再动态调试，符合「静态优先」思路。
 
 ### pwntools（pip 安装，Python 3.8+）—— 利用脚本主力
 
@@ -131,7 +131,7 @@ capabilities: [exploit-development]
 - [[re-angr]]：溢出偏移不确定 / 校验逻辑复杂时符号执行辅助（符号化输入找覆盖返回地址的约束）；[[re-z3]] 用于格式化字符串写地址的计算校验（少量）
 - [[re-exploit]]：进阶衔接——复杂 ROP（SROP / ret2dlresolve）、堆利用、seccomp 绕过
 - [[re-vuln]]：pwn 赛题即简化漏洞——赛题利用思路映射真实漏洞挖掘（崩溃分析 [[re-crash-triage]] / 找 bug [[re-fuzzing]]）
-- [[re-sandbox]] / [[platform-tips]]：一切动态执行与利用验证默认沙箱内跑（最高原则）；远程目标仅验证用，不投入真实系统
+- [[re-sandbox]] / [[re-analyze/platform-tips]]：一切动态执行与利用验证默认沙箱内跑（最高原则）；远程目标仅验证用，不投入真实系统
 
 ## 常见坑与陷阱
 

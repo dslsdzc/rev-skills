@@ -18,7 +18,7 @@ capabilities: [macho-parser]
 
 ## 工具准备
 
-静态分析（解包 / class-dump / otool）可免沙箱；动态（越狱设备 / 模拟器 / 受管设备）按 [[platform-tips]] 最高原则在受控环境执行。
+静态分析（解包 / class-dump / otool）可免沙箱；动态（越狱设备 / 模拟器 / 受管设备）按 [[re-analyze/platform-tips]] 最高原则在受控环境执行。
 
 ### unzip / zipinfo —— ipa 解包
 

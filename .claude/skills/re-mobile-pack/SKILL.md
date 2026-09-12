@@ -19,7 +19,7 @@ capabilities: [unpack]
 
 ## 工具准备
 
-动态脱壳默认在受控设备 / 模拟器快照内执行（[[platform-tips]] 最高原则——默认沙箱）。所有工具先验证再使用。
+动态脱壳默认在受控设备 / 模拟器快照内执行（[[re-analyze/platform-tips]] 最高原则——默认沙箱）。所有工具先验证再使用。
 
 ### frida + frida-dexdump —— 运行脱壳主力
 
@@ -73,7 +73,7 @@ capabilities: [unpack]
    frida-dexdump -U <pid>                  # 已运行 attach
    frida-dexdump -U -f <包名> -d           # 深度搜索（多 DEX / 部分抽取场景）
    ```
-   产物在当前目录 `<包名>/<时间戳>/*.dex`。**时机**：等 App 进到业务页面再 dump（[[platform-tips]] 关键经验——转储时机），一启动就 dump 拿到的是壳初始状态。
+   产物在当前目录 `<包名>/<时间戳>/*.dex`。**时机**：等 App 进到业务页面再 dump（[[re-analyze/platform-tips]] 关键经验——转储时机），一启动就 dump 拿到的是壳初始状态。
 
 3. **静态脱壳（BlackDex / Youpk，frida 被检测时的替代路径）**：
    - BlackDex: 安装对应架构 APK → 选择目标 App → 脱壳（普通壳几秒；抽取壳开深度模式，数分钟且有失败风险）→ 导出产物
@@ -103,7 +103,7 @@ capabilities: [unpack]
 - [[re-memdump]]: 内存 DEX 提取思路（dump 时机、magic 扫描、多 DEX 兜底）
 - [[re-anti-analysis]]: VMP / 虚拟化加固对抗（抽取+虚拟化组合壳转强壳流程）
 - [[re-binary-core]]: 壳 so / JNI 原生逻辑分析（[[re-format-elf]] / [[re-ghidra]]）
-- [[platform-tips]]: 默认沙箱（模拟器快照）、转储时机关键经验
+- [[re-analyze/platform-tips]]: 默认沙箱（模拟器快照）、转储时机关键经验
 - 本技能被 [[re-analyze]] 的 triage「移动 App 分析」路径引用（re-mobile → re-apk 识别加固 → re-mobile-pack）
 
 ## 常见坑与陷阱
@@ -112,7 +112,7 @@ capabilities: [unpack]
 - **反 frida 检测**：现象——spawn 即闪退、frida-dexdump 连不上或 dump 出空结果；原因——壳检测 frida-server 端口 27042 / 路径 / 特征线程（gum-js-loop）等指纹；对策——按 [[re-frida]] 反检测章节改名 + 换端口；仍被检测 → 换 BlackDex / Youpk（不依赖 frida）或 frida-gadget 注入
 - **DEX 修复不完整（方法体空壳）**：现象——jadx 打开脱壳 DEX，半数方法无反编译内容或直接 throw；原因——指令抽取壳的 CodeItem 未回填（dump 时机早于方法执行 / 修复器未处理）；对策——dexfixer 修复（Youpk 产物配套）或 BlackDex 深度模式重脱；主动调用触发方法执行后再 [[re-memdump]] 转储；修复后 dexdump 抽查 + jadx 反编译验证再进分析
 - **多 DEX 合并/丢失**：现象——只 dump 到单个 classes.dex，jadx 报类缺失 / 引用不存在；原因——加固后多 DEX 由壳运行时加载，frida-dexdump 默认搜索可能漏；对策——`-d` 深度搜索、hook ClassLoader 枚举已加载 dex（[[re-frida]] 枚举）、内存转储全部提取；jadx 直接加载全部 dex 分析
-- **转储时机过早**：现象——dump 出的 DEX 解不开 / 是壳初始数据；原因——真 dex 尚未解密加载；对策——等 App 进入业务页面再 dump（[[platform-tips]] 转储时机关键经验，与"解密数据看到立刻保存"相反的另一端）
+- **转储时机过早**：现象——dump 出的 DEX 解不开 / 是壳初始数据；原因——真 dex 尚未解密加载；对策——等 App 进入业务页面再 dump（[[re-analyze/platform-tips]] 转储时机关键经验，与"解密数据看到立刻保存"相反的另一端）
 - **PairIP（Google Play 自动保护）三道门**：现象——JADX 拉开关键方法只剩 `VMRunner.invoke("...")` 空壳，模拟器上跑几秒就退；原因——Play 上架自动套的加固三件套：①代码虚拟化：逻辑抽进加密 VM blob（assets 随机名无扩展名文件，`\x00IAP` 头为解密判据）+ native 解释器 `libpairipcore.so`（`executeVM` 等符号名运行时从 XOR 表解码，strings 搜不到）；②TEE 密钥：blob 是 AES/GCM 密文，wrapping key 存在设备 TEE（AndroidKeyStore），Play 经 `importWrappedKey`（SecureKeyWrapper ASN.1）下发——三个硬前提：Play 安装（`gpdeku` split 载体）、过 Play Integrity、有登录 Google 账号，缺一即 Finsky 日志 FAILURE → 本地伪造 `isEncryptionKeyPresent()` 也没用；③运行时反篡改：`dl_iterate_phdr`/opendir 扫 maps 发现注入 so → 故意给 std::vector 喂非法 length → `std::__throw_length_error` abort（tombstone 指纹 `length_error was thrown in -fno-exceptions mode`）→ abort 被中和则执行流落 abort 下一条指令踩内存 SIGSEGV + `SIG_DFL` 复位——**信号层 hook 拦不住，根因在检测端（maps 不露脸）**；对策——先过 Integrity（三绿真机或 PlayIntegrityFix）+ 清掉可见注入模块（Zygisk disable 后重启）
 - **PairIP 脱明文：调用而非 hook**：现象——hook `VMRunner` 任何方法（getVmByteCode/executeVM/readByteCode）进程立刻自毁；原因——PairIP 盯 ArtMethod 完整性：frida hook 改写 `entry_point_from_quick_compiled_code` 即命中检测；对策——**反射直接调用**解密函数（`getVmByteCode` 是 private static，frida 反射可调；blob 名带不带 `assets/` 前缀版本间不一致，两种都试），零 hook 零 ArtMethod 改动即可解出全部 blob 明文——脱 PairIP 不需要内核级隐身，只有必须动态跟解释器时才需要
 - **加固 APK 直接重打包 → 真机黑屏**：现象——对加固 APK 走 apktool 重打包，签名安装后真机黑屏（进程存活、无崩溃），同一 APK 在模拟器上却「看起来正常」；原因——重打包从 smali 重建 DEX，破坏壳的布局与自校验假设，壳定位/验证不了加密载荷 → 不解密 → 真实 DEX 里平台通道 handler 全部抛 MissingPluginException → 未捕获异常拆掉渲染；模拟器上壳校验被放松，「模拟器能跑」不是证据；对策——重打包前先做加固检测（assets 里壳运行时 so（`lib*sec*`/`lib*shell*` 风格）、动态 DEX loader so、壳 stub 入口类、单一超大 classes.dex 且无业务字符串、smali→dex 往返拆出多个空 stub DEX）；确认加固即放弃 apktool 重打包；转储内存必须卡解密窗口——壳瞬态自卸载，`/proc/self/maps` 里可能都看不到壳，过早/过晚都拿不到解密 DEX；若应用自身还自检「壳是否存在」，脱壳需一并中和该检查（来源：reverse-skills（inliver233），MIT）

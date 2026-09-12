@@ -16,7 +16,7 @@ capabilities: [triage]
 
 ## 工具准备
 
-所有工具先验证再使用。参考 [[platform-tips]] 最高原则（静态分析可免沙箱，但涉及运行一律沙箱）。
+所有工具先验证再使用。参考 [[re-analyze/platform-tips]] 最高原则（静态分析可免沙箱，但涉及运行一律沙箱）。
 
 ### file —— 文件类型判定
 
@@ -123,9 +123,9 @@ capabilities: [triage]
 6. **决定下一步**：
    - 正常格式 + 熵正常 → [[re-format-pe]] / [[re-format-elf]] / [[re-format-macho]]（按类型）
    - 熵异常 / 节名可疑（UPX0/.aspack）→ 转 [[re-anti-analysis]] 先确认壳
-   - 目标是动态行为 → 沙箱内 [[re-tracing]] + [[re-gdb]]（见 [[platform-tips]] 最高原则）
+   - 目标是动态行为 → 沙箱内 [[re-tracing]] + [[re-gdb]]（见 [[re-analyze/platform-tips]] 最高原则）
 
-7. **输出契约**：按 [[analysis-contract]] 输出结构化摘要——**核心字段**（target_id / sha256 / evidence / findings / unverified）+ **文件域扩展字段**（arch / format / entropy / sections / imports_exports / strings_refs / 安全特性），作为下一环节（format / 反编译 / 沙箱）的输入，不重新扫描。非文件目标（协议/模型/设备）按对应域字段出契约（见 [[analysis-contract]] §3.2），不套文件域字段。
+7. **输出契约**：按 [[re-analyze/analysis-contract]] 输出结构化摘要——**核心字段**（target_id / sha256 / evidence / findings / unverified）+ **文件域扩展字段**（arch / format / entropy / sections / imports_exports / strings_refs / 安全特性），作为下一环节（format / 反编译 / 沙箱）的输入，不重新扫描。非文件目标（协议/模型/设备）按对应域字段出契约（见 [[re-analyze/analysis-contract]] §3.2），不套文件域字段。
 
 ## 跨域联合
 

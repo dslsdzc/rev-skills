@@ -28,7 +28,7 @@ capabilities: [constraint-solving, stego-detection, shellcode-analysis]
    - 分派细则见「选择树」
 4. **混淆 → [[re-deobfuscate]]（能力：`deobfuscation`）** —— 反编译产物有花指令 / 控制流平坦化 / 字符串加密：**先还原再自动化**。直接对混淆函数上 angr 会路径爆炸 / 解不出（见坑 3）；[[re-deobfuscate]]（能力：`deobfuscation`） 还原后回到第 2/3 步
 5. **验证与产出**：
-   - 求解出的输入跑原程序（沙箱内，[[platform-tips]] 最高原则）必须打印 `flag{...}`（见坑 4：flag 格式 / 与求解结果一致性）
+   - 求解出的输入跑原程序（沙箱内，[[re-analyze/platform-tips]] 最高原则）必须打印 `flag{...}`（见坑 4：flag 格式 / 与求解结果一致性）
    - 记录：题型、关键函数地址、约束模型、求解脚本、flag、复现命令 —— writeup 与 [[re-ioc]]（能力：`threat-intel`） 特征（如自动化解题特征）
 
 ## 何时用哪个原子技能（选择树）
@@ -54,7 +54,7 @@ capabilities: [constraint-solving, stego-detection, shellcode-analysis]
 - **混淆对抗**：混淆题先 [[re-deobfuscate]] 还原（其「跨域联合」声明 CTF 反混淆题固定引用本网关）
 - **加密类题**：[[re-crypto-id]] / [[re-crypto-keys]] / [[re-crypto-decrypt]]（算法识别、密钥定位、解密还原）；密钥推导用 [[re-z3]] 建模
 - **序列号类题**：[[re-license]] / [[re-keygen]]（校验定位与注册机）；比较链硬推用 [[re-z3]]
-- **pwn / 动态**：[[re-gdb]]（调试 / 断点看校验分支）、[[re-radare2]]（命令行快攻）、[[re-sandbox]]（运行与 flag 验证沙箱，[[platform-tips]] 最高原则）
+- **pwn / 动态**：[[re-gdb]]（调试 / 断点看校验分支）、[[re-radare2]]（命令行快攻）、[[re-sandbox]]（运行与 flag 验证沙箱，[[re-analyze/platform-tips]] 最高原则）
 - **产出**：自动化解题脚本特征 / 题型指纹可进 [[re-ioc]] 列表
 
 ## 常见坑与陷阱

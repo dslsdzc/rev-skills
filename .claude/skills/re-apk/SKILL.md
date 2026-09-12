@@ -18,7 +18,7 @@ capabilities: [dex-parser]
 
 ## 工具准备
 
-纯静态分析（解包 / 反编译）可免沙箱（[[platform-tips]] 最高原则）；涉及动态 / 脱壳转 [[re-frida]] / 脱壳域。所有工具先验证再使用。
+纯静态分析（解包 / 反编译）可免沙箱（[[re-analyze/platform-tips]] 最高原则）；涉及动态 / 脱壳转 [[re-frida]] / 脱壳域。所有工具先验证再使用。
 
 ### jadx —— Java 反编译主力（含 JADX GUI）
 

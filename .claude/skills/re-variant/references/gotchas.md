@@ -21,7 +21,7 @@
 - **BinExport 版本与反编译器版本需匹配**：BinExport 插件与 IDA/Ghidra 版本严格绑定，版本错配导出失败或结果异常——先核对版本再导出
 - **rz-diff -B 消耗分析时间**：`-B` 先自动分析两个二进制（反汇编+函数识别），大文件耗时长——先用 `-t functions` 限定范围，大批量用脚本分批
 - **大二进制内存压力**：全函数图对比在超大二进制（内核/大型框架）上内存占用高——按节区（如 .text）分段对比，或增大工具内存
-- **qbindiff/ghidriff 的结果格式差异**：开源替代输出 CSV/BinDiff 格式不等——下游消费前统一格式（按 [[analysis-contract]]）
+- **qbindiff/ghidriff 的结果格式差异**：开源替代输出 CSV/BinDiff 格式不等——下游消费前统一格式（按 [[re-analyze/analysis-contract]]）
 
 ## 反例与边界组
 

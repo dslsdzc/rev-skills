@@ -90,7 +90,7 @@ capabilities: [address-translation, elf-parser]
 - [[re-frida]] / [[re-gdb]] / [[re-memdump]]：运行态基址来源（步骤 3）
 - [[re-ghidra]] / [[re-angr]]：跨工具地址对齐（步骤 4）
 - [[re-fw-extract]] / [[re-arm]]：固件加载地址（步骤 5）
-- [[analysis-contract]]：地址换算结论进数据契约的**文件域字段** base_addr（见 [[analysis-contract]] §3.2）
+- [[re-analyze/analysis-contract]]：地址换算结论进数据契约的**文件域字段** base_addr（见 [[re-analyze/analysis-contract]] §3.2）
 
 ## 常见坑与陷阱
 

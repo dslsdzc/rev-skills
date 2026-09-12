@@ -20,7 +20,7 @@ capabilities: [protocol-recovery]
 
 ## 工具准备
 
-物理设备抓包注意授权边界（见步骤 5），动态场景默认沙箱 / 隔离网络（[[platform-tips]] 最高原则）。所有工具先验证再使用。
+物理设备抓包注意授权边界（见步骤 5），动态场景默认沙箱 / 隔离网络（[[re-analyze/platform-tips]] 最高原则）。所有工具先验证再使用。
 
 ### wireshark / tshark —— 解析主力（MQTT/CoAP/BLE/Zigbee dissector 内置）
 
@@ -179,7 +179,7 @@ capabilities: [protocol-recovery]
 
 - 选购关注: 13.56MHz 高频支持（必备）、固件是否活跃更新、是否支持现场刷写、天线性能与外壳形式
 - 流程: 上电自检 → `hf 14a reader` 判型 → 按卡族选攻击/读写流程 → 验证结果
-- 授权边界: 只读与写卡/复制均需授权，实验室环境确认卡归属与目的（[[platform-tips]] 最高原则）
+- 授权边界: 只读与写卡/复制均需授权，实验室环境确认卡归属与目的（[[re-analyze/platform-tips]] 最高原则）
 
 ### 坑与陷阱
 
@@ -196,7 +196,7 @@ capabilities: [protocol-recovery]
 - [[re-crypto-id]] / [[re-crypto-keys]] / [[re-crypto-decrypt]]: 加密流量链路（TLS / DTLS / PSK 密钥提取与解密）
 - [[re-proto-rev]]: 私有 IoT 协议状态机重建
 - [[re-hardware-io]]: 串口 / flash 芯片读密钥
-- [[re-sandbox]]: 设备测试网络隔离与授权边界（[[platform-tips]] 最高原则）
+- [[re-sandbox]]: 设备测试网络隔离与授权边界（[[re-analyze/platform-tips]] 最高原则）
 - 本技能被 [[re-analyze]] 的 triage「协议分析」路径引用（re-protocol → re-iot-proto）
 - 射频信号级逆向（采集/解调/帧恢复）→ [[re-sdr]]
 - [[re-javacard]]: NFC/智能卡链路之上的 applet 逻辑（CAP 文件解析、process(APDU) 分派还原）

@@ -158,5 +158,5 @@ print(parse_ehdr('/bin/ls'))
 
 ## 使用注意
 
-- 静态分析无需沙箱（见 [[platform-tips]]）；跨架构 ELF 的 `readelf -h/-l/-S` 本机可直接跑，反汇编才需交叉工具
+- 静态分析无需沙箱（见 [[re-analyze/platform-tips]]）；跨架构 ELF 的 `readelf -h/-l/-S` 本机可直接跑，反汇编才需交叉工具
 - 样例取自系统二进制仅作对照；分析真实样本时以样本自身三表为准，别套模板

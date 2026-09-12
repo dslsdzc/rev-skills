@@ -16,11 +16,11 @@ capabilities: [shellcode-analysis]
 - 用：回答"这段代码调用哪些 API、想干什么"（API hash 解析）
 - 不用：有文件格式头的完整程序（那是 [[re-binary-core]] 域）
 - 不用：只需初勘结论（file/hash/熵，那是 [[re-triage]]）
-- 注意：模拟执行属动态执行，默认在沙箱内进行（[[platform-tips]] 最高原则）；纯静态提取/解码分析可免沙箱，但把解码产物落盘后真实执行验证时必须进 [[re-sandbox]]
+- 注意：模拟执行属动态执行，默认在沙箱内进行（[[re-analyze/platform-tips]] 最高原则）；纯静态提取/解码分析可免沙箱，但把解码产物落盘后真实执行验证时必须进 [[re-sandbox]]
 
 ## 工具准备
 
-所有工具先验证再使用。本技能静态解码可免沙箱；模拟执行默认沙箱内进行（[[platform-tips]] 最高原则）。
+所有工具先验证再使用。本技能静态解码可免沙箱；模拟执行默认沙箱内进行（[[re-analyze/platform-tips]] 最高原则）。
 
 ### python3 —— 解码/模拟脚本运行环境
 
@@ -175,7 +175,7 @@ capabilities: [shellcode-analysis]
 - [[re-malware]]：恶意样本载荷层——加载器/无文件样本的解码载荷走到本技能
 - [[re-anti-analysis]]：带壳/混淆样本里摘出的载荷段（脱壳产物回到本技能分析）
 - [[re-triage]]：提取前初勘（file/熵判断有无编码层）
-- 引用 [[platform-tips]] 最高原则（沙箱）与「静态优先」原则（先静态定位，动态按需）
+- 引用 [[re-analyze/platform-tips]] 最高原则（沙箱）与「静态优先」原则（先静态定位，动态按需）
 
 ## 常见坑与陷阱
 

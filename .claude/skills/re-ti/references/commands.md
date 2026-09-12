@@ -103,5 +103,5 @@ POST /events/restSearch value=<hash|域名|IP> → 命中则取 event ID/日期/
 ## 使用注意
 
 - 上传/查询前确认数据公开策略（私有样本先问归属，见 [[gotchas]]）
-- 动态执行（提交沙箱）在 [[re-sandbox]] 内（[[platform-tips]] 最高原则）
+- 动态执行（提交沙箱）在 [[re-sandbox]] 内（[[re-analyze/platform-tips]] 最高原则）
 - 情报入报告：IOC 列表 + 来源（报告编号/event ID）+ 查询时间（[[re-ioc]] 衔接）

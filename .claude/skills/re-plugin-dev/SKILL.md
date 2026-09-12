@@ -18,7 +18,7 @@ capabilities: [plugin-development]
 
 ## 工具准备
 
-静态分析工具开发可免沙箱；插件跑在分析工具进程内，不执行样本代码（免沙箱，[[platform-tips]] 静态优先）。
+静态分析工具开发可免沙箱；插件跑在分析工具进程内，不执行样本代码（免沙箱，[[re-analyze/platform-tips]] 静态优先）。
 
 ### Ghidra —— Java 扩展 / Python 脚本
 
@@ -94,7 +94,7 @@ capabilities: [plugin-development]
 - [[re-crypto-id]]：插件化常量表指纹扫描（FindCrypt 思路）
 - [[re-format-pe]] / [[re-format-elf]] / [[re-format-macho]]：格式解析类插件的目标对象
 - [[re-binaryninja]]：Binary Ninja 脚本 API 插件（多工具插件体系可互参考）
-- 引用 [[platform-tips]] 静态优先原则（插件开发与测试免沙箱）
+- 引用 [[re-analyze/platform-tips]] 静态优先原则（插件开发与测试免沙箱）
 
 ## 常见坑与陷阱
 

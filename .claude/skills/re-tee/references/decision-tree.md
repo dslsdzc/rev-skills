@@ -81,5 +81,5 @@ TEE OS/TA 不可得
 
 ## 使用注意
 
-- 主机侧动态（client/ioctl hook）在沙箱内（[[re-sandbox]]，[[platform-tips]] 最高原则）；secure world 内不做动态调试
+- 主机侧动态（client/ioctl hook）在沙箱内（[[re-sandbox]]，[[re-analyze/platform-tips]] 最高原则）；secure world 内不做动态调试
 - 设备密钥不可提取时记录用途与保护机制，不硬挖（红线）；结论按本表分级标注

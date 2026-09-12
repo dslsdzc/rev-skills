@@ -21,7 +21,7 @@ capabilities: [automotive-analysis]
 
 ## 工具准备
 
-所有工具先验证再使用。实车/实总线测试默认物理隔离——[[platform-tips]] 最高原则：仅自有或获授权测试车辆/台架可接入；实验室起步用 vcan 虚拟总线，不接真车。
+所有工具先验证再使用。实车/实总线测试默认物理隔离——[[re-analyze/platform-tips]] 最高原则：仅自有或获授权测试车辆/台架可接入；实验室起步用 vcan 虚拟总线，不接真车。
 
 ### can-utils —— candump/cansend/cangen/canplayer 主力
 
@@ -142,7 +142,7 @@ capabilities: [automotive-analysis]
 - [[re-fw-extract]] / [[re-fw-rootfs]] / [[re-fw-emulate]]：ECU/车机固件解包、文件系统分析、仿真
 - [[re-hardware-io]]：OBD 口抓包（CAN/UART）、JTAG/SWD 读 flash
 - [[re-protocol]]：DoIP（UDS over Ethernet，13400 端口）等车载以太网协议重建；CAN 私有协议转 [[re-proto-rev]]
-- [[re-sandbox]]：虚拟 CAN / DoIP 测试床隔离；固件仿真默认网络隔离（[[platform-tips]] 最高原则）
+- [[re-sandbox]]：虚拟 CAN / DoIP 测试床隔离；固件仿真默认网络隔离（[[re-analyze/platform-tips]] 最高原则）
 - [[re-binary-core]]：固件内 ELF 深度静态分析
 - [[re-crypto-id]] / [[re-crypto-decrypt]]：seed-key 算法、CAN 加密变体
 

@@ -19,7 +19,7 @@ capabilities: [hybrid-app-analysis]
 
 ## 工具准备
 
-静态分析可免沙箱（[[platform-tips]] 最高原则）；动态（reFlutter 重打包 / 运行）在受控设备 / 模拟器快照内。所有工具先验证再使用。
+静态分析可免沙箱（[[re-analyze/platform-tips]] 最高原则）；动态（reFlutter 重打包 / 运行）在受控设备 / 模拟器快照内。所有工具先验证再使用。
 
 ### 引擎识别 —— jadx / unzip（复用 [[re-apk]]）
 
@@ -115,7 +115,7 @@ Flutter 平台通道（PlatformChannel）是 Dart ↔ native 通信主干，拦�
 - **channel 名获取**：hook `MethodChannel.setMethodCallHandler`（onEnter 捕获 channel 实例，含名字）或 `MethodChannel` 构造器直接取 channel 名；更底层可 hook `BinaryMessenger.send`（首参即 channel 名）
 - **engine messenger 层**：`io.flutter.embedding.engine.FlutterEngine` 的 messenger 消息（低层兜底）
 - **与 Dart 侧静态观察互补**：静态找 channel 名与调用点（字符串字面量），动态确认实际流量
-- **输出**：结构化 JSON（channel / method / args），供 [[analysis-contract]] 数据契约消费（证据存档）
+- **输出**：结构化 JSON（channel / method / args），供 [[re-analyze/analysis-contract]] 数据契约消费（证据存档）
 
 Flutter 专项详见 [[re-flutter]]
 
@@ -163,7 +163,7 @@ Flutter 专项详见 [[re-flutter]]
 - [[re-apk]] / [[re-ios]]: 容器侧静态（manifest、签名、iOS 等价物）
 - [[re-binary-core]]: 原生部分——[[re-format-elf]] + [[re-ghidra]] 反编译 libapp.so / libflutter.so 与 RN JNI 桥
 - [[re-frida]]: 运行时 hook（桥接层、证书校验、反检测）
-- [[platform-tips]]: 默认沙箱、工具解析 ≠ 加载器视图（快照偏移 / 工具版本差异）
+- [[re-analyze/platform-tips]]: 默认沙箱、工具解析 ≠ 加载器视图（快照偏移 / 工具版本差异）
 - 本技能被 [[re-analyze]] 的 triage「移动 App 分析」路径引用（re-mobile → re-hybrid-app）
 
 ## 常见坑与陷阱

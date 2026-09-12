@@ -106,7 +106,7 @@ capabilities: [decompilation, debugging, memory-dump, elf-parser, pe-parser, mac
 - 要读懂函数逻辑 → 反编译四选一（[[re-ghidra]]（能力：`decompilation`、`debugging`） 默认；[[re-ida]]（能力：`decompilation`、`debugging`） / [[re-radare2]]（能力：`decompilation`） / [[re-binaryninja]]（能力：`decompilation`））
 - 要看运行行为、设断点 → 按 OS 选调试器（Linux [[re-gdb]]（能力：`debugging`）、Windows [[re-x64dbg]]（能力：`debugging`） / [[re-windbg]]（能力：`debugging`）、macOS [[re-lldb]]（能力：`debugging`））
 - 要跟踪系统调用/函数调用 → [[re-tracing]]（能力：`tracing`）
-- 要读/转储进程内存 → [[re-memdump]]（能力：`memory-dump`；默认转储优先，见 [[platform-tips]]）
+- 要读/转储进程内存 → [[re-memdump]]（能力：`memory-dump`；默认转储优先，见 [[re-analyze/platform-tips]]）
 - 目标是驱动/内核模块/rootkit → [[re-kernel]]（能力：`kernel-analysis`；配 [[re-windbg]]（能力：`debugging`） 内核调试）
 - 目标是 hypervisor/VMM/虚拟化检测相关 → [[re-hypervisor]]（能力：`hypervisor-analysis`；VT-x/SVM、VMCS/EPT）
 - 目标是反作弊组件（EAC/BattlEye 驱动、内存校验）→ [[re-anti-cheat]]（能力：`kernel-analysis`；驱动分析 + 内核调试，注意授权边界）
@@ -137,7 +137,7 @@ capabilities: [decompilation, debugging, memory-dump, elf-parser, pe-parser, mac
 
 - 探测到内存 <4GB 仍选 Ghidra → 提示 [[re-radare2]]
 - strings 输出被加密/压缩干扰 → 用熵值（re-triage）判断是否先脱壳
-- 直读 `/proc/<pid>/mem` 前必须查 maps（见 [[platform-tips]]）
+- 直读 `/proc/<pid>/mem` 前必须查 maps（见 [[re-analyze/platform-tips]]）
 
 ### 未知格式与模拟执行
 

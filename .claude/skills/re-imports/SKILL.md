@@ -16,7 +16,7 @@ capabilities: [pe-parser, elf-parser]
 
 ## 工具准备
 
-参考 [[platform-tips]]——导入表分析为静态步骤，免沙箱；涉及运行（验证动态解析 API）按最高原则进沙箱。
+参考 [[re-analyze/platform-tips]]——导入表分析为静态步骤，免沙箱；涉及运行（验证动态解析 API）按最高原则进沙箱。
 
 ### objdump / readelf（binutils）
 

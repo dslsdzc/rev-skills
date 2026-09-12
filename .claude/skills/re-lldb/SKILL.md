@@ -18,7 +18,7 @@ capabilities: [debugging]
 
 ## 工具准备
 
-参考 [[platform-tips]] macOS 分支——SIP 与 TCC 限制 attach，需 Developer Tools 授权。
+参考 [[re-analyze/platform-tips]] macOS 分支——SIP 与 TCC 限制 attach，需 Developer Tools 授权。
 
 ### lldb
 
@@ -109,14 +109,14 @@ capabilities: [debugging]
    ```
    - 找密钥/常量: 先 `memory find` 定位，再断写入点；区域权限（RWX）异常段先看（壳/解密段）
 
-8. **证据核对（收尾）**：断点命中记录、`frame variable`/`expr` 输出、`memory read` 转储（`memory read --force -o 文件` 导出）对照 [[re-triage]] 初勘值入档，结论写 [[analysis-contract]]
+8. **证据核对（收尾）**：断点命中记录、`frame variable`/`expr` 输出、`memory read` 转储（`memory read --force -o 文件` 导出）对照 [[re-triage]] 初勘值入档，结论写 [[re-analyze/analysis-contract]]
 
 ## 跨域联合
 
 - [[re-binary-core]]：工作流第 6 步（macOS/iOS 调试器）
 - [[re-mobile]]：iOS App/越狱动态调试的底层工具
 - [[re-format-macho]]：先解析结构再调试（入口/LC_MAIN 与签名状态）
-- attach 失败时按 [[platform-tips]] 转 [[re-memdump]]
+- attach 失败时按 [[re-analyze/platform-tips]] 转 [[re-memdump]]
 
 ## 常见坑与陷阱
 
@@ -124,7 +124,7 @@ capabilities: [debugging]
 - **权限弹窗需手动确认**：TCC 每次对新的调试目标弹窗，脚本化 attach 会被卡住——预先授权目标程序
 - **内核调试需额外配置**：macOS 内核调试要 KDK 匹配版本 + 开发内核启动，普通逆向用不上，别在用户态调试上浪费时间
 - **签名状态**: 修改过的 Mach-O 未重签无法运行（见 [[re-format-macho]]）——先 `codesign -f -s -` 重签再调试
-- **task_for_pid entitlement/SIP/Hardened Runtime 三层限制**：现象——Developer Tools 已授权仍 attach 失败或目标启动即崩溃；原因——除 TCC 外还有三层：调试器需 task_for_pid entitlement，目标启用 Hardened Runtime 时调试 API 受限，SIP 限制系统进程 attach；对策——逐层排查（`csrutil status`、检查目标签名与 entitlement），测试目标可先去签名/重签（[[re-format-macho]]）再调试，参考 [[platform-tips]] macOS 分支
+- **task_for_pid entitlement/SIP/Hardened Runtime 三层限制**：现象——Developer Tools 已授权仍 attach 失败或目标启动即崩溃；原因——除 TCC 外还有三层：调试器需 task_for_pid entitlement，目标启用 Hardened Runtime 时调试 API 受限，SIP 限制系统进程 attach；对策——逐层排查（`csrutil status`、检查目标签名与 entitlement），测试目标可先去签名/重签（[[re-format-macho]]）再调试，参考 [[re-analyze/platform-tips]] macOS 分支
 - **ASLR 基址漂移**：每次启动 dylib 基址不同——脚本里硬编码地址会失效；用 `image list -o` 拿基址换算，断点尽量下符号名（`-n`/`-s`）
 - **表达式求值有副作用**：`expr` 会真实执行代码（调用函数/改内存）——在 hook 点求值可能改变目标行为，验证场景用 `frame variable` 只读优先
 - 版本差异、调试服务器与边界见 [[gotchas]]

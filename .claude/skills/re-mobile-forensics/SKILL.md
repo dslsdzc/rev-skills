@@ -90,7 +90,7 @@ capabilities: [mobile-forensics]
 
 4. **证据整合与交付**：
    - 汇总：时间线表 + 提取物清单（每类数据的来源/提取方式/可信度）+ 方法记录
-   - 结论按 [[analysis-contract]] 复核格式交付（结论/证据/置信度）；删除恢复带「部分恢复」限定
+   - 结论按 [[re-analyze/analysis-contract]] 复核格式交付（结论/证据/置信度）；删除恢复带「部分恢复」限定
 
 ## 跨域联合
 
@@ -100,7 +100,7 @@ capabilities: [mobile-forensics]
 - [[re-frida]]：运行中动态提取（本技能是静态/备份侧，两者互补）
 - [[re-triage]]：产物初勘（类型/magic/哈希）
 - [[re-mem-forensics]]：设备内存转储分析衔接（root 设备可 dump 内存）
-- [[analysis-contract]]：结论交付格式
+- [[re-analyze/analysis-contract]]：结论交付格式
 
 ## 常见坑与陷阱
 

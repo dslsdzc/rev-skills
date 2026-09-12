@@ -12,11 +12,11 @@ capabilities: [lang-runtime-analysis]
 - 用：恶意 Go 样本（[[re-malware]] 静态还原——Go 恶意程序多带明文 C2 配置与 buildinfo）
 - 不用：非 Go 原生程序（C/C++ 直接 [[re-binary-core]]；Rust 走 [[re-rust]]）
 - 不用：确认带壳先走 [[re-anti-analysis]]（Go 二进制被加壳后 pclntab 偏移失效，脱壳后再回本技能）
-- 注意：动态步骤默认沙箱（[[platform-tips]] 最高原则）；Go 二进制体积大，静态优先（大型样本原则）
+- 注意：动态步骤默认沙箱（[[re-analyze/platform-tips]] 最高原则）；Go 二进制体积大，静态优先（大型样本原则）
 
 ## 工具准备
 
-参考 [[platform-tips]]——Go 二进制通常 1MB 起（runtime 占大头），遵循「静态优先（大型样本）」；动态（dlv/gdb 运行样本）默认进沙箱。
+参考 [[re-analyze/platform-tips]]——Go 二进制通常 1MB 起（runtime 占大头），遵循「静态优先（大型样本）」；动态（dlv/gdb 运行样本）默认进沙箱。
 
 ### Go 工具链（go version / go tool buildid / go version -m）
 
@@ -118,7 +118,7 @@ capabilities: [lang-runtime-analysis]
 - [[re-ghidra]] / [[re-ida]]：Go 符号/类型恢复产物（GoReSym JSON、redress types）导入反编译器
 - 动态侧：沙箱内 [[re-gdb]]/[[re-tracing]]；Go 程序调试首选 dlv（goroutine 感知）
 - 恶意场景：Go 恶意样本（C2、loader）静态按本技能还原 → 行为分析转 [[re-malware]]
-- [[platform-tips]] 相关分支：静态优先（大型样本）、动态默认沙箱、跨平台 Go 样本（Windows PE Go 在 Linux 侧走 Wine 分支）
+- [[re-analyze/platform-tips]] 相关分支：静态优先（大型样本）、动态默认沙箱、跨平台 Go 样本（Windows PE Go 在 Linux 侧走 Wine 分支）
 
 ## 常见坑与陷阱
 
@@ -137,5 +137,5 @@ capabilities: [lang-runtime-analysis]
 - **字符串噪声大**：现象——恢复的字符串混入大量标准库常量；原因——Go 标准库字符串常量；对策——按包级别过滤后再筛业务字符串
 - **源码重建原则**：现象——逐行还原不现实；原因——产物无源码对应；对策——按包重建可读代码、保留逻辑而非逐行一致（逻辑优先）
 - **cgo 混合产物，C 部分无 Go 命名**：现象——`nm` 里混着一批裸名符号（`printf`、`pthread_*`），与 `main.`/`runtime.` 风格不一致；原因——cgo 把 C 代码/静态库直接链接进 Go 二进制，C 符号不参与 Go 命名体系；对策——按命名风格分片：Go 侧（`main.`/包名.）走本技能，C 侧裸名符号走 [[re-binary-core]]（[[re-imports]] 库指纹）；cgo 块通常只做薄封装，主逻辑仍在 Go 侧
-- **Windows PE Go 样本在 Linux 上直接静态分析**：现象——`file` 报 PE、Ghidra 导入后入口不是 `_rt0_amd64_linux`，误以为需要 Windows 环境；原因——Go 产物跨平台结构一致，只是容器格式（PE/Mach-O/ELF）不同；对策——nm/GoReSym/redress 照常用（符号表与 pclntab 与平台无关），入口按平台认（Windows 侧 PE 入口指向 `_rt0_amd64_windows` 桩）；动态侧才需要 Windows/Wine（[[platform-tips]] 分支）
+- **Windows PE Go 样本在 Linux 上直接静态分析**：现象——`file` 报 PE、Ghidra 导入后入口不是 `_rt0_amd64_linux`，误以为需要 Windows 环境；原因——Go 产物跨平台结构一致，只是容器格式（PE/Mach-O/ELF）不同；对策——nm/GoReSym/redress 照常用（符号表与 pclntab 与平台无关），入口按平台认（Windows 侧 PE 入口指向 `_rt0_amd64_windows` 桩）；动态侧才需要 Windows/Wine（[[re-analyze/platform-tips]] 分支）
 （来源：reverse-skill field-journal，MIT）

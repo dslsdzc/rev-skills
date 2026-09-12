@@ -15,16 +15,16 @@ capabilities: [license-analysis]
 - 不用：目标已定位校验分支、只改字节绕过（直接 [[re-patching]]）
 - 不用：确认无授权机制（无注册 UI / 注册表 / 授权文件读取——诚实告诉用户，见坑 5）
 - 不用：只做协议层分析（在线激活的流量分析走 [[re-protocol]]）
-- 注意：样本带壳先脱壳（[[re-anti-analysis]]）；校验函数被混淆先 [[re-deobfuscate]]（见坑 1）；动态环节沙箱执行（[[re-sandbox]]，[[platform-tips]] 最高原则）
+- 注意：样本带壳先脱壳（[[re-anti-analysis]]）；校验函数被混淆先 [[re-deobfuscate]]（见坑 1）；动态环节沙箱执行（[[re-sandbox]]，[[re-analyze/platform-tips]] 最高原则）
 
 ## 工具准备
 
 ### 调试器（按 OS）
 
-- Linux / Wine 下调试 PE: [[re-gdb]] —— `apt install gdb` / `dnf install gdb` / `pacman -S gdb`，验证 `gdb --version`；**Wine 直读**：`wine sample.exe` 运行后 `gdb -p <pid>` attach（[[platform-tips]] Linux 分支）
-- Windows: [[re-x64dbg]] —— 官方 release zip，attach 需管理员权限（[[platform-tips]] Windows 分支）；验证：载入样本能单步
-- macOS: [[re-lldb]] —— `brew install lldb`，验证 `lldb --version`；attach 前检查 Developer Tools 授权（[[platform-tips]] macOS 分支）
-- WSL: 无法 attach Windows 进程——跨边界分析走 Windows 侧工具，WSL 内只做静态（[[platform-tips]] WSL 分支）
+- Linux / Wine 下调试 PE: [[re-gdb]] —— `apt install gdb` / `dnf install gdb` / `pacman -S gdb`，验证 `gdb --version`；**Wine 直读**：`wine sample.exe` 运行后 `gdb -p <pid>` attach（[[re-analyze/platform-tips]] Linux 分支）
+- Windows: [[re-x64dbg]] —— 官方 release zip，attach 需管理员权限（[[re-analyze/platform-tips]] Windows 分支）；验证：载入样本能单步
+- macOS: [[re-lldb]] —— `brew install lldb`，验证 `lldb --version`；attach 前检查 Developer Tools 授权（[[re-analyze/platform-tips]] macOS 分支）
+- WSL: 无法 attach Windows 进程——跨边界分析走 Windows 侧工具，WSL 内只做静态（[[re-analyze/platform-tips]] WSL 分支）
 
 ### 反编译器（[[re-ghidra]] 等，交叉引用工作台）
 
@@ -60,7 +60,7 @@ capabilities: [license-analysis]
 2. **调用图与校验分支（成功 / 失败跳转）**：
    - 反编译校验函数，确认结构：读输入（序列号字符串 / 注册表值）→ 计算 / 比较 → **按结果跳转**（`jz` / `jnz` 到成功或失败处理）。失败路径特征：MessageBox 报错、置注册标志为假、调用 `ExitProcess`
    - 找注册标志：全局变量（0/1）在成功路径置 1，功能代码检查它；xref 该标志可找出**所有**消费它的功能校验点（不只启动校验，见坑 3）
-   - 动态确认（沙箱内，[[platform-tips]] 最高原则）：调试器断在校验函数返回处看返回值与跳转方向——[[re-gdb]]：`break <addr>` 后 `si` 跟跳转；[[re-x64dbg]]：`bp <addr>` 后看标志位
+   - 动态确认（沙箱内，[[re-analyze/platform-tips]] 最高原则）：调试器断在校验函数返回处看返回值与跳转方向——[[re-gdb]]：`break <addr>` 后 `si` 跟跳转；[[re-x64dbg]]：`bp <addr>` 后看标志位
    - 产物：每个校验点的 地址 / 调用方 / 成功-失败分支地址 / 注册标志
 
 3. **算法还原（对比 / 解密 / 签名验证）**：
@@ -93,7 +93,7 @@ capabilities: [license-analysis]
    - 产物：到期时间存储位置（注册表 / 文件）、比较函数地址——补丁或绕过目标
 
 8. **证据核对（收尾）**：
-   - 全量校验点清单（地址 / 分支 / 标志 / 证据级别）入档 [[analysis-contract]]；结论按证据分级标注（动态确认 vs 静态推断，见 [[decision-tree]]）
+   - 全量校验点清单（地址 / 分支 / 标志 / 证据级别）入档 [[re-analyze/analysis-contract]]；结论按证据分级标注（动态确认 vs 静态推断，见 [[decision-tree]]）
    - 交付：校验点清单 + 算法文档 → [[re-cracking]] 网关统一验证
 
 ## 跨域联合
@@ -106,7 +106,7 @@ capabilities: [license-analysis]
 - [[re-binary-core]]：反编译工作台（[[re-ghidra]] / [[re-ida]] / [[re-radare2]]）
 - 动态：[[re-gdb]] / [[re-x64dbg]] / [[re-lldb]]（断点看分支返回值）、[[re-tracing]]（strace / ltrace 看注册表 / 文件 / API 调用）、[[re-memdump]]（内存中的注册标志 / 校验结果）
 - [[re-behavior]]：Windows 侧 ProcMon 注册表 / 文件行为 trace 衔接
-- [[re-sandbox]]：动态定位与验证沙箱（[[platform-tips]] 最高原则）
+- [[re-sandbox]]：动态定位与验证沙箱（[[re-analyze/platform-tips]] 最高原则）
 - [[re-ioc]]：注册相关字符串 / 校验指纹可作 YARA 特征
 
 ## 常见坑与陷阱

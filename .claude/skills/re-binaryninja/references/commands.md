@@ -91,5 +91,5 @@ bv.save()
 
 ## 使用注意
 
-- 全部在沙箱内执行（[[platform-tips]] 最高原则）；脚本触发动态执行默认沙箱内
-- 结论写 [[analysis-contract]]；与 [[re-triage]] 初勘值对照入档
+- 全部在沙箱内执行（[[re-analyze/platform-tips]] 最高原则）；脚本触发动态执行默认沙箱内
+- 结论写 [[re-analyze/analysis-contract]]；与 [[re-triage]] 初勘值对照入档

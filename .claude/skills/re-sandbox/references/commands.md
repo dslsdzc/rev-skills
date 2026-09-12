@@ -100,6 +100,6 @@ curl http://example.com                              # 验证命中模拟响应
 
 ## 使用注意
 
-- 本技能是 [[platform-tips]] 最高原则（默认沙箱）的执行者——动态分析一律先过这里
+- 本技能是 [[re-analyze/platform-tips]] 最高原则（默认沙箱）的执行者——动态分析一律先过这里
 - 高威胁样本用 VM 快照而非容器/firejail（内核共享面与隔离深度差异，SKILL.md 坑 3）
 - 时间/硬件/输入类环境指纹是另一层问题：隔离 ≠ 伪装，检测点应对见 [[re-evasion]]（SKILL.md 坑 6-8）

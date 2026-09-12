@@ -21,7 +21,7 @@ capabilities: [ebpf-analysis]
 
 ## 工具准备
 
-所有工具先验证再使用。加载/运行 BPF 程序到内核需要 root（或 CAP_BPF/CAP_SYS_ADMIN）；恶意样本（内核驻留/规避类）的动态分析默认在隔离虚拟机 + 快照中进行（[[re-sandbox]]，[[platform-tips]] 最高原则）；仅只读查询（`prog list`/`dump xlated`）风险较低，但同样建议在可控环境核对内核版本一致性。
+所有工具先验证再使用。加载/运行 BPF 程序到内核需要 root（或 CAP_BPF/CAP_SYS_ADMIN）；恶意样本（内核驻留/规避类）的动态分析默认在隔离虚拟机 + 快照中进行（[[re-sandbox]]，[[re-analyze/platform-tips]] 最高原则）；仅只读查询（`prog list`/`dump xlated`）风险较低，但同样建议在可控环境核对内核版本一致性。
 
 ### bpftool —— 核心工具（prog/map 查询与 xlated 反汇编）
 

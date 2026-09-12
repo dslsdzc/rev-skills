@@ -20,7 +20,7 @@ capabilities: [protocol-recovery]
 
 ## 工具准备
 
-所有工具先验证再使用。ICS 分析红线：**只测授权系统**、默认隔离网络（[[platform-tips]] 最高原则）——测试环境严禁接生产 OT 网络（见步骤 5）。
+所有工具先验证再使用。ICS 分析红线：**只测授权系统**、默认隔离网络（[[re-analyze/platform-tips]] 最高原则）——测试环境严禁接生产 OT 网络（见步骤 5）。
 
 ### wireshark / tshark —— ICS 解析器主力（modbus/dnp3/opcua dissector 内置）
 
@@ -98,7 +98,7 @@ capabilities: [protocol-recovery]
 
 - [[re-protocol]]：本技能是其工控分支（工作流第 5 步之后的选择树入口）
 - [[re-netcap]]：捕获原料来源（抓包点/沙箱隔离）
-- [[re-sandbox]]：安全测试边界——测试床隔离、只测授权系统（[[platform-tips]] 最高原则）
+- [[re-sandbox]]：安全测试边界——测试床隔离、只测授权系统（[[re-analyze/platform-tips]] 最高原则）
 - [[re-crypto-id]] / [[re-crypto-keys]] / [[re-crypto-decrypt]]：加密变体前置（Modbus over TLS、OPC UA 安全通道；DNP3 Secure Authentication 是认证扩展非默认加密，需另确认是否套了 TLS/VPN）
 - [[re-firmware]]：PLC/RTU/工控设备固件分析（提取 → rootfs → 仿真）
 - [[re-proto-rev]]：非标工控协议的状态机重建

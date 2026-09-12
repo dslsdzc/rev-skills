@@ -12,11 +12,11 @@ capabilities: [bytecode-parser]
 - 用：恶意 .NET 样本（[[re-malware]] → [[re-managed]] 路径）的静态还原
 - 不用：非托管 PE（native 程序直接 [[re-binary-core]]；混合模式程序 native 部分同样转出）
 - 不用：Java（[[re-java]]）、脚本（[[re-script-deob]]）
-- 注意：动态步骤默认沙箱（[[platform-tips]] 最高原则）；先 `file`/初勘确认再动手
+- 注意：动态步骤默认沙箱（[[re-analyze/platform-tips]] 最高原则）；先 `file`/初勘确认再动手
 
 ## 工具准备
 
-参考 [[platform-tips]]——反编译/去混淆为静态步骤，免沙箱；动态验证按最高原则进沙箱。
+参考 [[re-analyze/platform-tips]]——反编译/去混淆为静态步骤，免沙箱；动态验证按最高原则进沙箱。
 
 ### dotnet SDK（跑 .NET 工具的前提）
 

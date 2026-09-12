@@ -25,5 +25,5 @@
 
 ## 使用注意
 
-- 驱动加载/触发/验证全部在调试 VM 内（[[re-sandbox]] + [[platform-tips]] 最高原则），生产环境不加载分析样本
-- 结论按 [[decision-tree]] 证据分级标注版本上下文；rootkit 手法描述限定在授权分析场景
+- 驱动加载/触发/验证全部在调试 VM 内（[[re-sandbox]] + [[re-analyze/platform-tips]] 最高原则），生产环境不加载分析样本
+- 结论按 [[windows-decision-tree]] 证据分级标注版本上下文；rootkit 手法描述限定在授权分析场景

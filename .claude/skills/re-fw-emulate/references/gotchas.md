@@ -25,7 +25,7 @@
 ## 网络与隔离
 
 - **默认无网络**：qemu-user 无网络；qemu-system 默认 `-net none`——需要出站时显式加 `-netdev user`（用户态 NAT，仅模拟出站，不暴露宿主）
-- **NAT 不等于隔离**：`-netdev user` 的 guest 出站直达宿主网络栈——回连分析前仍按 [[platform-tips]] 隔离（断外网/fake DNS），firmadyne 默认网卡同样先隔离
+- **NAT 不等于隔离**：`-netdev user` 的 guest 出站直达宿主网络栈——回连分析前仍按 [[re-analyze/platform-tips]] 隔离（断外网/fake DNS），firmadyne 默认网卡同样先隔离
 - **guest 内需要 IP 固定**：user 模式 NAT 的 DHCP/地址分配与固件假设不符时程序初始化失败——`-netdev user,net=192.168.x.0/24` 定制网段
 
 ## 版本差异
@@ -37,6 +37,6 @@
 
 ## 使用注意
 
-- 仿真 = 动态执行，默认沙箱 + 网络隔离（[[platform-tips]] 最高原则）
+- 仿真 = 动态执行，默认沙箱 + 网络隔离（[[re-analyze/platform-tips]] 最高原则）
 - 跑不动且静态可分析就回退静态（[[re-fw-rootfs]] / [[re-binary-core]]），不在仿真上死磕
 - 仿真结果与真实硬件行为有差距（时序/外设/内核驱动）——涉及硬件交互的结论用 [[re-hardware-io]] 验证

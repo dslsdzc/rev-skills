@@ -51,7 +51,7 @@ capabilities: [bytecode-parser, deobfuscation]
 - **凭扩展名/导入猜运行时**：PE 导入 `mscoree.dll` 未必是纯托管（混合模式 / 混淆器伪装），Jar 可能内嵌 native 库——先按工作流第 1 步确认（CLI header / manifest / 魔数）再选技能
 - **.NET 自包含单文件 / Java fat jar 不解包直接分析**：单文件把 IL + 运行库捆进 native host，fat jar 的类在 `BOOT-INF/lib`——先解包（[[re-dotnet]] / [[re-java]] 有对应步骤），否则反编译产物空/乱
 - **混淆层数估计不足**：还原一层发现还有一层是常态——逐层验证，每层存档，别试图一步到位
-- **动态执行不上沙箱**：脚本/宏/VBA 可能下载器、可能持久化——一切动态执行默认沙箱（[[platform-tips]] 最高原则），静态解码可免
+- **动态执行不上沙箱**：脚本/宏/VBA 可能下载器、可能持久化——一切动态执行默认沙箱（[[re-analyze/platform-tips]] 最高原则），静态解码可免
 - **加固与混淆混淆**：Java 加固（Virbox 等）是"壳"，de4dot 管不了——先判"壳还是混淆"，壳走 [[re-anti-analysis]] 思路（先脱后反）
 - **Bytenode 字节码绑定 ABI**：现象——宿主 Node 加载 JSC 失败；原因——Bytenode 字节码绑定特定 V8/Node ABI；对策——用样本自带 Electron 的 RunAsNode 模式（`ELECTRON_RUN_AS_NODE=1`）执行，不启动业务 GUI
 - **注册面 ≠ 执行面**：现象——枚举 handler 无法证明数据流；原因——注册存在不等于路径执行；对策——先枚举 IPC/preload 注册面，再对高风险 handler 用 mock fixture 调用并捕获副作用（URL 接收/下载/解压/spawn 参数），形成证据闭环

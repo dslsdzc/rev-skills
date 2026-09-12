@@ -30,6 +30,8 @@
 | 文件尾附加/图片异常（隐写怀疑） | `stego-detection` | [[re-stego]] |
 | 白盒加密特征（大查表 + 编码网络） | `crypto-identification` | [[re-whitebox]] |
 | 内核驱动/rootkit 结构 | `kernel-analysis` | [[re-kernel]] |
+| 内存区被改成可执行（W→X / RWX）、无背书区域在执行 | `sample-acquisition` | [[re-sample-acquire]] |
+| 服务端动态注册的组件无对应类文件（内存马特征） | `sample-acquisition` | [[re-sample-acquire]] → [[re-java]] |
 | 整机内存镜像（LiME/崩溃转储） | `memory-forensics` | [[re-mem-forensics]] |
 | 磁盘镜像/未分配空间/分区表异常 | `disk-forensics` | [[re-disk-forensics]] |
 | 越狱检测/tweak（dylib 注入）特征 | `jailbreak-analysis` | [[re-ios-jb]] |

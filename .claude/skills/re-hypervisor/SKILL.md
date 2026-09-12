@@ -15,11 +15,11 @@ capabilities: [hypervisor-analysis]
 - 用：分析 VT-x（VMX）或 SVM 相关的启动代码、VMCS/VMCB 布局、EPT 相关操作
 - 不用：普通 Windows 驱动/rootkit（走 [[re-kernel]]）；只要识别"我在不在 VM 里"（快速判断走 [[re-triage]] 思路或 `virt-what`）
 - 不用：无 CPU 虚拟化支持 / 无嵌套虚拟化环境时的动态验证（静态分析先行，见坑 1）
-- 注意：动态实验（QEMU/KVM 嵌套）按 [[platform-tips]] 最高原则在沙箱内进行；hypervisor 样本具有高特权，只在与宿主隔离的实验环境运行
+- 注意：动态实验（QEMU/KVM 嵌套）按 [[re-analyze/platform-tips]] 最高原则在沙箱内进行；hypervisor 样本具有高特权，只在与宿主隔离的实验环境运行
 
 ## 工具准备
 
-静态分析（CPUID 检查 / 反编译）免沙箱；QEMU/KVM 动态实验属动态执行，默认沙箱 + 快照（[[platform-tips]] 最高原则）。
+静态分析（CPUID 检查 / 反编译）免沙箱；QEMU/KVM 动态实验属动态执行，默认沙箱 + 快照（[[re-analyze/platform-tips]] 最高原则）。
 
 ### CPUID 检查工具（hypervisor 识别）
 
@@ -108,12 +108,12 @@ capabilities: [hypervisor-analysis]
 - [[re-kernel]]：hypervisor 驱动/内核模块分析底座（DriverEntry、IRP、内核调试配合）
 - [[re-windbg]]：Windows 宿主/guest 内核调试（`!cpuid` 查 CPUID 叶子、驱动加载观察）
 - [[re-ghidra]] / [[re-ida]]：VMCS/VMCB 相关代码反编译与结构标注（SDM 附录 B 建枚举）
-- [[re-sandbox]] / [[platform-tips]]：QEMU/KVM 实验环境隔离最高原则；嵌套 VM 是默认沙箱形态
+- [[re-sandbox]] / [[re-analyze/platform-tips]]：QEMU/KVM 实验环境隔离最高原则；嵌套 VM 是默认沙箱形态
 - [[re-triage]]：初勘阶段"是否在 VM 内 / CPU 虚拟化能力"快速判断（`virt-what` 思路）
 
 ## 常见坑与陷阱
 
-- **硬件虚拟化调试环境复杂**：现象——hypervisor 样本在普通 VM 里跑不起来/直接崩溃，调试器附加失败，样本检测到嵌套环境后行为异常；原因——嵌套虚拟化需要宿主 CPU 支持 + 显式开启（KVM nested / Hyper-V / VMware 选项），且样本会检测自己是否"真的在底层"；对策——先纯静态积累信息（步骤 1-2 的 CPUID 与 VMCS 分析不需要跑样本），动态前确认三层能力：宿主 vmx/svm 标志（`grep vmx /proc/cpuinfo`）→ 嵌套开关（`/sys/module/kvm_intel/parameters/nested`）→ QEMU `-cpu host` 透传；实验全部在隔离沙箱（[[platform-tips]] 最高原则）
+- **硬件虚拟化调试环境复杂**：现象——hypervisor 样本在普通 VM 里跑不起来/直接崩溃，调试器附加失败，样本检测到嵌套环境后行为异常；原因——嵌套虚拟化需要宿主 CPU 支持 + 显式开启（KVM nested / Hyper-V / VMware 选项），且样本会检测自己是否"真的在底层"；对策——先纯静态积累信息（步骤 1-2 的 CPUID 与 VMCS 分析不需要跑样本），动态前确认三层能力：宿主 vmx/svm 标志（`grep vmx /proc/cpuinfo`）→ 嵌套开关（`/sys/module/kvm_intel/parameters/nested`）→ QEMU `-cpu host` 透传；实验全部在隔离沙箱（[[re-analyze/platform-tips]] 最高原则）
 - **VMCS 内核对象逆向门槛高**：现象——反编译里 VMREAD/VMWRITE 一堆魔数，不知道读写的是什么字段，VM exit 分派逻辑看不懂；原因——VMCS 是硬件定义格式（字段编码不是符号），且各 CPU 架构（VT-x vs SVM）布局完全不同；对策——把 Intel SDM 附录 B 的字段编码表建进反编译器（Ghidra 枚举/结构），VMREAD/VMWRITE 操作数逐一解码；按 guest-state / host-state / control 三块组织分析；AMD 目标改用 VMCB 固定偏移布局（APM Volume 2）
 - **EPT 使内存断点失效**：现象——调试器在 guest 里下的内存断点/页保护断点不触发或触发后行为诡异（寄存器对不上）；原因——EPT 的访问位/脏位独立于 guest 页表，VMM 通过 EPT 控制 guest 看到的内存视图（含隐藏页），普通调试器断点基于 guest 页表视角；对策——区分 EPT violation（VM exit reason 48）与 guest page fault（reason 14）；要观察 EPT 层必须看 EPT 页表结构本身（沿 VMCS EPTP 字段展开）而不是 guest 页表；[[re-kernel]] 内核调试下对照宿主/guest 两侧内存视图
 - **CPU 特性差异（VT-x vs SVM）**：现象——在 Intel 机器上整理的 VMCS 偏移/exit reason 编号拿到 AMD 机器全对不上，或相反；原因——VT-x 与 SVM 是两套独立实现：VMCS（VMREAD/VMWRITE 编码）vs VMCB（固定偏移），exit reason 编号体系不同；对策——先确认目标平台（CPUID vendor + vmx/svm 标志，步骤 1），按平台选对应手册（Intel SDM Vol 3C / AMD APM Vol 2），分析笔记标注目标平台与 CPU 型号，不跨平台复用字段表

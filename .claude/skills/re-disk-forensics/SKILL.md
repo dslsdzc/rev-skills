@@ -19,7 +19,7 @@ capabilities: [disk-forensics]
 
 ## 工具准备
 
-取证铁律：**只读**。本技能所有工具只读镜像文件、不挂载可写、不在原介质上写任何东西（见坑 1）。镜像获取与可疑对象提取的结果按 sha256 + 路径存档（取证要求可追溯，见 [[platform-tips]]）。
+取证铁律：**只读**。本技能所有工具只读镜像文件、不挂载可写、不在原介质上写任何东西（见坑 1）。镜像获取与可疑对象提取的结果按 sha256 + 路径存档（取证要求可追溯，见 [[re-analyze/platform-tips]]）。
 
 ### sleuthkit —— 取证分析主力（fls/icat/tsk_recover/mmls/fsstat/blkls）
 
@@ -27,7 +27,7 @@ capabilities: [disk-forensics]
 - Fedora: `dnf install sleuthkit`
 - Arch: `pacman -S sleuthkit`（extra 仓库）
 - macOS: `brew install sleuthkit`
-- Windows: WSL 内 Linux 版优先（见 [[platform-tips]] WSL 分支）；GUI 用 Autopsy（`winget install SleuthKit.Autopsy`，内置 sleuthkit 工具）
+- Windows: WSL 内 Linux 版优先（见 [[re-analyze/platform-tips]] WSL 分支）；GUI 用 Autopsy（`winget install SleuthKit.Autopsy`，内置 sleuthkit 工具）
 - 验证: `fls -h`；`mmls -h`；`tsk_recover -h`；`mactime -h`
 
 ### testdisk / photorec —— 分区修复与文件雕刻（cgsecurity）
@@ -137,7 +137,7 @@ capabilities: [disk-forensics]
 - [[re-crypto-keys]] / [[re-crypto-decrypt]]：加密卷密钥提取（BitLocker/LUKS）与加密文件解密
 - [[re-firmware]]：固件/嵌入式存储镜像同样按"磁盘镜像"流程处理（binwalk 解包层）
 - [[re-memdump]]：内存转储是磁盘取证的上游佐证（密钥/凭据/执行痕迹，默认转储优先）
-- 引用 [[platform-tips]] WSL 分支（Windows 盘镜像在 WSL 内用 Linux 取证工具）与取证证据链要求
+- 引用 [[re-analyze/platform-tips]] WSL 分支（Windows 盘镜像在 WSL 内用 Linux 取证工具）与取证证据链要求
 
 ## 常见坑与陷阱
 

@@ -16,7 +16,7 @@ capabilities: [bytecode-parser]
 
 ## 工具准备
 
-参考 [[platform-tips]]——解包/反编译为静态步骤，免沙箱；动态取明文（[[re-sandbox]]）按最高原则进沙箱。
+参考 [[re-analyze/platform-tips]]——解包/反编译为静态步骤，免沙箱；动态取明文（[[re-sandbox]]）按最高原则进沙箱。
 
 ### python3（基础运行时，必备）
 

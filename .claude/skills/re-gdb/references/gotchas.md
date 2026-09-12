@@ -31,6 +31,6 @@
 
 ## 使用注意
 
-- 动态执行默认沙箱 + 网络隔离（[[platform-tips]] 最高原则）；attach 失败即转 [[re-memdump]]
+- 动态执行默认沙箱 + 网络隔离（[[re-analyze/platform-tips]] 最高原则）；attach 失败即转 [[re-memdump]]
 - 修改只影响本次运行；持久化 patch 后重新 sha256 对照（[[re-triage]] / [[re-patching]]）
-- 结论写入 [[analysis-contract]]；工具版本差异以目标环境实际行为为准
+- 结论写入 [[re-analyze/analysis-contract]]；工具版本差异以目标环境实际行为为准

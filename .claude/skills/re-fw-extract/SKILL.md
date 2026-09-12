@@ -18,7 +18,7 @@ capabilities: [firmware-extraction]
 
 ## 工具准备
 
-所有工具先验证再使用。解包与 magic 扫描是纯静态分析，可免沙箱（[[platform-tips]] 最高原则）；解出产物要运行时转 [[re-fw-emulate]]。
+所有工具先验证再使用。解包与 magic 扫描是纯静态分析，可免沙箱（[[re-analyze/platform-tips]] 最高原则）；解出产物要运行时转 [[re-fw-emulate]]。
 
 ### binwalk —— 自动解包主力
 

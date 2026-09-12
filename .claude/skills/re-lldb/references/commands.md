@@ -106,5 +106,5 @@ lldb -p <pid>
 
 ## 使用注意
 
-- 全部在沙箱内执行（[[platform-tips]] 最高原则）；attach 需 Developer Tools 授权
-- 结论写 [[analysis-contract]]；与 [[re-triage]] 初勘值对照；iOS 目标权限/证书问题走 [[re-mobile]]
+- 全部在沙箱内执行（[[re-analyze/platform-tips]] 最高原则）；attach 需 Developer Tools 授权
+- 结论写 [[re-analyze/analysis-contract]]；与 [[re-triage]] 初勘值对照；iOS 目标权限/证书问题走 [[re-mobile]]

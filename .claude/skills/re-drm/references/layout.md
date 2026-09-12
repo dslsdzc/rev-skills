@@ -133,5 +133,5 @@ offset  字段              说明
 
 ## 使用注意
 
-- 所有动态步骤在受控环境内（[[platform-tips]] 最高原则）；密钥材料不进报告
+- 所有动态步骤在受控环境内（[[re-analyze/platform-tips]] 最高原则）；密钥材料不进报告
 - 与 [[re-protocol]]（协议结构）、[[re-crypto-id]]（算法识别）、[[re-netcap]]（抓包）配合使用

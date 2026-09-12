@@ -103,4 +103,4 @@ main (C 入口，runtime/main.c)
 ## 使用注意
 
 - 静态分析无需沙箱；跨平台（Linux/Windows/macOS）产物结构一致（C 运行时移植）
-- 与 [[analysis-contract]]（数据流图传递）、[[re-cpp-abi]]（表指针分派对照）配合使用
+- 与 [[re-analyze/analysis-contract]]（数据流图传递）、[[re-cpp-abi]]（表指针分派对照）配合使用

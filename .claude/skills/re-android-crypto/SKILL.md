@@ -29,11 +29,11 @@ capabilities: [crypto-identification, key-extraction]
 
 ## 工具准备
 
-所有工具先验证再使用。动态 hook 默认沙箱（[[platform-tips]] 最高原则）；静态审计可免沙箱。
+所有工具先验证再使用。动态 hook 默认沙箱（[[re-analyze/platform-tips]] 最高原则）；静态审计可免沙箱。
 
 ### frida（[[re-frida]]）—— crypto hook 主力
 
-- 安装与验证见 [[re-frida]] 工具准备；脚本模板见 [[frida-scripts]]
+- 安装与验证见 [[re-frida]] 工具准备；脚本模板见 [[re-frida/frida-scripts]]
 - 验证: `frida --version`
 
 ### python3 / jadx —— 静态定位加密调用点
@@ -56,7 +56,7 @@ capabilities: [crypto-identification, key-extraction]
    ```
    - **遍历**：`aliases()` 枚举全部条目（密钥别名 = 应用内引用键）
    - **条目属性**：算法（AES/RSA/EC）、用途（encrypt/decrypt/sign/verify）、来源——`KeyInfo.getSecurityLevel()`（API 31+，返回 SOFTWARE / TRUSTED_ENVIRONMENT(TEE) / STRONGBOX 三档）；API 23–30 只有 `isInsideSecureHardware()`（布尔，TEE 与 StrongBox 同为 true，分不开）
-   - **生物绑定**：`setUserAuthenticationRequired` 的密钥在认证失败时不可用（绕过与检测见 [[anti-dynamic-workflow]]）
+   - **生物绑定**：`setUserAuthenticationRequired` 的密钥在认证失败时不可用（绕过与检测见 [[re-analyze/anti-dynamic-workflow]]）
    - 产出：别名 → 算法/用途/硬件背书 清单（不记录密钥字节）
 
 2. **crypto hook**（加密调用点拦截）：
@@ -91,7 +91,7 @@ capabilities: [crypto-identification, key-extraction]
 ## 跨域联合
 
 - [[re-android-native]]：JNI/so 原生逻辑逆向（本技能的 .so 库内部逻辑承接方；Keystore 审计自其转出）
-- [[re-frida]]：hook 执行层（[[frida-scripts]] 模板）
+- [[re-frida]]：hook 执行层（[[re-frida/frida-scripts]] 模板）
 - [[re-crypto-id]] / [[re-crypto-keys]]：算法识别与通用密钥提取（Keystore 硬件密钥除外——走本技能审计）
 - [[re-apk]]：应用静态定位（jadx 调用点）
 - [[re-mobile]]：工作流移动分支（加密审计子路径）

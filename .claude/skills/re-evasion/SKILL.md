@@ -19,7 +19,7 @@ capabilities: [evasion-analysis]
 
 ## 工具准备
 
-规避分析必须动态执行 + 内存取证：全程在沙箱内（[[re-sandbox]] 强制前置，[[platform-tips]] 最高原则）。所有工具先验证再使用。
+规避分析必须动态执行 + 内存取证：全程在沙箱内（[[re-sandbox]] 强制前置，[[re-analyze/platform-tips]] 最高原则）。所有工具先验证再使用。
 
 ### amsi.dll 内存对照 —— AMSI patch 定位主力（无独立安装包）
 
@@ -54,7 +54,7 @@ capabilities: [evasion-analysis]
 1. **规避手段识别（先分类再深入）**：
    - 输入: 样本/工具 + 检测触发信息（杀软告警、EDR 日志、沙箱告警）
    - 分类清单（按特征归档）: AMSI 绕过（patch / 反射加载）、ETW 禁用（patch provider / 掩码）、无文件（内存执行 / 注册表运行键 + 远程脚本 / WMI）、lolbin 链（rundll32 / mshta / regsvr32 / WMI / PowerShell）、字符串编码混淆（防特征）
-   - 证据采集: 沙箱内运行（[[re-sandbox]]）→ Sysmon/procmon 记录进程创建链与命令行；同时 [[re-memdump]] 留内存快照（默认转储优先，[[platform-tips]]「直读 vs 转储」）；PowerShell 开启 ScriptBlock 日志（事件 4104）与模块日志
+   - 证据采集: 沙箱内运行（[[re-sandbox]]）→ Sysmon/procmon 记录进程创建链与命令行；同时 [[re-memdump]] 留内存快照（默认转储优先，[[re-analyze/platform-tips]]「直读 vs 转储」）；PowerShell 开启 ScriptBlock 日志（事件 4104）与模块日志
    - 先跑一遍不 patch 的基准样本确认"检测触发点"（见坑 5 与步骤 5 对齐）
 
 2. **AMSI 绕过分析（内存 patch 定位）**：
@@ -97,14 +97,14 @@ capabilities: [evasion-analysis]
 ## 跨域联合
 
 - [[re-anti-analysis]]：本技能是该网关的检测规避分支——壳/混淆是"静态反分析"，AMSI/ETW/无文件是"检测对抗"，编排上并列
-- [[re-sandbox]]：动态执行强制前置——规避分析全程在隔离环境（网络隔离 + 快照，见 [[platform-tips]] 最高原则）
+- [[re-sandbox]]：动态执行强制前置——规避分析全程在隔离环境（网络隔离 + 快照，见 [[re-analyze/platform-tips]] 最高原则）
 - [[re-memdump]]：内存 patch 定位与无文件载荷取证（默认转储优先）
 - [[re-behavior]]：进程链/执行行为观察（lolbin 链的行为侧佐证）
 - [[re-tracing]]：API 调用跟踪——patch 目标函数（AmsiScanBuffer/EtwEventWrite）的调用序列佐证绕过是否生效
 - [[re-ioc]]：规避特征（内存哈希/命令行模式/lolbin 组合）进 IOC 与 YARA 规则
 - [[re-malware]]：恶意样本的规避层分析（re-malware 行为分析后转本技能深挖规避）
 - [[re-ebpf]]：驻留 bpf hook（fentry/kprobe/tracepoint/cgroup）的识别与反制
-- 引用 [[platform-tips]] 最高原则（默认沙箱）与 Windows 分支
+- 引用 [[re-analyze/platform-tips]] 最高原则（默认沙箱）与 Windows 分支
 
 ## 常见坑与陷阱
 

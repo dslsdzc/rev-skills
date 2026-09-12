@@ -109,6 +109,6 @@ ltrace -f -c ./target                     # 库调用热点
 
 ## 使用注意
 
-- 全部在沙箱内执行（[[platform-tips]] 最高原则）
+- 全部在沙箱内执行（[[re-analyze/platform-tips]] 最高原则）
 - 反调试样本的 trace 结果可能被刻意污染（见 [[gotchas]] 与 [[re-anti-analysis]]）
-- 证据链：日志路径 + sha256 + 时间戳 → [[analysis-contract]]
+- 证据链：日志路径 + sha256 + 时间戳 → [[re-analyze/analysis-contract]]

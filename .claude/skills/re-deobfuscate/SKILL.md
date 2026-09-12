@@ -62,7 +62,7 @@ capabilities: [deobfuscation]
 
 3. **字符串解密循环定位与仿真**：
    - 静态定位：数据节找密文数组（高熵 / 无明文）→ xref 找引用它的函数（或引用 `memcpy`/`strcpy` 前指针）→ 分析解密循环（XOR 单字节 / 多字节 key、查表、逐字节变换）。
-   - 动态读（需沙箱，[[platform-tips]] 最高原则）：[[re-gdb]] / [[re-x64dbg]] 断在解密函数返回处，`x/s` 读结果。
+   - 动态读（需沙箱，[[re-analyze/platform-tips]] 最高原则）：[[re-gdb]] / [[re-x64dbg]] 断在解密函数返回处，`x/s` 读结果。
    - 仿真：小循环用 python3 复刻（按逆向出的算法与 key）：
      ```python
      # 例：单字节 XOR 解密
@@ -85,7 +85,7 @@ capabilities: [deobfuscation]
 5. **还原前后对比验证**：
    - `sha256sum` 记录修改前后；`objdump -d` 对比花指令区域字节差异。
    - 重新反汇编确认无 "undefined"/ 无未定义跳转目标（每步做完即查，别攒到最后）。
-   - 重新反编译目标函数，确认控制流与调用关系合理；沙箱内运行验证行为一致（[[re-sandbox]]，见 [[platform-tips]] 最高原则）。
+   - 重新反编译目标函数，确认控制流与调用关系合理；沙箱内运行验证行为一致（[[re-sandbox]]，见 [[re-analyze/platform-tips]] 最高原则）。
    - 字符串解密结果用运行验证交叉确认（动态解密值 == 脚本仿真值）。
 
 ## 跨域联合

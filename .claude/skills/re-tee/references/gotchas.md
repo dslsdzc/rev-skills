@@ -33,5 +33,5 @@
 
 ## 使用注意
 
-- 主机侧动态在沙箱内（[[re-sandbox]]，[[platform-tips]] 最高原则）；secure world 内不做动态调试
+- 主机侧动态在沙箱内（[[re-sandbox]]，[[re-analyze/platform-tips]] 最高原则）；secure world 内不做动态调试
 - 结论按 [[decision-tree]] 证据分级标注；设备密钥类结论区分「提取成功/不可提取+用途/推测」三档

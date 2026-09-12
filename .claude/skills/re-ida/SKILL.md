@@ -18,7 +18,7 @@ capabilities: [decompilation, debugging]
 
 ## 工具准备
 
-参考 [[platform-tips]]——静态分析免沙箱；用 IDA 调试器做动态调试时按最高原则默认沙箱执行。
+参考 [[re-analyze/platform-tips]]——静态分析免沙箱；用 IDA 调试器做动态调试时按最高原则默认沙箱执行。
 
 ### IDA（商业版 / 免费版）
 
@@ -87,13 +87,13 @@ capabilities: [decompilation, debugging]
    - `F9` 运行、`F2` 断点切换、`F8`/`F7` 单步、`Ctrl+F2` 重启——与 [[re-x64dbg]] 同习惯
    - 反调试检测（`IsDebuggerPresent` 等）先静态定位再处理，边界见 [[gotchas]]
 
-8. **证据核对（收尾）**：重命名/注释/已恢复结构随 .i64 存档（`File > Save`，副本备份原库）；无头导出产物（函数清单/反编译 .c）与 [[re-triage]] 初勘值对照入档；关键结论写 [[analysis-contract]]——IDA 里的标注要能还原到报告，别只留在数据库里
+8. **证据核对（收尾）**：重命名/注释/已恢复结构随 .i64 存档（`File > Save`，副本备份原库）；无头导出产物（函数清单/反编译 .c）与 [[re-triage]] 初勘值对照入档；关键结论写 [[re-analyze/analysis-contract]]——IDA 里的标注要能还原到报告，别只留在数据库里
 
 ## 函数分析上下文清单
 
-分析每个函数前先收集（见 [[analysis-contract]] 上下文清单）：xrefs、目标函数引用的字符串、caller/callee 签名、已命名符号表、已恢复 struct。一次性给足再分析；主动申请额外证据每函数不超过 8 次工具调用。
+分析每个函数前先收集（见 [[re-analyze/analysis-contract]] 上下文清单）：xrefs、目标函数引用的字符串、caller/callee 签名、已命名符号表、已恢复 struct。一次性给足再分析；主动申请额外证据每函数不超过 8 次工具调用。
 
-深分析按 [[analysis-contract]] 的「单函数深分析顺序」五步推进（types → constants → vtables → identity → decompilation）；IDA 下类型用 idapython `get_type`/结构体定义，符号/常量证据可用 readelf / strings / objdump 导出辅助。
+深分析按 [[re-analyze/analysis-contract]] 的「单函数深分析顺序」五步推进（types → constants → vtables → identity → decompilation）；IDA 下类型用 idapython `get_type`/结构体定义，符号/常量证据可用 readelf / strings / objdump 导出辅助。
 
 ## 跨域联合
 

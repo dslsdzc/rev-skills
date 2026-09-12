@@ -18,11 +18,11 @@ capabilities: [electron-analysis]
 - 不用：脱离 Electron 场景的混淆 JS/脚本（走 [[re-script-deob]] / [[re-deobfuscate]]）
 - 不用：`.jsc` 出现在 Cocos 游戏资源场景（那是 Cocos 引擎字节码，走 [[re-game]]；本技能只管 Electron 的 V8 字节码）
 - 不用：仅需通用二进制初勘（[[re-binary-core]] 通用底座；本技能只补 Electron 打包层语义）
-- 注意：**动态执行默认沙箱（[[platform-tips]] 最高原则）**——跑应用、连 CDP、加载 `.jsc` 均按动态处理，静态解包可免沙箱
+- 注意：**动态执行默认沙箱（[[re-analyze/platform-tips]] 最高原则）**——跑应用、连 CDP、加载 `.jsc` 均按动态处理，静态解包可免沙箱
 
 ## 工具准备
 
-所有工具先验证再使用。静态解包可免沙箱；运行应用 / 动态调试默认沙箱 + 网络隔离（[[platform-tips]] 最高原则）。Electron 应用多为跨平台打包，工具链以 npm 生态为主、跨 OS 一致。
+所有工具先验证再使用。静态解包可免沙箱；运行应用 / 动态调试默认沙箱 + 网络隔离（[[re-analyze/platform-tips]] 最高原则）。Electron 应用多为跨平台打包，工具链以 npm 生态为主、跨 OS 一致。
 
 ### Node.js + npm —— 工具底座（asar / CDP 客户端 / bytenode / fuses）
 
@@ -156,7 +156,7 @@ capabilities: [electron-analysis]
 - [[re-tracing]]：动态行为观察（文件/网络/系统调用）
 - [[re-variant]]：多版本对比（补丁定位、逻辑差异）
 - [[re-game]]：Cocos 场景 `.jsc`（JS 引擎字节码）与 Electron `.jsc`（V8 字节码）的区分
-- [[re-sandbox]]：一切动态执行强制前置（[[platform-tips]] 默认沙箱原则）
+- [[re-sandbox]]：一切动态执行强制前置（[[re-analyze/platform-tips]] 默认沙箱原则）
 - 配套：[[re-patching]]（改 bundle 字节补丁）、[[re-triage]]（初勘前置）
 
 ## 常见坑与陷阱

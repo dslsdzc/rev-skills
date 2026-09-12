@@ -36,6 +36,6 @@
 
 ## 使用注意
 
-- 静态分析可免沙箱（[[platform-tips]] 最高原则）；越狱设备动态分析在受控环境执行
-- 脱壳产物/头文件/签名信息 sha256 与时间戳存档（[[re-triage]]）；结论写 [[analysis-contract]]
+- 静态分析可免沙箱（[[re-analyze/platform-tips]] 最高原则）；越狱设备动态分析在受控环境执行
+- 脱壳产物/头文件/签名信息 sha256 与时间戳存档（[[re-triage]]）；结论写 [[re-analyze/analysis-contract]]
 - 版本相关行为（越狱工具、frida、签名规则）以目标版本实际表现为准

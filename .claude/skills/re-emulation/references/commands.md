@@ -110,5 +110,5 @@ ql.restore 回到存档点继续分支探索（多阶段流程用）
 
 ## 使用注意
 
-- 模拟属动态执行，默认沙箱 + 网络隔离（[[platform-tips]] 最高原则）；模拟结论与真实沙箱执行交叉验证
-- 产物（明文段/轨迹/快照）sha256 存档（[[re-triage]]）；结论入 [[analysis-contract]]
+- 模拟属动态执行，默认沙箱 + 网络隔离（[[re-analyze/platform-tips]] 最高原则）；模拟结论与真实沙箱执行交叉验证
+- 产物（明文段/轨迹/快照）sha256 存档（[[re-triage]]）；结论入 [[re-analyze/analysis-contract]]

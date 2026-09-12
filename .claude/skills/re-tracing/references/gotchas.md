@@ -40,5 +40,5 @@
 
 ## 使用注意
 
-- 全部在沙箱内执行（[[platform-tips]] 最高原则）
-- trace 日志作为证据：路径 + sha256 + 时间戳入档（[[re-triage]]），结论写 [[analysis-contract]]
+- 全部在沙箱内执行（[[re-analyze/platform-tips]] 最高原则）
+- trace 日志作为证据：路径 + sha256 + 时间戳入档（[[re-triage]]），结论写 [[re-analyze/analysis-contract]]

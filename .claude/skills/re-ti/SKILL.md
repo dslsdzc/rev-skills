@@ -17,7 +17,7 @@ capabilities: [threat-intel]
 
 ## 工具准备
 
-本技能以查询/解读为主，不运行样本；上传到沙箱的动态执行须在 [[re-sandbox]] 内（默认沙箱最高原则，见 [[platform-tips]]）。
+本技能以查询/解读为主，不运行样本；上传到沙箱的动态执行须在 [[re-sandbox]] 内（默认沙箱最高原则，见 [[re-analyze/platform-tips]]）。
 
 ### VirusTotal（核心查询，网页 + API）
 
@@ -67,7 +67,7 @@ capabilities: [threat-intel]
    - 隐私选项：上传/查询私有对象用 VT 的私有 API（企业版）或先确认数据公开风险（见坑 2）
 
 2. **沙箱报告解读（Any.run / hybrid-analysis）**：
-   - 查询: 在 Any.run/hybrid-analysis 搜同一 hash，找公开报告；提交新样本执行须在 [[re-sandbox]] 隔离环境内（网络隔离 INetSim/fake DNS，见 [[platform-tips]] 最高原则）
+   - 查询: 在 Any.run/hybrid-analysis 搜同一 hash，找公开报告；提交新样本执行须在 [[re-sandbox]] 隔离环境内（网络隔离 INetSim/fake DNS，见 [[re-analyze/platform-tips]] 最高原则）
    - hybrid-analysis API（key 在个人 profile 的 API key 页生成，请求头 `api-key`）：
      ```sh
      curl -s -H "api-key: $HA_API_KEY" \
@@ -116,7 +116,7 @@ capabilities: [threat-intel]
 - [[re-malware]]：恶意样本分析第 6 步前用本技能佐证家族/判定；反沙箱样本的静态情报尤其依赖本技能
 - [[re-behavior]]：步骤 2 解读沙箱报告的基线来自行为分析产物（进程/网络/文件对照）
 - [[re-ioc]]：步骤 5 情报汇总进 IOC 列表与报告（衔接）
-- [[re-sandbox]]：本技能动态执行必须在其内（默认沙箱最高原则，见 [[platform-tips]]）
+- [[re-sandbox]]：本技能动态执行必须在其内（默认沙箱最高原则，见 [[re-analyze/platform-tips]]）
 - 回传 [[re-analyze]]：按 RE_REPORT 偏好把情报摘要写进最终报告
 
 ## 常见坑与陷阱

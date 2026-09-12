@@ -34,5 +34,5 @@
 ## 使用注意
 
 - 静态分析免沙箱；内存 <4GB 换 [[re-radare2]]（启动即卡顿）
-- 样本/工程/导出产物 sha256 存证（[[re-triage]]）；结论入 [[analysis-contract]]
+- 样本/工程/导出产物 sha256 存证（[[re-triage]]）；结论入 [[re-analyze/analysis-contract]]
 - 版本相关行为（API 方法名、分析选项）以目标版本实际表现为准

@@ -12,11 +12,11 @@ capabilities: [bytecode-parser]
 - 用：恶意 Java 样本（[[re-malware]] → [[re-managed]] 路径）静态还原
 - 不用：Android DEX 直接分析（[[re-apk]]；转成 jar 后可回本技能）
 - 不用：非 Java（.NET 走 [[re-dotnet]]、脚本走 [[re-script-deob]]、native 走 [[re-binary-core]]）
-- 注意：动态步骤默认沙箱（[[platform-tips]] 最高原则）；解包产物先备份
+- 注意：动态步骤默认沙箱（[[re-analyze/platform-tips]] 最高原则）；解包产物先备份
 
 ## 工具准备
 
-参考 [[platform-tips]]——反编译/解包为静态步骤，免沙箱；动态验证按最高原则进沙箱。
+参考 [[re-analyze/platform-tips]]——反编译/解包为静态步骤，免沙箱；动态验证按最高原则进沙箱。
 
 ### JDK（javap / jar / java 运行时）
 

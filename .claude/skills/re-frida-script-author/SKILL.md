@@ -12,9 +12,9 @@ capabilities: [frida-instrumentation]
 ## 何时使用 / 何时不用
 
 - 用：需要新脚本时——拦截（加密/网络/文件）、绕过（检测/固定）、追踪（JNI/方法调用）
-- 用：现成模板没有的变体——按 [[frida-scripts]] 模板改写出目标专用脚本
+- 用：现成模板没有的变体——按 [[re-frida/frida-scripts]] 模板改写出目标专用脚本
 - 不用：执行现成脚本 → 转 [[re-frida]]（本技能只产出脚本，运行与进程管理在 re-frida）
-- 不用：反检测对抗面整体分析 → [[anti-dynamic-workflow]]
+- 不用：反检测对抗面整体分析 → [[re-analyze/anti-dynamic-workflow]]
 - 不用：纯静态可解的问题——先走 [[re-apk]] / [[re-ghidra]] 静态路径，动态是最后手段
 - 不用：目标不可达（无设备/无 root/无越狱、加固拦注入）——先解决环境（[[re-frida]] 工具准备），不硬写脚本
 
@@ -48,12 +48,12 @@ capabilities: [frida-instrumentation]
 
 1. **目标侦察**：
    - 静态：目标包名/类名/关键 API（[[re-apk]] jadx 输出）、加固商特征（[[re-mobile-pack]]）、Flutter/RN 混合结构（[[re-hybrid-app]]）
-   - 动态基线：原样跑一次抓崩溃与日志（崩溃特征 → 保护机制对照，见 [[anti-dynamic-workflow]]）
+   - 动态基线：原样跑一次抓崩溃与日志（崩溃特征 → 保护机制对照，见 [[re-analyze/anti-dynamic-workflow]]）
    - 产出：目标特征清单——检测点/目标 API 全限定名/输入输出形态/方法 overload 数
    - 不确定的类名/方法名先小脚本枚举（`Java.enumerateLoadedClasses` / `Java.use(...).overloads`），不猜名字
-   - 侦察结论记入 [[analysis-contract]] 契约字段（包名/类名/API 清单），供脚本与报告复用
+   - 侦察结论记入 [[re-analyze/analysis-contract]] 契约字段（包名/类名/API 清单），供脚本与报告复用
 
-2. **模板选择**：按特征清单对照 [[frida-scripts]] 模板表：
+2. **模板选择**：按特征清单对照 [[re-frida/frida-scripts]] 模板表：
 
 | 目标特征 | 模板 |
 |---|---|
@@ -66,7 +66,7 @@ capabilities: [frida-instrumentation]
 | 反调试/检测拦截 | 检测绕过表（root/属性/文件/命令） |
 
    - 特征不匹配任何模板 → 组合改写（多个模板拼装）而非从零写
-   - 选完模板先读模板内已知边界注释（[[frida-scripts]]），避免重复踩坑
+   - 选完模板先读模板内已知边界注释（[[re-frida/frida-scripts]]），避免重复踩坑
 
 3. **改写**：
    - 替换占位符：包名/类名/方法名（精确匹配，Java 全限定名）
@@ -98,15 +98,15 @@ capabilities: [frida-instrumentation]
    ```
    - 验证清单：hook 挂载成功（无报错输出）→ 触发目标路径（操作 app 或复现调用）→ 输出与静态分析一致 → 重复触发输出稳定
    - 输出 JSON 可解析、目标行为符合预期（拦截到目标调用/绕过生效）
-   - 失败 → 回步骤 2 重选模板或细化特征；崩溃 → 按 [[anti-dynamic-workflow]] 崩溃对照表定位；输出为空 → 见 [[decision-tree]] 排查分支
+   - 失败 → 回步骤 2 重选模板或细化特征；崩溃 → 按 [[re-analyze/anti-dynamic-workflow]] 崩溃对照表定位；输出为空 → 见 [[decision-tree]] 排查分支
 
 ## 跨域联合
 
 - [[re-frida]]：脚本执行（本技能产出 → re-frida 运行）
 - [[re-mobile]] / [[re-android-native]]：移动目标场景衔接
-- [[anti-dynamic-workflow]]：检测面与崩溃迭代法
-- [[frida-scripts]]：模板素材库（re-frida references）
-- [[analysis-contract]]：脚本输出按数据契约消费（证据存档）
+- [[re-analyze/anti-dynamic-workflow]]：检测面与崩溃迭代法
+- [[re-frida/frida-scripts]]：模板素材库（re-frida references）
+- [[re-analyze/analysis-contract]]：脚本输出按数据契约消费（证据存档）
 - [[re-ios-jb]]：iOS 越狱环境执行侧
 
 ## 常见坑与陷阱
@@ -116,6 +116,6 @@ capabilities: [frida-instrumentation]
 - **参数索引版本相关**：现象——native 参数读错；原因——目标版本字段/参数位次变化；对策——对照目标符号核实，不照搬经验值
 - **不侦察就写脚本**：现象——脚本对不上目标；原因——跳过步骤 1；对策——先探后写
 - **绕过类脚本只观察不持久化**：现象——测试后目标状态被改；原因——脚本含写操作；对策——脚本只做读取/日志，绕过仅用于观察（红线）
-- **类未加载时 hook 不生效**：现象——类存在但无输出；原因——懒加载/加固延迟加载；对策——`Java.choose` 或对类加载点下 hook（[[anti-dynamic-workflow]]）
+- **类未加载时 hook 不生效**：现象——类存在但无输出；原因——懒加载/加固延迟加载；对策——`Java.choose` 或对类加载点下 hook（[[re-analyze/anti-dynamic-workflow]]）
 - **版本相关 API 报错**：现象——`Module.getExportByName is not a function`；原因——Frida 17 移除静态 Module 查找 API；对策——按 [[gotchas]] 版本组迁移写法
-- 模板选择分支与验证排查树见 [[decision-tree]]；版本差异与边界见 [[gotchas]]；全部在沙箱内执行（[[platform-tips]] 最高原则），脚本输出按 [[analysis-contract]] 契约存档
+- 模板选择分支与验证排查树见 [[decision-tree]]；版本差异与边界见 [[gotchas]]；全部在沙箱内执行（[[re-analyze/platform-tips]] 最高原则），脚本输出按 [[re-analyze/analysis-contract]] 契约存档

@@ -16,11 +16,11 @@ capabilities: [uefi-analysis]
 - 不用：固件是传统 Linux 嵌入式 rootfs（走 [[re-fw-extract]] / [[re-fw-rootfs]]；[[re-firmware]] 网关先判定）
 - 不用：Legacy BIOS Option ROM / 非 EFI 传统固件（binwalk 走 [[re-fw-extract]]）
 - 不用：只需整体解包看内容（先 [[re-fw-extract]] 初判，确认是 UEFI 结构再进本技能）
-- 注意：静态分析先行（大型固件原则）；仿真 bootkit = 运行恶意代码，默认沙箱（[[platform-tips]] 最高原则）
+- 注意：静态分析先行（大型固件原则）；仿真 bootkit = 运行恶意代码，默认沙箱（[[re-analyze/platform-tips]] 最高原则）
 
 ## 工具准备
 
-所有工具先验证再使用。固件镜像解析/模块静态分析可免沙箱；OVMF 仿真（步骤 5）是动态执行，默认沙箱 + 网络隔离（[[platform-tips]] 最高原则）。
+所有工具先验证再使用。固件镜像解析/模块静态分析可免沙箱；OVMF 仿真（步骤 5）是动态执行，默认沙箱 + 网络隔离（[[re-analyze/platform-tips]] 最高原则）。
 
 ### UEFITool / UEFIExtract（固件解析主力）
 
@@ -124,7 +124,7 @@ capabilities: [uefi-analysis]
 - [[re-triage]]：初勘（hash / 架构 / 熵），每层产物存证
 - [[re-malware]]：bootkit 动态验证进沙箱（[[re-sandbox]]），恶意行为分析转 [[re-malware]]
 - 非 EFI 固件（传统 BIOS / 嵌入式镜像）→ [[re-fw-extract]]（binwalk 初判）
-- [[platform-tips]] 相关分支：静态优先（大型固件样本）、动态默认沙箱（仿真 bootkit 时网络 -net none）、Linux/Windows 平台分支
+- [[re-analyze/platform-tips]] 相关分支：静态优先（大型固件样本）、动态默认沙箱（仿真 bootkit 时网络 -net none）、Linux/Windows 平台分支
 
 ## 常见坑与陷阱
 

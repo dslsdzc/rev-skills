@@ -19,7 +19,7 @@ capabilities: [crypto-identification]
 
 ## 工具准备
 
-所有工具先验证再使用。本技能以静态/离线分析为主，可免沙箱；动态确认环节（Frida）只针对已运行样本（默认沙箱，[[platform-tips]] 最高原则）。
+所有工具先验证再使用。本技能以静态/离线分析为主，可免沙箱；动态确认环节（Frida）只针对已运行样本（默认沙箱，[[re-analyze/platform-tips]] 最高原则）。
 
 ### python3 —— 指纹与熵分析脚本
 

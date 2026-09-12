@@ -22,7 +22,7 @@ capabilities: [drm-analysis]
 
 ## 工具准备
 
-静态分析（CDM 反编译 / 抓包分析）免沙箱；运行 CDM 与抓许可证流量属动态执行，在受控环境（[[platform-tips]] 最高原则）内进行。所有工具先验证再使用。
+静态分析（CDM 反编译 / 抓包分析）免沙箱；运行 CDM 与抓许可证流量属动态执行，在受控环境（[[re-analyze/platform-tips]] 最高原则）内进行。所有工具先验证再使用。
 
 ### 反编译工作台（[[re-ghidra]]）—— CDM/解密器分析
 
@@ -101,7 +101,7 @@ capabilities: [drm-analysis]
 - [[re-protocol]]：许可证协议还原（challenge/response 结构、protobuf/SOAP 解析）
 - [[re-crypto-id]] / [[re-crypto-keys]] / [[re-crypto-decrypt]]：加密算法识别、密钥材料定位、密文还原
 - [[re-android-native]] / [[re-ios]]：移动端 CDM（Android 侧 Widevine 集成、FairPlay/Apple 侧）——设备侧 DRM 的延伸
-- [[re-sandbox]] / [[platform-tips]]：动态执行（播放自有内容/抓包）受控环境最高原则
+- [[re-sandbox]] / [[re-analyze/platform-tips]]：动态执行（播放自有内容/抓包）受控环境最高原则
 
 ## 常见坑与陷阱
 

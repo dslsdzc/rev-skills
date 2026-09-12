@@ -29,7 +29,7 @@ capabilities: [license-analysis]
    - 两者可同时做：patch 即时可用，keygen 长期有效
 4. **补丁：[[re-patching]]（能力：`binary-patching`）** —— 定位 patch 点（失败跳转 jz/jnz）→ 字节修改（nop / 跳转重写）→ 校验和 / 自校验处理 → 补丁导出（二进制 diff / patch 文件）→ 多架构适配（ARM 改 B 指令等）
 5. **注册机：[[re-keygen]]（能力：`license-analysis`）** —— 从 [[re-license]]（能力：`license-analysis`） 拿到的校验算法 → 逆推生成算法（正推 / 约束求解）→ python 实现 → 校验码 / 校验位边界处理 → 多平台 CLI 输出
-6. **验证**：沙箱内（[[re-sandbox]]（能力：`sandbox-setup`），[[platform-tips]] 最高原则）复跑——补丁版与 keygen 生成的序列号必须通过**全部**校验点（启动 + 功能点，见坑 2）；与未修改样本对比行为一致；产物与证据路径存档
+6. **验证**：沙箱内（[[re-sandbox]]（能力：`sandbox-setup`），[[re-analyze/platform-tips]] 最高原则）复跑——补丁版与 keygen 生成的序列号必须通过**全部**校验点（启动 + 功能点，见坑 2）；与未修改样本对比行为一致；产物与证据路径存档
 
 每步结果按 [[re-triage]]（能力：`triage`） 记录；注册算法指纹 / 补丁字节是 [[re-ioc]]（能力：`threat-intel`） YARA 特征来源。
 
@@ -55,7 +55,7 @@ capabilities: [license-analysis]
 - **在线激活**：校验含网络交互 → [[re-protocol]]（[[re-netcap]] 抓包 + [[re-crypto-id]] / [[re-crypto-keys]] / [[re-crypto-decrypt]] 处理激活协议加密）
 - **DRM 内容保护**：PlayReady / Widevine 许可证与内容解密属 DRM 域 → [[re-drm]]（区别于授权校验破解；仅授权研究）
 - **混淆对抗**：校验函数被花指令 / 平坦化 / 字符串加密保护 → [[re-deobfuscate]] 还原后再定位
-- **验证沙箱**：补丁版 / keygen 序列号复跑验证必须 [[re-sandbox]]（[[platform-tips]] 最高原则）
+- **验证沙箱**：补丁版 / keygen 序列号复跑验证必须 [[re-sandbox]]（[[re-analyze/platform-tips]] 最高原则）
 - **IOC 产出**：注册算法指纹、补丁字节、keygen 典型特征进 [[re-ioc]] 列表
 
 ## 常见坑与陷阱

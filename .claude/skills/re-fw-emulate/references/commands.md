@@ -95,7 +95,7 @@ qemu-<arch> -strace 定位首个崩溃访问（如 mmap 固定地址后读 [addr
 
 ```
 全系统先不加网络参数（默认 -net none）确认行为 → 需要网络再加 -nic user,model=e1000
-→ 回连/协议分析前按 [[platform-tips]] 隔离；抓包与协议重建转 [[re-protocol]]
+→ 回连/协议分析前按 [[re-analyze/platform-tips]] 隔离；抓包与协议重建转 [[re-protocol]]
 → firmadyne 默认带网卡，同样先隔离再跑
 ```
 
@@ -109,6 +109,6 @@ qemu-<arch> -strace 定位首个崩溃访问（如 mmap 固定地址后读 [addr
 
 ## 使用注意
 
-- 仿真 = 动态执行，默认沙箱 + 网络隔离（[[platform-tips]] 最高原则）
+- 仿真 = 动态执行，默认沙箱 + 网络隔离（[[re-analyze/platform-tips]] 最高原则）
 - 架构识别先做（[[re-arm]] / [[re-riscv]] / [[re-mips]] 对照），选错 qemu-<arch> 秒崩
-- 产物与日志 sha256 入档（[[re-triage]] 惯例）；仿真结论写 [[analysis-contract]]
+- 产物与日志 sha256 入档（[[re-triage]] 惯例）；仿真结论写 [[re-analyze/analysis-contract]]

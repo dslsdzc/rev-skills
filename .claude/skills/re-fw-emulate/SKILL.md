@@ -18,7 +18,7 @@ capabilities: [emulation]
 
 ## 工具准备
 
-所有工具先验证再使用。仿真 = 动态执行，默认沙箱 + 网络隔离（[[platform-tips]] 最高原则）；用户态仿真优先（最轻可行方案）。
+所有工具先验证再使用。仿真 = 动态执行，默认沙箱 + 网络隔离（[[re-analyze/platform-tips]] 最高原则）；用户态仿真优先（最轻可行方案）。
 
 ### qemu-user —— 用户态仿真（最轻）
 
@@ -43,7 +43,7 @@ capabilities: [emulation]
 ### gdb-multiarch + gdbserver —— 交叉调试
 
 - Linux: `apt install gdb-multiarch` / `dnf install gdb-multiarch` / `pacman -S gdb-multiarch`；gdbserver: `apt install gdbserver`（或随 gdb 包提供）
-- macOS: `brew install gdb`（需 Developer Tools 授权，见 [[platform-tips]] macOS 分支）或 WSL 内 Linux 版
+- macOS: `brew install gdb`（需 Developer Tools 授权，见 [[re-analyze/platform-tips]] macOS 分支）或 WSL 内 Linux 版
 - Windows/WSL: WSL 内 Linux 版
 - 验证: `gdb-multiarch --version`
 
@@ -51,7 +51,7 @@ capabilities: [emulation]
 
 - 安装: `git clone https://github.com/firmadyne/firmadyne`，依赖 qemu-system-* 与预编译内核（scripts/ 下下载），首次搭建较重
 - 验证: `ls sources/` 有 getArch.py 等脚本；`which qemu-system-mips`
-- 多数单程序分析不需要它——用户态优先（[[platform-tips]] 先给最轻可行方案）
+- 多数单程序分析不需要它——用户态优先（[[re-analyze/platform-tips]] 先给最轻可行方案）
 
 ## 操作步骤
 
@@ -102,13 +102,13 @@ capabilities: [emulation]
 5. **网络隔离下仿真**：
    - 用户态：默认无网络；需要时用全系统方案
    - 全系统：先 `-net none`，确认行为后再加 `-netdev user,id=n0`（用户态 NAT，仅模拟出站，隔离宿主机）
-   - 分析回连/协议前先隔离（[[platform-tips]] 最高原则），流量抓包与协议重建转 [[re-protocol]]；firmadyne 默认带网卡也需按此原则先行隔离
+   - 分析回连/协议前先隔离（[[re-analyze/platform-tips]] 最高原则），流量抓包与协议重建转 [[re-protocol]]；firmadyne 默认带网卡也需按此原则先行隔离
 
 ## 跨域联合
 
 - [[re-firmware]]：工作流第 4 步固定调用本技能
 - 架构识别与指令级深挖：ARM（向量表/Thumb/MMIO 外设交叉）→ [[re-arm]]；RISC-V（RV32/RV64/ecall）→ [[re-riscv]]（选对 qemu-<arch> 前先对照）
-- 仿真内动态行为观察 → [[re-tracing]] + [[re-gdb]]（默认沙箱内，[[platform-tips]] 最高原则）
+- 仿真内动态行为观察 → [[re-tracing]] + [[re-gdb]]（默认沙箱内，[[re-analyze/platform-tips]] 最高原则）
 - 固件运行产生通信 → [[re-protocol]]；仿真内 ELF 深挖 → [[re-binary-core]]
 - 仿真不成的程序回退静态 → [[re-fw-rootfs]]
 
@@ -118,5 +118,5 @@ capabilities: [emulation]
 - **架构选错直接 segfault**：现象——qemu-arm 跑 MIPS 程序秒崩；原因——没先 `file`/`readelf` 确认架构与字节序（大端 mips ≠ mipsel）；对策——步骤 1 先确认，选对 qemu-<arch>
 - **无网络设备 → 初始化卡死**：现象——程序在网卡初始化处挂起不退出；原因——全系统仿真没配网卡，ioctl 无返回；对策——启动加 `-device e1000` 等虚拟网卡，或先 `-net none` 观察是否跳过（步骤 5）
 - **时间戳/时钟函数陷阱**：现象——程序读时间怪异（1970/倒退），行为与真实设备不同；原因——QEMU 虚拟时钟与墙钟不同步；对策——`-rtc base=utc` 固定，或 stub 掉 clock_gettime 相关调用
-- **网络未隔离就仿真**：现象——固件真实回连外网（C2/升级服务器）；原因——跳过网络隔离；对策——全系统仿真默认 `-net none` / 用户态 NAT（步骤 5），回连分析前按 [[platform-tips]] 隔离
+- **网络未隔离就仿真**：现象——固件真实回连外网（C2/升级服务器）；原因——跳过网络隔离；对策——全系统仿真默认 `-net none` / 用户态 NAT（步骤 5），回连分析前按 [[re-analyze/platform-tips]] 隔离
 - 命令族速查与操作序列见 [[commands]]；工具特有坑与版本差异见 [[gotchas]]

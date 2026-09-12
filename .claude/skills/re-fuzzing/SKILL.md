@@ -18,7 +18,7 @@ capabilities: [fuzzing]
 
 ## 工具准备
 
-所有工具先验证再使用。fuzz 是动态执行，一律在沙箱内跑（[[platform-tips]] 最高原则，见 [[re-sandbox]]）。
+所有工具先验证再使用。fuzz 是动态执行，一律在沙箱内跑（[[re-analyze/platform-tips]] 最高原则，见 [[re-sandbox]]）。
 
 ### AFL++ —— 覆盖率引导 fuzz 主力
 
@@ -143,7 +143,7 @@ capabilities: [fuzzing]
 - [[re-ctf]]：CTF pwn / 赛题二进制的 fuzzing 引用本技能
 - [[re-binary-core]]：写 harness 前用反编译确认解析入口与 API 语义（[[re-ghidra]] / [[re-ida]]）
 - [[re-netcap]]：网络目标 fuzz 的种子语料来源（真实流量抓包）
-- [[re-sandbox]] / [[platform-tips]]：fuzz 是动态执行，默认沙箱内跑
+- [[re-sandbox]] / [[re-analyze/platform-tips]]：fuzz 是动态执行，默认沙箱内跑
 
 ## 常见坑与陷阱
 

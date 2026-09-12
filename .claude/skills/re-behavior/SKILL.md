@@ -12,12 +12,12 @@ capabilities: [malware-behavior]
 
 - 用：判定样本"在干什么"——运行后的进程/文件/注册表/网络行为；识别持久化与注入；ATT&CK 战术映射
 - 用：动态分析的证据收集环节（与 [[re-tracing]] 互补）
-- 不用：样本还没在沙箱里跑过（先 [[re-sandbox]]——动态执行是强制前置，见 [[platform-tips]] 最高原则）
+- 不用：样本还没在沙箱里跑过（先 [[re-sandbox]]——动态执行是强制前置，见 [[re-analyze/platform-tips]] 最高原则）
 - 不用：只需静态结论（走 [[re-triage]] / [[re-binary-core]] 域）；只需内存内容（走 [[re-memdump]]）
 
 ## 工具准备
 
-本技能分析的是沙箱运行产物——运行环境先由 [[re-sandbox]] 建立（默认沙箱最高原则，见 [[platform-tips]]）。
+本技能分析的是沙箱运行产物——运行环境先由 [[re-sandbox]] 建立（默认沙箱最高原则，见 [[re-analyze/platform-tips]]）。
 
 ### 沙箱产物（运行环境前置）
 

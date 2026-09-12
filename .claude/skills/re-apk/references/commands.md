@@ -97,6 +97,6 @@ ls -la out/classes*.dex | 体积异常小 → 真 dex 运行时解密
 
 ## 使用注意
 
-- 纯静态可免沙箱（[[platform-tips]] 最高原则）；涉及运行样本（重打包安装、脱壳验证）按 [[platform-tips]] 沙箱分支执行
-- 每步产物（解包目录 hash、补丁 APK sha256、签名证书）对照 [[re-triage]] 入档；结论写 [[analysis-contract]]
+- 纯静态可免沙箱（[[re-analyze/platform-tips]] 最高原则）；涉及运行样本（重打包安装、脱壳验证）按 [[re-analyze/platform-tips]] 沙箱分支执行
+- 每步产物（解包目录 hash、补丁 APK sha256、签名证书）对照 [[re-triage]] 入档；结论写 [[re-analyze/analysis-contract]]
 - 重打包目标含签名自校验时先评估校验链（见 [[gotchas]] 签名坑组），带壳目标优先免重打包方案

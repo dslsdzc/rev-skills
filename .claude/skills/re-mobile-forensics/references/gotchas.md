@@ -25,6 +25,6 @@
 ## 使用注意
 
 - 仅授权设备；授权范围先确认；越权路径（绕过锁屏等）不做
-- 产物按取证流程存档（路径 + 设备状态 + sha256，见 [[re-triage]]）；结论按 [[analysis-contract]] 交付
+- 产物按取证流程存档（路径 + 设备状态 + sha256，见 [[re-triage]]）；结论按 [[re-analyze/analysis-contract]] 交付
 - 动态/运行态数据（进程内存、实时消息）本技能不覆盖，转 [[re-frida]] / [[re-mem-forensics]] 评估
 - 云侧数据（iCloud/Google 云备份）需单独授权与流程，本技能只处理设备本地数据

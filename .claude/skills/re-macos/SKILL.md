@@ -42,7 +42,7 @@ capabilities: [macho-parser]
 
 ## 操作步骤
 
-按顺序执行，每步产物存档（路径 + sha256，见 [[re-triage]]）。签名/entitlements 信息按 [[analysis-contract]] 契约记录。
+按顺序执行，每步产物存档（路径 + sha256，见 [[re-triage]]）。签名/entitlements 信息按 [[re-analyze/analysis-contract]] 契约记录。
 
 1. **包结构与签名检查**：
    ```sh
@@ -94,7 +94,7 @@ capabilities: [macho-parser]
    - 签名校验：`SecStaticCodeCheckValidity` / `SecRequirementCheck` 类调用点——改签名或注入触发校验失败的典型点，逐点定位（坑 1）
    - 对抗面记录：代码签名校验、调试器检测、反注入（DYLD_INSERT_LIBRARIES 检查）三类各自调用点与触发条件
 
-7. **证据核对（收尾）**：签名者/Team ID/entitlements 原文、TCC 依赖点、钥匙串条目用途、dyld 依赖清单——按 [[analysis-contract]] 入档；动态结论与静态清单对照（能力边界以动态行为为准，见 [[decision-tree]]）
+7. **证据核对（收尾）**：签名者/Team ID/entitlements 原文、TCC 依赖点、钥匙串条目用途、dyld 依赖清单——按 [[re-analyze/analysis-contract]] 入档；动态结论与静态清单对照（能力边界以动态行为为准，见 [[decision-tree]]）
 
 ## 跨域联合
 
@@ -102,8 +102,8 @@ capabilities: [macho-parser]
 - [[re-ios]]：iOS 侧互补（越狱生态与 entitlements 差异）
 - [[re-lldb]]：动态调试
 - [[re-frida]]：动态插桩（macOS 桌面支持）
-- [[re-sandbox]] / [[platform-tips]]：动态执行隔离（签名/行为观察在沙箱内进行）
-- [[analysis-contract]]：签名/entitlements 信息按数据契约传递
+- [[re-sandbox]] / [[re-analyze/platform-tips]]：动态执行隔离（签名/行为观察在沙箱内进行）
+- [[re-analyze/analysis-contract]]：签名/entitlements 信息按数据契约传递
 - [[re-patching]]：PT_DENY_ATTACH 与签名校验点的持久化处理
 - Swift 层分析（mangling/witness table）→ [[re-swift]]
 
@@ -116,4 +116,4 @@ capabilities: [macho-parser]
 - **hardened runtime 限制注入**：现象——DYLD_INSERT_LIBRARIES 无效；原因——runtime 标志未含 allow-dyld 环境变量；对策——静态分析路径（[[re-ghidra]]），不硬注入
 - **quarantine 干扰运行**：现象——目标下载来源时崩溃/弹窗；原因——`com.apple.quarantine` 触发 Gatekeeper 检查；对策——`xattr -dr com.apple.quarantine` 去除后重测（仅测试环境）
 - **嵌套签名漏处理**：现象——patch 后运行时校验失败；原因——framework/helper/扩展各自独立签名，只重签主程序不够；对策——`codesign --deep` 或逐层重签，核对每层 CDHash
-- 决策分支（动态可行性判定/数据目标分级）见 [[decision-tree]]；签名/注入/TCC 边界与反例见 [[gotchas]]；全部在沙箱内执行（[[platform-tips]] 最高原则）
+- 决策分支（动态可行性判定/数据目标分级）见 [[decision-tree]]；签名/注入/TCC 边界与反例见 [[gotchas]]；全部在沙箱内执行（[[re-analyze/platform-tips]] 最高原则）

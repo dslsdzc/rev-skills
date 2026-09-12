@@ -15,7 +15,7 @@ capabilities: [blockchain-analysis]
 - 用：恶意合约/代币诈骗合约取证（链上数据获取、只读拉取）
 - 不用：Solidity 源码可得且未混淆——直接读源码更准（审计思路同 [[re-vuln]]），本技能面向无源码/仅字节码
 - 不用：本节未覆盖的非 EVM 链（如 WASM 系链，指令集不同）；WASM 走 [[re-wasm]]
-- 注意：链上交互以只读为主（`cast call`/`cast code`/`cast storage`）；任何写链/部署/动态验证默认本地 anvil 或隔离网络（[[platform-tips]] 沙箱最高原则）；合约分析基本静态，按「静态优先」执行
+- 注意：链上交互以只读为主（`cast call`/`cast code`/`cast storage`）；任何写链/部署/动态验证默认本地 anvil 或隔离网络（[[re-analyze/platform-tips]] 沙箱最高原则）；合约分析基本静态，按「静态优先」执行
 
 ## 工具准备
 
@@ -137,7 +137,7 @@ capabilities: [blockchain-analysis]
 - [[re-vuln]]：合约漏洞与漏洞挖掘网关衔接——echidna 的覆盖引导/语料思路同 [[re-fuzzing]]，断言崩溃分析思路同 [[re-crash-triage]]；漏洞报告结构一致（入口/条件/影响/修复）
 - 链上数据获取：cast/web3.py 经 RPC 只读（公开 RPC、自有节点、Etherscan API）；写链与动态验证默认本地 anvil（隔离网络）
 - [[re-wasm]]：非 EVM 的 Wasm 合约/链上 Wasm 模块（同域不同指令集）
-- 引用 [[platform-tips]] 静态优先（大型样本）与沙箱隔离分支（写链/动态验证隔离）
+- 引用 [[re-analyze/platform-tips]] 静态优先（大型样本）与沙箱隔离分支（写链/动态验证隔离）
 
 ## 常见坑与陷阱
 

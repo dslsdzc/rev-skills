@@ -16,7 +16,7 @@ capabilities: [decompilation, debugging]
 
 ## 工具准备
 
-参考 [[platform-tips]]——Ghidra 为静态分析主力（免沙箱）；低内存环境按平台经验换 [[re-radare2]]，headless 批处理适合远程环境。
+参考 [[re-analyze/platform-tips]]——Ghidra 为静态分析主力（免沙箱）；低内存环境按平台经验换 [[re-radare2]]，headless 批处理适合远程环境。
 
 ### Ghidra（官方安装，Java 21 要求）
 
@@ -96,11 +96,11 @@ capabilities: [decompilation, debugging]
 
 ## 函数分析上下文清单
 
-分析每个函数前先收集（见 [[analysis-contract]] 上下文清单）：xrefs（谁引用它/它引用谁）、目标函数引用的字符串、caller/callee 签名、已命名符号表、已恢复 struct。一次性给足再分析，避免反复翻 xrefs；主动申请额外证据每函数不超过 8 次工具调用。
+分析每个函数前先收集（见 [[re-analyze/analysis-contract]] 上下文清单）：xrefs（谁引用它/它引用谁）、目标函数引用的字符串、caller/callee 签名、已命名符号表、已恢复 struct。一次性给足再分析，避免反复翻 xrefs；主动申请额外证据每函数不超过 8 次工具调用。
 
 ## 单函数深分析顺序
 
-按 [[analysis-contract]] 的「单函数深分析顺序」五步推进（types → constants → vtables → identity → decompilation，不可跳步、禁止先反编译再倒推）。Ghidra 下的对应操作：类型用 Type Manager / Apply Function Signature，虚表用 vtable 分析，符号/常量证据可用 readelf / strings / objdump 导出辅助。
+按 [[re-analyze/analysis-contract]] 的「单函数深分析顺序」五步推进（types → constants → vtables → identity → decompilation，不可跳步、禁止先反编译再倒推）。Ghidra 下的对应操作：类型用 Type Manager / Apply Function Signature，虚表用 vtable 分析，符号/常量证据可用 readelf / strings / objdump 导出辅助。
 
 ## 跨域联合
 - [[re-address-space]]：Ghidra 基址与运行时地址换算（load bias）
@@ -118,7 +118,7 @@ capabilities: [decompilation, debugging]
 - **Java 版本不匹配启动失败**：报 `UnsupportedClassVersionError` → 确认 `java -version` 为 21+，`JAVA_HOME` 指向正确 JDK
 - **内存 <4GB 卡顿**：分析大二进制内存耗尽 → 换 [[re-radare2]] 或减小分析范围（`-analysisTimeoutPerFile`）
 - headless 默认分析选项与 GUI 有差异（缺少部分可选项）→ 用 `-postScript` 显式执行分析脚本保证一致
-- **大文件自动分析卡死**：现象——导入大二进制后自动分析长时间不结束/界面卡死；原因——大文件卡死诱因=间接调用爆炸/大型 C++ RTTI/混淆控制流/大量数据段；对策——先降低自动分析范围（限制/关闭间接调用与 RTTI 分析选项），优先定位入口/字符串/交叉引用再逐步展开，见 [[platform-tips]] 静态优先原则
+- **大文件自动分析卡死**：现象——导入大二进制后自动分析长时间不结束/界面卡死；原因——大文件卡死诱因=间接调用爆炸/大型 C++ RTTI/混淆控制流/大量数据段；对策——先降低自动分析范围（限制/关闭间接调用与 RTTI 分析选项），优先定位入口/字符串/交叉引用再逐步展开，见 [[re-analyze/platform-tips]] 静态优先原则
 - **函数边界异常 → 检查反编译假象**：现象——反编译视图里函数被错误拆分/合并、多出假参数或栈变量错乱、函数体看着像垃圾数据，照此分析得出荒谬逻辑；原因——手写汇编、混淆代码、尾调用（tail call 使相邻函数被错误合并）、无 frame pointer（不用 rbp/ebp 使帧推断失真）会让 decompiler 的边界与帧推断出错；对策——先核对 Listing 汇编与真实字节，按 `C`/Create Function 手工修正边界，尾调用与无 frame pointer 的函数以汇编语义为准、不完全相信反编译输出（见 [[re-binary-core]] 分析方法论 R4）
 - **内置脚本解释器是 Jython 2.7，不是 Python 3**：现象——脚本一跑就报 `SyntaxError`（f-string/海象运算符）或 `ImportError`（找不到 pip 安装的三方库）；原因——Ghidra 内置 Jython 2.7，是 Python 2 语法与标准库，不支持 Python 3 语法，也无法 import pip 装的包；对策——脚本按 Python 2 兼容语法写（不用 f-string、用 `xrange`），需要现代 Python 能力（numpy 等）时改用 ghidra-bridge 让外部 Python 3 解释器驱动分析（见工具准备）
 - **脚本/扩展选型失当 → 自动化维护成本失控**：现象——一次性批处理逻辑越写越复杂、每次手动触发很烦，或需要常驻自动化却反复手动点脚本；原因——Script（脚本：轻量单文件、手动触发、适合一次性/简单重复任务）与 Extension（扩展：可注册菜单/面板/事件监听、随工程加载自动执行、ZIP 打包团队分发）的边界没分清；对策——简单重复任务用脚本即用即走；需要 UI 集成、外部服务接入、加载时自动执行或团队标准化分发时才做扩展

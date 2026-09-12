@@ -16,11 +16,11 @@ capabilities: [jailbreak-analysis]
 - 用：自己开发 tweak（Theos + Logos）辅助逆向（hook 检测函数验证假设）
 - 不用：无越狱设备时的 iOS 动态分析（静态先行，见 [[re-ios]] 坑 3）
 - 不用：只要 App 静态结构 / 脱壳（走 [[re-ios]]）
-- 注意：越狱与动态执行按 [[platform-tips]] 最高原则在受控设备上进行（专用测试设备，不用于日常/生产设备）
+- 注意：越狱与动态执行按 [[re-analyze/platform-tips]] 最高原则在受控设备上进行（专用测试设备，不用于日常/生产设备）
 
 ## 工具准备
 
-越狱/动态分析属动态执行，受控设备 + 网络隔离（[[platform-tips]] 最高原则）。静态（tweak 二进制分析）免沙箱。所有工具先验证再使用。
+越狱/动态分析属动态执行，受控设备 + 网络隔离（[[re-analyze/platform-tips]] 最高原则）。静态（tweak 二进制分析）免沙箱。所有工具先验证再使用。
 
 ### 越狱设备（palera1n 等）
 
@@ -135,13 +135,13 @@ capabilities: [jailbreak-analysis]
 - [[re-mobile]]：网关——越狱设备动态分析是 re-mobile 工作流第 3-4 步的环境前提
 - [[re-binary-core]]：tweak 动态库 / App 二进制反编译底座（[[re-ghidra]] / [[re-ida]]）
 - [[re-analyze]]：被 triage「移动 App 分析」路径调用（re-mobile → iOS 动态 → 本技能）
-- [[platform-tips]]：越狱/动态执行受控设备最高原则；[参考 macOS/iOS 分支]
+- [[re-analyze/platform-tips]]：越狱/动态执行受控设备最高原则；[参考 macOS/iOS 分支]
 
 ## 常见坑与陷阱
 
 - **越狱后系统完整性仍受限**：现象——越狱成功但部分路径写不进去、tweak 注入不生效、App 还是"沙盒"行为；原因——iOS 系统完整性保护（AMFI / SSV 签名卷）仍在，rootless 越狱（palera1n 2.x 默认）刻意保留系统卷只读，全部越狱改动在 `/var/jb` 前缀下；对策——明确 rootless 与 rootful 的区别：rootless 下依赖、tweak、frida 都在 `/var/jb`，写系统分区内容不生效；需要写系统分区的老工具要确认 rootless 兼容或改用 rootful 模式（旧 iOS 才支持）
 - **设备版本匹配（工具链版本）**：现象——palera1n 报 unsupported、Theos 编译的 tweak 装了没反应、frida-server 启动失败；原因——palera1n 只支持 A8–A11 的特定 iOS 版本；Theos SDK 版本与设备 iOS 不符；frida-server 版本与主机 frida 不一致；对策——越狱前查官方支持矩阵（docs.palera.in），按设备/iOS 选工具；SDK 下载对应 iOS 大版本（theos/sdks）；frida-server 与主机 `frida --version` 完全一致（[[re-frida]] 坑 1）；越狱过程先备份，DFU 失败可重来
-- **检测对抗（jb 检测库）**：现象——App 一运行就闪退 / 提示"设备不受支持"，frida 都来不及 attach；原因——App 集成越狱检测（文件路径 / URL scheme / fork 测试 / 越狱检测 SDK），检测在启动早期执行；对策——spawn 模式抓早期（`frida -U -f <bundleID>`），按步骤 2 的 hook 清单逐项绕过；检测库的分析用静态先定位（strings + xref），动态只做验证；绕过方案先记录再实施（[[platform-tips]] 受控设备）
+- **检测对抗（jb 检测库）**：现象——App 一运行就闪退 / 提示"设备不受支持"，frida 都来不及 attach；原因——App 集成越狱检测（文件路径 / URL scheme / fork 测试 / 越狱检测 SDK），检测在启动早期执行；对策——spawn 模式抓早期（`frida -U -f <bundleID>`），按步骤 2 的 hook 清单逐项绕过；检测库的分析用静态先定位（strings + xref），动态只做验证；绕过方案先记录再实施（[[re-analyze/platform-tips]] 受控设备）
 - **调试器检测**：现象——lldb attach 成功后 App 立即退出 / 停止响应 / 白屏；原因——App 检测 ptrace（`ptrace(PT_DENY_ATTACH)`）、`sysctl` 的 P_TRACED 标志、getppid 等反调试手段；对策——断点先打在 `ptrace`/`sysctl` 上改返回值（步骤 4 示例），或用 Theos 写 anti-anti-debug tweak 全局绕过；越狱设备上部分检测还针对 debugserver 进程名，必要时改名/隐藏
 - **双重校验**：现象——绕过越狱检测后仍闪退；原因——越狱检测与 SSL Pinning 叠加；对策——同时禁用两者，不要只处理一个
 - **hook 系统函数波及自身**：现象——hook stat 后 App 卡住；原因——系统级 hook 影响正常逻辑；对策——按 caller 过滤，只 hook 应用自身代码触发的调用

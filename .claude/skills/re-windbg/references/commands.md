@@ -119,5 +119,5 @@ dx @$cursession.TTD.Calls("模块!可疑函数")   # 看调用次数/参数分�
 
 ## 使用注意
 
-- 全部在沙箱内执行（[[platform-tips]] 最高原则）；attach/内核调试需管理员权限
-- 结论写 [[analysis-contract]]；dump 产物 sha256 与 [[re-triage]] 初勘值对照；驱动场景配合 [[re-kernel]]
+- 全部在沙箱内执行（[[re-analyze/platform-tips]] 最高原则）；attach/内核调试需管理员权限
+- 结论写 [[re-analyze/analysis-contract]]；dump 产物 sha256 与 [[re-triage]] 初勘值对照；驱动场景配合 [[re-kernel]]

@@ -19,7 +19,7 @@ capabilities: [malware-behavior]
 
 ## 工具准备
 
-无文件分析 = 动态执行 + 内存取证 + 脚本解码三线并行，全程在沙箱内（[[re-sandbox]] 强制前置，[[platform-tips]] 最高原则）。所有工具先验证再使用。
+无文件分析 = 动态执行 + 内存取证 + 脚本解码三线并行，全程在沙箱内（[[re-sandbox]] 强制前置，[[re-analyze/platform-tips]] 最高原则）。所有工具先验证再使用。
 
 ### 动态分析环境（强制前置）
 
@@ -29,7 +29,7 @@ capabilities: [malware-behavior]
 
 ### 内存转储与提取（[[re-memdump]] 联动）
 
-- gcore（Linux）/ procdump（Windows）: 默认转储优先，见 [[platform-tips]]「直读 vs 转储」决策表
+- gcore（Linux）/ procdump（Windows）: 默认转储优先，见 [[re-analyze/platform-tips]]「直读 vs 转储」决策表
 - 验证: `gcore --help`（安装见 [[re-memdump]] 工具准备）；Windows 侧 Sysinternals procdump（`choco install sysinternals` 套件内）
 
 ### PowerShell 分析（[[re-script-deob]] 联动）
@@ -107,7 +107,7 @@ capabilities: [malware-behavior]
 - [[re-shellcode]]：内存中提取的纯代码载荷（非脚本形态）转 shellcode 专项分析
 - [[re-netcap]] / [[re-protocol]]：下载执行链的 C2 流量捕获与协议还原
 - [[re-ioc]]：无文件载荷的 IOC 收集（内存特征/命令行模式/注册表键）
-- 引用 [[platform-tips]] 最高原则（默认沙箱）与「直读 vs 转储」决策表
+- 引用 [[re-analyze/platform-tips]] 最高原则（默认沙箱）与「直读 vs 转储」决策表
 
 ## 常见坑与陷阱
 

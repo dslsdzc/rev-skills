@@ -15,7 +15,7 @@ capabilities: [malware-behavior, crypto-identification]
 - 用：勒索样本的加密算法、密钥管理、C2 交互还原
 - 不用：样本还没确认是勒索（先 [[re-triage]] 初勘 + [[re-behavior]] 行为确认）
 - 不用：只分析加密算法本身（直接走 [[re-crypto-id]] / [[re-crypto-keys]]）
-- 注意：运行样本 = 会真实加密文件，必须在沙箱快照内（[[re-sandbox]] 强制前置，[[platform-tips]] 最高原则）；静态分析可免沙箱
+- 注意：运行样本 = 会真实加密文件，必须在沙箱快照内（[[re-sandbox]] 强制前置，[[re-analyze/platform-tips]] 最高原则）；静态分析可免沙箱
 
 ## 工具准备
 
@@ -48,7 +48,7 @@ capabilities: [malware-behavior, crypto-identification]
 
 ## 操作步骤
 
-按顺序执行，每步记录证据（路径 + sha256，见 [[re-triage]]）。静态优先（[[platform-tips]] 静态优先原则）：先在宿主机做 1-2，需要运行时才进沙箱。
+按顺序执行，每步记录证据（路径 + sha256，见 [[re-triage]]）。静态优先（[[re-analyze/platform-tips]] 静态优先原则）：先在宿主机做 1-2，需要运行时才进沙箱。
 
 1. **初始判断（扩展名变化 / 加密头特征 / 勒索信）**：
    ```sh
@@ -88,12 +88,12 @@ capabilities: [malware-behavior, crypto-identification]
 ## 跨域联合
 
 - [[re-crypto-id]] / [[re-crypto-keys]] / [[re-crypto-decrypt]]：步骤 2/3/5 分别引用，构成加密识别→密钥→解密主链
-- [[re-sandbox]] / [[re-behavior]]：动态分析强制前置（[[platform-tips]] 最高原则）与加密/外传行为观察
+- [[re-sandbox]] / [[re-behavior]]：动态分析强制前置（[[re-analyze/platform-tips]] 最高原则）与加密/外传行为观察
 - [[re-protocol]]：勒索信背后的 C2 交互（netcap / crypto-* / proto-rev），步骤 4
 - [[re-ti]]：样本哈希/家族识别（VT、ID Ransomware）
 - [[re-ioc]]：勒索信邮箱/URL/钱包地址、密钥与密文指纹出 IOC
 - [[re-malware]]：本技能由 re-malware 网关引用（勒索样本分支）；行为分析/报告走网关全流程
-- [[platform-tips]] 相关分支：默认沙箱（加密行为破坏性强）、静态优先、平台分支（Linux 用 snapper、Windows 用 vssadmin）
+- [[re-analyze/platform-tips]] 相关分支：默认沙箱（加密行为破坏性强）、静态优先、平台分支（Linux 用 snapper、Windows 用 vssadmin）
 
 ## 常见坑与陷阱
 

@@ -23,7 +23,7 @@ capabilities: [console-analysis]
 
 ## 工具准备
 
-所有工具先验证再使用。静态分析可免沙箱；涉及动态执行（模拟器运行 ROM、运行解密样本）默认沙箱 + 网络隔离（[[platform-tips]] 最高原则）。
+所有工具先验证再使用。静态分析可免沙箱；涉及动态执行（模拟器运行 ROM、运行解密样本）默认沙箱 + 网络隔离（[[re-analyze/platform-tips]] 最高原则）。
 
 ### 反编译器（Ghidra / IDA 任选其一）
 
@@ -144,7 +144,7 @@ capabilities: [console-analysis]
 - [[re-arm]]：GBA ARM7TDMI 的 Thumb/ARM 处理
 - [[re-fw-extract]] / [[re-fw-rootfs]]：卡带/光盘镜像内嵌文件与文件系统提取（binwalk 前置）
 - [[re-patching]]：ROM/程序字节级修改落地（注意头校验和重算，见坑 4）
-- [[re-sandbox]]：模拟器/动态执行强制隔离（[[platform-tips]] 默认沙箱原则）
+- [[re-sandbox]]：模拟器/动态执行强制隔离（[[re-analyze/platform-tips]] 默认沙箱原则）
 - [[re-triage]]：容器识别前置初勘
 - [[re-format-pe]]：XEX2 内嵌 PE 部分解析
 

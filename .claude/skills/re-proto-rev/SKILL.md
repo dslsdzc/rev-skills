@@ -19,7 +19,7 @@ capabilities: [protocol-recovery]
 
 ## 工具准备
 
-所有工具先验证再使用。本技能只处理数据与解析脚本，不运行样本，可免沙箱（[[platform-tips]] 最高原则）；抓流量环节在 [[re-netcap]] 内进行。
+所有工具先验证再使用。本技能只处理数据与解析脚本，不运行样本，可免沙箱（[[re-analyze/platform-tips]] 最高原则）；抓流量环节在 [[re-netcap]] 内进行。
 
 ### python3 —— 解析脚本运行环境
 

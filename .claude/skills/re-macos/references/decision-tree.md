@@ -33,7 +33,7 @@ codesign -dv 结果
 │  └─ DYLD 注入不可行 → lldb attach 或静态分析（[[re-ghidra]]）
 ├─ PT_DENY_ATTACH（ptrace 拦截）→ 先 patch 调用点（[[re-patching]]）再 attach
 ├─ 沙箱开启 → 动态观察被限制在沙箱能力内（以 entitlements 为准）
-└─ 全无限制 → 标准 lldb / frida 流程（沙箱环境内，[[platform-tips]]）
+└─ 全无限制 → 标准 lldb / frida 流程（沙箱环境内，[[re-analyze/platform-tips]]）
 ```
 
 ### 4. 数据目标分支（第四级）
@@ -65,7 +65,7 @@ codesign -dv 结果
 - 签名信息本地可查（codesign -d -r- / -dv），公证状态需网络——离线时用本地信息替代并标注
 - TCC 数据只读分析、不导出内容（红线）；Full Disk Access 是读取前置，先确认授权
 - Secure Enclave 密钥记用途不找字节；钥匙串条目记录访问条件与访问点而非口令内容
-- 动态观察在沙箱内进行（[[re-sandbox]]，[[platform-tips]] 最高原则）
+- 动态观察在沙箱内进行（[[re-sandbox]]，[[re-analyze/platform-tips]] 最高原则）
 - 证据链记录：签名者/Team ID、entitlements 原文、TCC 依赖点、dyld 依赖清单、动态行为对照
 
 ## 使用注意

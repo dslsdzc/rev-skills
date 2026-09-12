@@ -13,7 +13,7 @@ capabilities: [unpack]
 - 不用：强壳 / 虚拟化壳（VMProtect/Themida，转 [[re-unpack-advanced]]）
 - 不用：目标已确认无壳（直接 [[re-binary-core]]）
 - 不用：需要观察带壳行为本身（行为分析有时刻意保留壳，与 [[re-behavior]] 配合时评估）
-- 注意：脱壳产物验证必须在沙箱（[[re-sandbox]]，[[platform-tips]] 最高原则）
+- 注意：脱壳产物验证必须在沙箱（[[re-sandbox]]，[[re-analyze/platform-tips]] 最高原则）
 
 ## 工具准备
 
@@ -27,10 +27,10 @@ capabilities: [unpack]
 
 ### 调试器（按 OS）
 
-- Linux / Wine 下调试 PE: [[re-gdb]] —— `apt install gdb` / `dnf install gdb` / `pacman -S gdb`，验证 `gdb --version`。**Wine 直读**：`wine sample.exe` 运行后 `gdb -p <pid>` attach 直接操作 Wine 进程（见 [[platform-tips]] Linux 分支）
+- Linux / Wine 下调试 PE: [[re-gdb]] —— `apt install gdb` / `dnf install gdb` / `pacman -S gdb`，验证 `gdb --version`。**Wine 直读**：`wine sample.exe` 运行后 `gdb -p <pid>` attach 直接操作 Wine 进程（见 [[re-analyze/platform-tips]] Linux 分支）
 - Windows: [[re-x64dbg]] —— 官方 release zip，验证：载入样本能单步
 - macOS: PE 脱壳场景走 Wine + [[re-gdb]] 或 Windows VM，不用本机调试器
-- WSL: 无法 attach Windows 进程，跨边界走 Windows 侧工具（[[platform-tips]] WSL 分支）
+- WSL: 无法 attach Windows 进程，跨边界走 Windows 侧工具（[[re-analyze/platform-tips]] WSL 分支）
 
 ### Scylla（Windows IAT 修复）
 
@@ -55,7 +55,7 @@ capabilities: [unpack]
    - 原理：压缩壳入口 `pushad` 保存寄存器 → 壳解密完毕后 `popad` → `jmp OEP`。**对 pushad 之后的 ESP 所指地址下硬件访问断点**，运行后在 `popad` 后的第一条指令附近找 OEP。
    - **本质（技巧，不是脱壳公式）**：入口 `pushad` 压栈是壳"保存现场"的必然行为，ESP 定律利用它定位"恢复现场"点——`popad` 恢复后即解密完成、控制流将跳真实代码。它只在"入口压栈保护现场、尾部恢复后跳转"这一实现下成立，并非对一切壳都有效：TLS 回调壳（回调先于 EP 执行，EP 处无压栈现场）、多线程壳（多线程各自压栈、断点命中的栈地址错位）、VMProtect/Themida 等虚拟化壳（入口直接进 VM dispatcher，无 pushad/popad 周期）都不适用。**先确认 EP 入口确实是 pushad/popad 周期再用**，否则直接走步骤 3 或转 [[re-unpack-advanced]]。
    - x64dbg（Windows）：载入 → 停在 EP → 单步见 `pushad` → 再单步执行 `pushad` → 记录 **pushad 执行后**的 ESP 值 → 右键 ESP 寄存器 → Hardware Breakpoint（on access）→ 运行 → 断在 `popad` 后第一条指令 → 下面几行 `jmp` 的目标即 OEP。记下 OEP 地址。
-   - gdb（Linux/Wine，见 [[platform-tips]] Wine 直读）：
+   - gdb（Linux/Wine，见 [[re-analyze/platform-tips]] Wine 直读）：
      ```
      (gdb) starti                    # 停在 EP
      (gdb) si                        # 单步执行 pushad（x86 pushad 压 8 个寄存器）
@@ -71,7 +71,7 @@ capabilities: [unpack]
    - x64dbg：`bp VirtualAlloc` → 每次返回后看分配区域是否被写入可执行内容（壳的解压目标节）→ 对该区域下内存访问断点（View > Memory Map > 目标节 > Set breakpoint on access）→ 运行到壳完成解密处。也可直接对壳第二节（UPX1/.aspack）下内存断点。
    - gdb（Wine）：`break *VirtualAlloc`，返回后查看分配区，再对分配地址下 watch。
 
-4. **转储 OEP**（时机：解密完成后，见 [[platform-tips]] 关键经验；默认转储优先）：
+4. **转储 OEP**（时机：解密完成后，见 [[re-analyze/platform-tips]] 关键经验；默认转储优先）：
    - Linux/Wine：运行到 OEP（解密完成）后默认转储 `gcore -o out <pid>`（完整流程见 [[re-memdump]]；转储前按 maps 过滤 vsyscall/vdso）。
    - Windows：x64dbg 运行到 OEP → `Plugins > Scylla > Attach to process` → 填 OEP 地址（步骤 2 记录值）→ `Dump`。先记镜像基址 + OEP 偏移。
    - **别在壳解密完成前 dump**——拿到的是壳的初始状态（见坑 1）。
@@ -92,10 +92,10 @@ capabilities: [unpack]
 
 ## 常见坑与陷阱
 
-- **转储过早 = 壳初始状态**：现象——dump 后 `file` 仍报 UPX、反编译只见压缩数据；原因——壳未运行到 OEP 解密完成就转储；对策——**解密完成后**再 dump（[[platform-tips]] 关键经验），默认转储优先
+- **转储过早 = 壳初始状态**：现象——dump 后 `file` 仍报 UPX、反编译只见压缩数据；原因——壳未运行到 OEP 解密完成就转储；对策——**解密完成后**再 dump（[[re-analyze/platform-tips]] 关键经验），默认转储优先
 - **IAT 不修 → 导入表乱**：现象——脱壳样本反编译里全是 `GetProcAddress` 动态调用、导入表解析失败；原因——导入表由壳在运行时重建，转储未修复；对策——步骤 5 Scylla/ImpREC 修复，修复后重新反编译验证
 - **自校验（CRC）→ 脱壳后需补丁**：现象——脱壳样本沙箱运行即退出 / 弹校验失败；原因——程序比对自身字节（原壳时是压缩数据，脱壳后对不上）；对策——定位校验代码（xref 自身映像基址 / CRC 计算函数）patch 跳过或 hook，验证在沙箱内做
-- **Wine 环境用错调试器**：现象——Windows 调试器在 Wine 下 attach 失败 / 断点不生效；原因——Wine 是 Linux 进程，需 Linux 调试路径；对策——按 [[platform-tips]] Wine 直读：`gdb -p` attach Wine 进程读内存、下断点、`gcore` 转储
+- **Wine 环境用错调试器**：现象——Windows 调试器在 Wine 下 attach 失败 / 断点不生效；原因——Wine 是 Linux 进程，需 Linux 调试路径；对策——按 [[re-analyze/platform-tips]] Wine 直读：`gdb -p` attach Wine 进程读内存、下断点、`gcore` 转储
 - **双层压缩壳 → ESP 定律要用两次**：现象——ESP 定律断下后进入的仍是解包层，dump 出来还是壳代码，`upx -d` 解一层后 `file` 仍报壳特征；原因——壳套壳（如 ASPack v2.12 第一层解完还有一层在解密 IAT）；对策——第一层落地后继续观察：出现又一次 pushad/popad 周期、或 `VirtualFree` 释放 IAT 解密堆时才是最后一步，跟到最终 `jmp` 并验证目标是真实代码序言（`push ebp; mov ebp,esp` + 密集正常 API 引用）再 dump，别在过渡 jmp 前早一跳
 - **按 FF 25 搜 IAT 不可靠**：现象——按教程二进制搜索 `FF 25`（间接 jmp）找 IAT 起址，找不到或找到错位置；原因——不是所有程序都经间接跳转调 API（直接 `CALL [addr]` 很常见）；对策——用调试器 `Find > All intermodular calls` 定位一个真实程序调用点，顺 `CALL/JMP [addr]` 跟到跳转表顶端计算 IAT 起址与块大小，再填 ImportREC/Scylla
 - **dump 后 PE 头字段未修 → 加载失败**：现象——IAT 修复完样本仍打不开 / "invalid Win32 application" / 加载即崩；原因——转储工具没修 `SizeOfImage`/`NumberOfSections`/`CheckSum`，或 Win7+ 上 LordPE/ImportREC 因 ASLR 失败；对策——Fix Dump 后仍异常就用 pefile 手工核对修正头三字段，必要时关闭随机基址后重新转储

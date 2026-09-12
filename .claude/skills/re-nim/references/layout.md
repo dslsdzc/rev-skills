@@ -83,4 +83,4 @@ struct NimStringDesc {        /* len/reserved + 内联字符 */
 ## 使用注意
 
 - 静态分析无需沙箱；Nim 产物跨平台（Linux ELF / Windows PE / macOS Mach-O），符号形态一致（C 后端）
-- 与 [[analysis-contract]]（符号表传递）、[[re-cpp-abi]]（C 混合侧）配合使用
+- 与 [[re-analyze/analysis-contract]]（符号表传递）、[[re-cpp-abi]]（C 混合侧）配合使用

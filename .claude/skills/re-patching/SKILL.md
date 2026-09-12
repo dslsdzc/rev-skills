@@ -15,7 +15,7 @@ capabilities: [binary-patching]
 - 不用：校验点都还没定位（先 [[re-license]]）
 - 不用：需要为正版用户生成合法序列号（算法可逆 → 走 [[re-keygen]] 更优雅，不修改目标）
 - 不用：只改内存不落盘（会话级 hook 走 [[re-frida]]；调试器内修改不存档不算补丁）
-- 注意：补丁版验证必须在沙箱（[[re-sandbox]]，[[platform-tips]] 最高原则）；修改前备份原文件（见坑 1）
+- 注意：补丁版验证必须在沙箱（[[re-sandbox]]，[[re-analyze/platform-tips]] 最高原则）；修改前备份原文件（见坑 1）
 
 ## 工具准备
 
@@ -24,12 +24,12 @@ capabilities: [binary-patching]
 - Linux: `apt install hexedit` / `dnf install hexedit` / `pacman -S hexedit`，验证 `hexedit --version`（交互式按 F2 保存）
 - Windows: HxD（官方免费下载，便携版免安装）；或 010 Editor（商业，模板解析强）
 - macOS: `brew install hexedit`
-- WSL: WSL 内 Linux 版；跨边界文件编辑用 Windows 侧 HxD（[[platform-tips]] WSL 分支）
+- WSL: WSL 内 Linux 版；跨边界文件编辑用 Windows 侧 HxD（[[re-analyze/platform-tips]] WSL 分支）
 
 ### 调试器（按 OS，定位 patch 点 / 确认分支方向）
 
-- Linux / Wine 下调试 PE: [[re-gdb]] —— `apt install gdb`，验证 `gdb --version`；**Wine 直读**：`wine sample.exe` 后 `gdb -p <pid>` attach（[[platform-tips]] Linux 分支）
-- Windows: [[re-x64dbg]] —— 官方 release zip，验证：载入样本能单步（attach 需管理员权限，[[platform-tips]] Windows 分支）
+- Linux / Wine 下调试 PE: [[re-gdb]] —— `apt install gdb`，验证 `gdb --version`；**Wine 直读**：`wine sample.exe` 后 `gdb -p <pid>` attach（[[re-analyze/platform-tips]] Linux 分支）
+- Windows: [[re-x64dbg]] —— 官方 release zip，验证：载入样本能单步（attach 需管理员权限，[[re-analyze/platform-tips]] Windows 分支）
 - macOS: [[re-lldb]]（`brew install lldb`）；Windows 目标走 Wine + gdb 或 VM
 - 作用：断点确认成功 / 失败分支的真实走向，避免改错分支（见坑 2）
 
@@ -97,7 +97,7 @@ capabilities: [binary-patching]
 - [[re-anti-analysis]]：带壳样本先脱壳（OEP 后再定位 patch 点）；自校验/防篡改常与壳叠加
 - [[re-binary-core]]：反编译工作台（[[re-ghidra]] / [[re-ida]] / [[re-radare2]] 的 Patch Instruction 亦可直接写）
 - 动态：[[re-gdb]] / [[re-x64dbg]] / [[re-lldb]]（确认分支方向）、[[re-frida]]（不落盘的会话级 hook 替代方案）
-- [[re-sandbox]]：补丁版复跑验证沙箱（[[platform-tips]] 最高原则）
+- [[re-sandbox]]：补丁版复跑验证沙箱（[[re-analyze/platform-tips]] 最高原则）
 - [[re-ioc]]：补丁字节特征 / 典型绕过模式可作检测特征
 
 ## 常见坑与陷阱

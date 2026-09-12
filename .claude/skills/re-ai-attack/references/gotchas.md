@@ -32,5 +32,5 @@
 ## 使用注意
 
 - 仅授权评估场景（范围/目标/数据确认先行）；不绕过付费/访问控制边界
-- 结论按 [[analysis-contract]] 交付，统计性陈述 + 置信度 + 局限
+- 结论按 [[re-analyze/analysis-contract]] 交付，统计性陈述 + 置信度 + 局限
 - 相关文件分析衔接 [[re-ai-model]]；经验沉淀转 [[re-feedback]]（脱敏）

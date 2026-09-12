@@ -137,5 +137,5 @@ c                             # 后续比较点同样 patch，或一次性静态
 
 ## 使用注意
 
-- 动态执行默认沙箱（[[platform-tips]] 最高原则）；attach 失败即转 [[re-memdump]] 转储
-- 修改/转储产物 sha256 存档（[[re-triage]]）；结论写入 [[analysis-contract]]
+- 动态执行默认沙箱（[[re-analyze/platform-tips]] 最高原则）；attach 失败即转 [[re-memdump]] 转储
+- 修改/转储产物 sha256 存档（[[re-triage]]）；结论写入 [[re-analyze/analysis-contract]]

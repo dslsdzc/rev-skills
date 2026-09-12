@@ -19,7 +19,7 @@ capabilities: [key-extraction]
 
 ## 工具准备
 
-所有工具先验证再使用。静态搜索可免沙箱；内存转储/动态环节按 [[re-memdump]] 默认转储优先 + [[platform-tips]] 最高原则（运行样本进沙箱）。
+所有工具先验证再使用。静态搜索可免沙箱；内存转储/动态环节按 [[re-memdump]] 默认转储优先 + [[re-analyze/platform-tips]] 最高原则（运行样本进沙箱）。
 
 ### strings —— 可打印串快速扫描（全平台）
 
@@ -35,7 +35,7 @@ capabilities: [key-extraction]
 
 ### 转储产物 —— 内存搜索原料（[[re-memdump]] 默认转储）
 
-- 按 [[re-memdump]] 步骤 1 用 `gcore -o out <pid>` 转储；脱壳样本等到 OEP 后再 dump（见 [[platform-tips]] 关键经验）
+- 按 [[re-memdump]] 步骤 1 用 `gcore -o out <pid>` 转储；脱壳样本等到 OEP 后再 dump（见 [[re-analyze/platform-tips]] 关键经验）
 - 验证: `file out` 确认为 ELF core，`eu-stack -e out` 能跑
 
 ### python3 —— 熵块/模式扫描脚本
@@ -89,7 +89,7 @@ capabilities: [key-extraction]
 4. **导入表线索（Crypt* 函数附近）**：
    - `objdump -p sample.exe | grep Crypt` / Ghidra Imports 窗口找 `CryptEncrypt`/`CryptDecrypt`/`BCrypt*`/`RSA*`/`EVP_*`（OpenSSL）
    - 找到后反编译该函数：密钥参数（handle/KEYEXCHANGE 结构）通常来自"前面某处设置的固定值"——从函数上溯数据流：常量赋值、全局变量初始化、`CryptSetKeyParam` 的 `pbKeyData` 参数
-   - 设断点观察参数更直接（[[re-gdb]] / [[re-x64dbg]]）: `b CryptSetKeyParam` 后看 `pbKeyData` 指向的内存——但注意 [[platform-tips]] 最高原则：运行进沙箱
+   - 设断点观察参数更直接（[[re-gdb]] / [[re-x64dbg]]）: `b CryptSetKeyParam` 后看 `pbKeyData` 指向的内存——但注意 [[re-analyze/platform-tips]] 最高原则：运行进沙箱
 
 5. **密钥派生函数（PBKDF）还原**：
    - 反编译里认出 `PBKDF2`/`scrypt`/`bcrypt`/`EVP_BytesToKey` 调用 → 密钥 = KDF(口令, 盐, 迭代次数)，逐参数提取：口令（硬编码串或用户输入）、盐（固定字节或上下文）、迭代次数（常量）
@@ -107,7 +107,7 @@ capabilities: [key-extraction]
 - [[re-protocol]]：本网关工作流第 3 步（密钥）——加密通信解密链路的中段（crypto-id → crypto-keys → crypto-decrypt）
 - [[re-malware]]：C2 配置提取（硬编码 C2 密钥/口令）——re-malware 第 4 步的密钥环节；恶意样本密钥常埋在配置里（[[re-behavior]] 行为确认 + 本技能提取）
 - [[re-firmware]]：固件内硬编码口令/密钥挖掘——re-firmware 第 3 步（rootfs 配置/默认证书）
-- [[re-memdump]]：默认转储是本技能内存搜索的原料（[[platform-tips]] 直读 vs 转储决策表）
+- [[re-memdump]]：默认转储是本技能内存搜索的原料（[[re-analyze/platform-tips]] 直读 vs 转储决策表）
 - [[re-crypto-decrypt]]：下游——提取的密钥交给解密脚本验证与使用
 - [[re-anti-analysis]]：壳内密钥先脱壳（OEP 后再 dump，见 [[re-memdump]] 转储时机）
 - [[re-ioc]]：提取出的硬编码密钥/口令可作 YARA 特征与 IOC
@@ -116,7 +116,7 @@ capabilities: [key-extraction]
 
 - **密钥分片存储/异或混淆**：现象——提取的单块"密钥"解不出明文，或字符串/内存里找不到完整密钥；原因——样本把密钥拆成多段（分片）或与常量异或后存储，运行时重组；对策——反编译找重组逻辑：密钥字节来自多个偏移/多次异或（见坑 3 的"先查硬编码"流程里，确认硬编码时要看引用处的运算）；还原出候选后在 [[re-crypto-decrypt]] 里逐个试
 - **真随机密钥 ≠ 可从静态提取**：现象——静态/内存搜索全无收获，用户仍要密钥；原因——密钥是启动时 `RAND_bytes` 生成或服务器下发，根本不在样本里（白盒攻击之外无解）；对策——诚实报告：本地无可提取密钥，改走密钥派生拦截（hook `RAND_bytes`/KDF 输入）、算法侧攻击（若解密结果可被已知明文验证）或回 [[re-malware]] 看密钥是否由 C2 下发
-- **先查是否硬编码再上动态**：现象——样本硬编码了密钥，却先跑沙箱+Frida 折腾半天；原因——没有按静态优先顺序执行；对策——步骤 1 strings/交叉引用是 30 秒检查，静态命中直接跳过动态；动态只在静态无果、且需要运行时材料（KDF 输入、重组逻辑）时上（见 [[platform-tips]] 静态优先思路与最高原则）
+- **先查是否硬编码再上动态**：现象——样本硬编码了密钥，却先跑沙箱+Frida 折腾半天；原因——没有按静态优先顺序执行；对策——步骤 1 strings/交叉引用是 30 秒检查，静态命中直接跳过动态；动态只在静态无果、且需要运行时材料（KDF 输入、重组逻辑）时上（见 [[re-analyze/platform-tips]] 静态优先思路与最高原则）
 - **转储时机过早拿不到运行时密钥**：现象——内存搜索找不到任何高熵块或找到的都对不上；原因——在壳解密/密钥初始化前 dump（拿到的是壳的初始状态，见 [[re-memdump]] 坑 2）；对策——确认进程运行到业务逻辑（OEP 后、执行过加密调用）再 gcore；必要时在加密函数断点触发后再 dump（[[re-gdb]] 配合）
 - **内存密钥候选模式漏 AES-192**：现象——高熵块只按 16/32 字节搜，24 字节密钥漏检，解密对不上；原因——AES-128/256 的 16/32 字节是常见假设，AES-192 密钥恰为 24 字节（轮数 12）；对策——高熵块搜索窗口覆盖 16/24/32 三档（配合 [[re-crypto-id]] 的轮数 10/12/14 判断定参数），候选命中后先在 [[re-crypto-decrypt]] 试解验证
 - **勒索类样本密钥即用即销，事后 dump 必然为空**：现象——确认样本执行过加密，但任何内存转储里都搜不到密钥材料；原因——勒索软件在加密完成后立即清零密钥（wipe），密钥只在加密执行阶段短暂存在于内存（NotPetya/BadRabbit/Phobos 实验可画出密钥存在时间线）；对策——在加密阶段（业务逻辑运行中）做多次快照 dump 对比构建时间线，或配合 [[re-gdb]] 在加密函数返回前断住抓参数，比单一事后 dump 可靠

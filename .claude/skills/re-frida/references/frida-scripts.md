@@ -1,6 +1,6 @@
 # Frida 脚本模板
 
-按场景选用模板，替换占位符（`<pkg>` 包名、`<cls>` 类名、`<method>` 方法名）。统一骨架：**先保存 original 引用再带 `this` 调用原方法**；输出双格式（可打印 ASCII + hex）；`try/catch` 包裹；全部在沙箱内执行。通用对抗方法论见 [[anti-dynamic-workflow]]。
+按场景选用模板，替换占位符（`<pkg>` 包名、`<cls>` 类名、`<method>` 方法名）。统一骨架：**先保存 original 引用再带 `this` 调用原方法**；输出双格式（可打印 ASCII + hex）；`try/catch` 包裹；全部在沙箱内执行。通用对抗方法论见 [[re-analyze/anti-dynamic-workflow]]。
 
 ## 通用骨架
 
@@ -208,7 +208,7 @@ Java.perform(function () {
 | native 命令 | libc `system` | 命令命中 → 改写假命令 |
 | 裸系统调用 | svc 指令特征码扫描（arm64: `01 00 00 D4`，SYS_OPENAT=56，无 open 系统调用） | 捕获绕过 libc 的文件访问（arm64 openat 路径参数在 x1，x0 是 dirfd） |
 
-绕过策略不预置全家桶：基线跑原样目标 → 崩溃特征反推保护点（对照表见 [[anti-dynamic-workflow]]）→ 定点 hook；迭代 3-5 层是常态。
+绕过策略不预置全家桶：基线跑原样目标 → 崩溃特征反推保护点（对照表见 [[re-analyze/anti-dynamic-workflow]]）→ 定点 hook；迭代 3-5 层是常态。
 
 ## 实现教训（内化）
 
@@ -220,5 +220,5 @@ Java.perform(function () {
 
 ## 使用注意
 
-- 全部在沙箱内执行（见 [[platform-tips]] 最高原则）；`--pause` 覆盖早期代码检查
-- 输出 JSON 供 [[analysis-contract]] 数据契约消费（证据存档）
+- 全部在沙箱内执行（见 [[re-analyze/platform-tips]] 最高原则）；`--pause` 覆盖早期代码检查
+- 输出 JSON 供 [[re-analyze/analysis-contract]] 数据契约消费（证据存档）

@@ -41,6 +41,6 @@
 
 ## 使用注意
 
-- 动态分析一律先过本技能（[[platform-tips]] 最高原则）；样本/产物 sha256 双端存证（[[re-triage]]）
-- 分析结论与决策记录（隔离级别、网络方案、恢复验证）写 [[analysis-contract]]
+- 动态分析一律先过本技能（[[re-analyze/platform-tips]] 最高原则）；样本/产物 sha256 双端存证（[[re-triage]]）
+- 分析结论与决策记录（隔离级别、网络方案、恢复验证）写 [[re-analyze/analysis-contract]]
 - 版本相关行为（firejail 选项、VM 工具、INetSim 服务表）以目标版本实际表现为准

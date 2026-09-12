@@ -12,11 +12,11 @@ capabilities: [deobfuscation]
 - 用：钓鱼附件宏、恶意下载器脚本（[[re-malware]] → [[re-managed]] 路径）
 - 不用：编译产物（native 走 [[re-binary-core]]、.NET 走 [[re-dotnet]]、Java 走 [[re-java]]）
 - 不用：脚本完全可读（直接读逻辑，无需本技能）
-- 注意：**动态执行默认沙箱（[[platform-tips]] 最高原则）**——静态解码不执行可免沙箱，任何"运行脚本取下一层"的步骤必须进 [[re-sandbox]]
+- 注意：**动态执行默认沙箱（[[re-analyze/platform-tips]] 最高原则）**——静态解码不执行可免沙箱，任何"运行脚本取下一层"的步骤必须进 [[re-sandbox]]
 
 ## 工具准备
 
-参考 [[platform-tips]]——本技能静态解码为主，免沙箱；执行链跟踪中需要运行时（跑脚本/开宏）的步骤按最高原则进沙箱。
+参考 [[re-analyze/platform-tips]]——本技能静态解码为主，免沙箱；执行链跟踪中需要运行时（跑脚本/开宏）的步骤按最高原则进沙箱。
 
 ### python3（解码主力）
 
@@ -136,7 +136,7 @@ JScrambler 类商业混淆器的手法与对抗：
 
 - [[re-managed]]：网关工作流步骤②（反编译）③（去混淆）固定调用本技能
 - [[re-malware]]：恶意脚本/钓鱼宏样本路径（docm/ps1/js 附件 → 沙箱行为 + 本技能还原载荷）
-- [[re-sandbox]]：一切动态执行（跑脚本、开宏）强制前置，见 [[platform-tips]] 默认沙箱原则
+- [[re-sandbox]]：一切动态执行（跑脚本、开宏）强制前置，见 [[re-analyze/platform-tips]] 默认沙箱原则
 - 配套：[[re-triage]]（初勘）、[[re-ioc]]（提取脚本中的 C2 域名/URL 作为 IOC）、[[re-protocol]]（脚本下载的回连流量）
 
 ## 常见坑与陷阱

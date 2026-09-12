@@ -102,7 +102,7 @@ capabilities: [lang-runtime-analysis]
 - [[re-format-macho]]：Mach-O 段/反射段定位工具链
 - [[re-cpp-abi]]：vtable/witness table 恢复思路同源
 - [[re-frida]]：运行时 hook Swift 函数（符号解码后的名称直接作 hook 点）
-- [[analysis-contract]]：符号表按数据契约传递
+- [[re-analyze/analysis-contract]]：符号表按数据契约传递
 
 ## 常见坑与陷阱
 

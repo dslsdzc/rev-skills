@@ -17,7 +17,7 @@ capabilities: [threat-intel]
 
 ## 工具准备
 
-本技能以静态处理为主（写规则/扫描文件），不运行样本；运行样本只在 [[re-sandbox]] 内（默认沙箱最高原则，见 [[platform-tips]]）。
+本技能以静态处理为主（写规则/扫描文件），不运行样本；运行样本只在 [[re-sandbox]] 内（默认沙箱最高原则，见 [[re-analyze/platform-tips]]）。
 
 ### yara —— 规则引擎
 

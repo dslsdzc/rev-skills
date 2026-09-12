@@ -16,7 +16,7 @@ capabilities: [pe-parser]
 
 ## 工具准备
 
-参考 [[platform-tips]] 平台分支——Windows 目标可静态分析免沙箱，动态执行一律沙箱。
+参考 [[re-analyze/platform-tips]] 平台分支——Windows 目标可静态分析免沙箱，动态执行一律沙箱。
 
 ### objdump（binutils）
 

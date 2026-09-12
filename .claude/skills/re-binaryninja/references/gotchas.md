@@ -28,6 +28,6 @@
 
 ## 使用注意
 
-- 全部在沙箱内执行（[[platform-tips]] 最高原则）；脚本触发动态执行默认沙箱内
+- 全部在沙箱内执行（[[re-analyze/platform-tips]] 最高原则）；脚本触发动态执行默认沙箱内
 - 换栈（Ghidra/IDA ↔ BN）无工程互导格式——标注靠脚本统一命名规范，或按函数手搬
 - 版本相关行为以 `Options > About` 与 `core_version()` 实际值为准

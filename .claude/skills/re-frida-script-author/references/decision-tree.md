@@ -39,7 +39,7 @@
 hook 无输出
 ├─ 脚本控制台有异常 → 修语法/API 版本问题（[[gotchas]] 版本组）
 ├─ 无报错但无输出
-│  ├─ 类未加载 → Java.choose / 类加载点 hook（[[anti-dynamic-workflow]]）
+│  ├─ 类未加载 → Java.choose / 类加载点 hook（[[re-analyze/anti-dynamic-workflow]]）
 │  ├─ overload 不匹配 → 枚举 overloads 重选
 │  ├─ 目标路径未触发 → 操作 app 触发后再观察
 │  └─ 多 hook 互相覆盖 → 合并进一个 implementation
@@ -55,7 +55,7 @@ hook 无输出
 | C 弱 | 静态推断 | 仅凭反编译推断调用存在，未动态确认 | 只支持「待验证」 |
 | 反证 | 良性解释 | 检测到调用但确认属正常功能路径 | 记录并存档 |
 
-- 脚本输出按 [[analysis-contract]] 契约存档：时间戳、进程、hook 点、参数/返回值、原始 hex
+- 脚本输出按 [[re-analyze/analysis-contract]] 契约存档：时间戳、进程、hook 点、参数/返回值、原始 hex
 - 绕过类结论（检测绕过成功/固定绕过成功）单独标注，与数据类结论分开陈述
 
 ## 实现教训（内化）
@@ -69,5 +69,5 @@ hook 无输出
 
 ## 使用注意
 
-- 动态执行在沙箱内（[[re-sandbox]] / [[platform-tips]] 最高原则）
-- 绕过类脚本只观察不持久化（红线）；输出按 [[analysis-contract]] 契约存档
+- 动态执行在沙箱内（[[re-sandbox]] / [[re-analyze/platform-tips]] 最高原则）
+- 绕过类脚本只观察不持久化（红线）；输出按 [[re-analyze/analysis-contract]] 契约存档

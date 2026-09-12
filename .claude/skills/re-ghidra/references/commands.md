@@ -115,5 +115,5 @@ GUI 内 Script Manager 跑 ghidra_bridge_server.py（打印端口）
 
 ## 使用注意
 
-- 静态分析免沙箱（[[platform-tips]] 静态优先）；样本 sha256 与导出产物存档（[[re-triage]]）
-- 结论写入 [[analysis-contract]]；脚本与工程按版本锁存（[[gotchas]] 版本组）
+- 静态分析免沙箱（[[re-analyze/platform-tips]] 静态优先）；样本 sha256 与导出产物存档（[[re-triage]]）
+- 结论写入 [[re-analyze/analysis-contract]]；脚本与工程按版本锁存（[[gotchas]] 版本组）

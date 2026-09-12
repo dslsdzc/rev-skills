@@ -18,11 +18,11 @@ capabilities: [ai-model-analysis]
 - 不用：纯推理脚本/训练代码（那是源码，走 [[re-script-deob]]）
 - 不用：模型被打包进可执行文件（PyInstaller/pyarmor 等）——先 [[re-binary-core]] 拆包，拆出的模型文件再回本技能
 - 边界：本技能定位 = 模型文件解析 / 结构分析 / 权重分析 / 文件级水印——恶意模型判定、投毒/后门行为侧、归属取证属取证域（未来独立 re-ai-malware 技能承接；当前此类需求暂在本技能范围，以安全边界（坑 2 pickle 隔离）处理，行为侧转 [[re-ai-attack]]）
-- 注意：**安全提示——不要直接 torch.load 未知 pkl 文件**（pickle 反序列化可执行任意代码，见坑 2）；一切对未知 pkl 的加载默认隔离环境（[[platform-tips]] 沙箱最高原则），先读后跑；模型解析/权重提取为静态步骤，可免沙箱
+- 注意：**安全提示——不要直接 torch.load 未知 pkl 文件**（pickle 反序列化可执行任意代码，见坑 2）；一切对未知 pkl 的加载默认隔离环境（[[re-analyze/platform-tips]] 沙箱最高原则），先读后跑；模型解析/权重提取为静态步骤，可免沙箱
 
 ## 工具准备
 
-参考 [[platform-tips]]——模型文件 GB 级常见，静态分析按「静态优先（大型样本）」思路：先格式识别与结构解析，按需提取权重，不整载内存（坑 1）。
+参考 [[re-analyze/platform-tips]]——模型文件 GB 级常见，静态分析按「静态优先（大型样本）」思路：先格式识别与结构解析，按需提取权重，不整载内存（坑 1）。
 
 ### python3 —— 所有解析脚本基础
 
@@ -145,11 +145,11 @@ capabilities: [ai-model-analysis]
 
 - [[re-managed]]：本网关「识别运行时」识别到 AI 模型文件后固定调用本技能（模型是"代码在数据里"的托管域分支）
 - [[re-binary-core]]：模型内嵌代码、模型被打包进可执行文件（PyInstaller/pyarmor 打包的推理程序）——先二进制域拆解（格式解析/反编译），拆出的模型文件回本技能
-- [[re-sandbox]]：一切未知 pkl 的 load 默认隔离环境（[[platform-tips]] 最高原则）
+- [[re-sandbox]]：一切未知 pkl 的 load 默认隔离环境（[[re-analyze/platform-tips]] 最高原则）
 - [[re-malware]]：恶意模型载荷（pickle 恶意代码、后门权重、投毒模型分发）的行为与情报侧
 - [[re-ioc]]：模型指纹（sha256/张量 hash/水印模式）进 IOC；[[re-triage]]：模型文件初勘入口与哈希存档
 - [[re-script-deob]]：PyTorch 推理/训练脚本还原（state_dict 无结构时的补全路径）
-- 引用 [[platform-tips]] 静态优先（大型样本）与沙箱最高原则分支
+- 引用 [[re-analyze/platform-tips]] 静态优先（大型样本）与沙箱最高原则分支
 - [[re-ai-attack]]：**文件级证据 → 行为级验证**（单向数据流）——本技能产出的文件侧结论（结构 / 权重 / 文件级 fingerprint）作为 re-ai-attack 行为一致性验证的输入。示例：拿到 suspect.pt → 本技能提取结构+权重生成 fingerprint → 转 re-ai-attack 做行为一致性验证（API 侧比对）
 - 只有 API（无文件）的评估直接进 [[re-ai-attack]]，不经本技能
 

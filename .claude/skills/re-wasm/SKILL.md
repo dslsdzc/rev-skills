@@ -12,11 +12,11 @@ capabilities: [web-assembly]
 - 用：`WebAssembly.instantiate` / `WebAssembly.Module` / `.wasm` fetch 出现的样本——wasm 与 JS 胶水一体分析
 - 不用：非 wasm（native 走 [[re-binary-core]]、.NET 走 [[re-dotnet]]、Java 走 [[re-java]]、纯 JS/脚本走 [[re-script-deob]]）
 - 不用：wasm 模块本身可读性尚可、只需读逻辑——直接 `wasm2wat` 读 WAT 即可，无需完整流程
-- 注意：动态运行默认沙箱（[[platform-tips]] 最高原则）；wasm 模块相对隔离，但宿主 JS 胶水会调 DOM/网络等敏感 API——JS 侧先还原（[[re-script-deob]]）
+- 注意：动态运行默认沙箱（[[re-analyze/platform-tips]] 最高原则）；wasm 模块相对隔离，但宿主 JS 胶水会调 DOM/网络等敏感 API——JS 侧先还原（[[re-script-deob]]）
 
 ## 工具准备
 
-参考 [[platform-tips]]——wasm 解析/反编译为静态步骤，免沙箱；动态运行（wasmtime/wasm3/浏览器加载）按最高原则进沙箱（至少断网）。
+参考 [[re-analyze/platform-tips]]——wasm 解析/反编译为静态步骤，免沙箱；动态运行（wasmtime/wasm3/浏览器加载）按最高原则进沙箱（至少断网）。
 
 ### WABT（wasm2wat / wasm-decompile / wasm-objdump，解析与反编译主力）
 
@@ -100,7 +100,7 @@ capabilities: [web-assembly]
      const { instance } = await WebAssembly.instantiate(bytes, imports);
      console.log(instance.exports.f(1n, 2n));   // i64 必须 BigInt（坑 4）
      ```
-   - 一切动态执行默认沙箱（[[platform-tips]] 最高原则）
+   - 一切动态执行默认沙箱（[[re-analyze/platform-tips]] 最高原则）
 
 ## 跨域联合
 

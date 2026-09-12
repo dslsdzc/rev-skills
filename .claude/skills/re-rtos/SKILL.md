@@ -17,7 +17,7 @@ capabilities: [rtos-analysis]
 
 ## 工具准备
 
-本技能以纯静态分析为主（免沙箱，[[platform-tips]] 最高原则）；需要动态验证时转 [[re-fw-emulate]]。工具可替换，方法为核心。
+本技能以纯静态分析为主（免沙箱，[[re-analyze/platform-tips]] 最高原则）；需要动态验证时转 [[re-fw-emulate]]。工具可替换，方法为核心。
 
 ### Ghidra（反编译与结构体定义主力）
 

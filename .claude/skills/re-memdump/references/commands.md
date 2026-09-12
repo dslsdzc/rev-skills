@@ -14,7 +14,7 @@
 ### maps 定址（/proc）
 
 - `cat /proc/<pid>/maps > maps.txt` 记录全部映射（地址区间/权限/路径）
-- `grep -E 'vsyscall|vdso|vvar' maps.txt` 剔除不可读极端段（见 [[platform-tips]] Linux 内存转储极端段）
+- `grep -E 'vsyscall|vdso|vvar' maps.txt` 剔除不可读极端段（见 [[re-analyze/platform-tips]] Linux 内存转储极端段）
 - `awk '$1 ~ /r/ {print $1}' maps.txt` 只保留含读权限的映射区间（提取范围白名单）
 
 ### 定向提取（core 内搜索）
@@ -100,6 +100,6 @@ eu-stack -e out | head -30                             # 快速栈回溯
 
 ## 使用注意
 
-- 动态运行样本在沙箱内执行（[[platform-tips]] 最高原则）；转储产物 sha256 存档（[[re-triage]]）
+- 动态运行样本在沙箱内执行（[[re-analyze/platform-tips]] 最高原则）；转储产物 sha256 存档（[[re-triage]]）
 - 大 core（数 GB）先 `file` 确认再按需定向提取，别整文件导入工具
-- 结论与证据（转储时间戳/地址/明文片段）写 [[analysis-contract]]
+- 结论与证据（转储时间戳/地址/明文片段）写 [[re-analyze/analysis-contract]]

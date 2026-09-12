@@ -124,14 +124,14 @@ capabilities: [ai-model-analysis]
 
 5. **评估报告与存证**：
    - 三要素全记录：方法（采样集/蒸馏超参/距离阈值）、结果（指标）、参数（随机种子/框架版本）
-   - 攻击脚本与评估产物 sha256 存档；结论按 [[analysis-contract]] 交付
+   - 攻击脚本与评估产物 sha256 存档；结论按 [[re-analyze/analysis-contract]] 交付
 
 ## 跨域联合
 
 - [[re-ai-model]]：**消费文件级证据**（文件级证据 → 行为级验证单向流）——有模型文件时先经 re-ai-model 提取结构/权重/文件级 fingerprint，再在本技能做行为一致性验证；仅 API（无文件）时无文件侧输入，直接黑盒评估
 - [[re-python]]：Python 工具链基础
 - [[re-feedback]]：攻击案例经验沉淀（脱敏后）
-- [[analysis-contract]]：评估结论交付格式
+- [[re-analyze/analysis-contract]]：评估结论交付格式
 
 ## 常见坑与陷阱
 

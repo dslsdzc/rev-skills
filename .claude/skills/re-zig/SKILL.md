@@ -107,7 +107,7 @@ capabilities: [lang-runtime-analysis]
 - [[re-binary-core]] 网关：本技能归属（选择树「Zig 产物」分支）
 - [[re-cpp-abi]]：边界区分（无 RTTI/异常 → 非 C++）
 - [[re-imports]]：C 库边界（NEEDED/导入符号）与导出表
-- [[analysis-contract]]：符号表按数据契约传递
+- [[re-analyze/analysis-contract]]：符号表按数据契约传递
 - [[re-triage]]：初勘兜底
 
 ## 常见坑与陷阱

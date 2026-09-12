@@ -165,4 +165,4 @@ MAGIC=b'PYZ\x00' pyc_magic=2b0e0d0a toc_offset=0x19b92b
 ## 使用注意
 
 - 样例为本地构建产物，仅作结构对照；分析真实样本以样本自身头字段为准（[[layout]] 各表）
-- 动态取明文（进入桩解密窗口内抓取）在沙箱内执行（[[re-sandbox]]，见 [[platform-tips]]）
+- 动态取明文（进入桩解密窗口内抓取）在沙箱内执行（[[re-sandbox]]，见 [[re-analyze/platform-tips]]）

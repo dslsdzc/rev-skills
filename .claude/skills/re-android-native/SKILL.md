@@ -32,11 +32,11 @@ capabilities: [jni-analysis]
 - 用：Java 层只看到 `System.loadLibrary` + `native` 声明，要定位与还原 native 实现
 - 不用：只要 APK Java 层静态（走 [[re-apk]]）；只要运行时 hook 不需要理解 .so 结构（走 [[re-frida]]）
 - 不用：so 是加固壳壳（先按 [[re-mobile-pack]] / [[re-anti-analysis]] 脱壳，见坑 5）
-- 注意：动态插桩按 [[platform-tips]] 最高原则在受控设备 / 模拟器快照内执行
+- 注意：动态插桩按 [[re-analyze/platform-tips]] 最高原则在受控设备 / 模拟器快照内执行
 
 ## 工具准备
 
-静态分析（readelf / Ghidra 导入 .so）免沙箱；动态（frida / xhook）按 [[platform-tips]] 最高原则在受控环境执行。所有工具先验证再使用。
+静态分析（readelf / Ghidra 导入 .so）免沙箱；动态（frida / xhook）按 [[re-analyze/platform-tips]] 最高原则在受控环境执行。所有工具先验证再使用。
 
 ### 反编译工作台（so 加载）—— [[re-ghidra]] / [[re-ida]]
 
@@ -127,7 +127,7 @@ capabilities: [jni-analysis]
 - [[re-mobile-pack]] / [[re-anti-analysis]]：加固 so 壳壳先脱壳再分析（坑 5）
 - [[re-android-crypto]]：加密体系审计（Keystore/Cipher/第三方加密库语义）已独立承接——本技能聚焦 JNI/native 逻辑；.so 内加密库 API 的加密语义转 [[re-android-crypto]]
 - [[re-analyze]]：被 triage「移动 App 分析」路径调用（re-mobile → 原生库 → 本技能）
-- [[platform-tips]]：动态插桩受控环境最高原则
+- [[re-analyze/platform-tips]]：动态插桩受控环境最高原则
 
 ## 常见坑与陷阱
 

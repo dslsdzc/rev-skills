@@ -17,7 +17,7 @@ capabilities: [macho-parser]
 
 ## 工具准备
 
-参考 [[platform-tips]] macOS 分支——attach/调试受 SIP 与 TCC 限制；静态解析不受影响。
+参考 [[re-analyze/platform-tips]] macOS 分支——attach/调试受 SIP 与 TCC 限制；静态解析不受影响。
 
 ### otool（Apple 自带）
 
@@ -117,7 +117,7 @@ capabilities: [macho-parser]
 - [[re-ios]] / [[re-macos]]：生态衔接（App 层、签名公证、TCC/SIP 限制）
 - [[re-cracking]]：macOS 破解类任务（补丁后重签流程见本技能步骤 8）
 - [[re-imports]]：dylib 依赖与导出符号的劫持面分析
-- 动态调试配合 [[re-lldb]]（SIP/TCC 限制见 [[platform-tips]]）
+- 动态调试配合 [[re-lldb]]（SIP/TCC 限制见 [[re-analyze/platform-tips]]）
 
 ## 常见坑与陷阱
 

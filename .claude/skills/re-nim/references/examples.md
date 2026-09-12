@@ -121,4 +121,4 @@ fatal.nim                              ← std 运行时源文件名
 ## 使用注意
 
 - 静态分析无需沙箱；本机 nim 2.2.10 实测输出与用户产物的差异以产物自身符号为准
-- 与 [[analysis-contract]]（符号表传递）、[[re-triage]]（初勘兜底）配合使用
+- 与 [[re-analyze/analysis-contract]]（符号表传递）、[[re-triage]]（初勘兜底）配合使用

@@ -16,7 +16,7 @@ capabilities: [memory-dump]
 
 ## 工具准备
 
-参考 [[platform-tips]]「直读 vs 转储」决策表与 Linux 内存转储极端段——**默认转储优先**，直读仅特例。
+参考 [[re-analyze/platform-tips]]「直读 vs 转储」决策表与 Linux 内存转储极端段——**默认转储优先**，直读仅特例。
 
 ### gdb / gcore（转储主力）
 
@@ -63,7 +63,7 @@ capabilities: [memory-dump]
    grep -E 'vsyscall|vdso|vvar' maps.txt     # 这些段必须剔除
    # 只保留 r--p / rw-p 可读映射区域作为提取范围
    ```
-   按 [[platform-tips]] Linux 内存转储极端段: `[vsyscall]`（0xffffffffff600000）、`[vdso]`/`[vvar]` 读取失败正常，dump 进 core 也只是垃圾页——转储后提取时跳过，或用 maps 白名单方式直读（步骤 5）。
+   按 [[re-analyze/platform-tips]] Linux 内存转储极端段: `[vsyscall]`（0xffffffffff600000）、`[vdso]`/`[vvar]` 读取失败正常，dump 进 core 也只是垃圾页——转储后提取时跳过，或用 maps 白名单方式直读（步骤 5）。
 
 3. **导入 Ghidra/IDA 分析（core 复盘）**：
    ```sh
@@ -106,7 +106,7 @@ capabilities: [memory-dump]
    data = f.read(4096)
    f.close()
    ```
-   - 适用: 进程必须保持运行 / 只取极小特定区段（[[platform-tips]] 特例①/②）
+   - 适用: 进程必须保持运行 / 只取极小特定区段（[[re-analyze/platform-tips]] 特例①/②）
    - `/proc/<pid>/mem` 偏移是**虚拟地址**，不是文件偏移——直接 open+read 从 0 开始读必报错（见坑 3）
 
 6. **Windows 侧转储（分支补齐）**：
@@ -120,6 +120,7 @@ capabilities: [memory-dump]
 ## 跨域联合
 
 - [[re-binary-core]]：工作流第 6 步（内存环节，默认转储优先）
+- [[re-sample-acquire]]：**还没确定要 dump 哪个进程/哪块内存**（只有现象、样本不落盘）时先走那边——它负责扫描异常执行区与执行上下文归属，再把目标交回本技能执行转储
 - [[re-malware]]：恶意样本内存产物提取（脱壳后样本）
 - [[re-mobile]]：App 内存中 DEX/so 提取
 - [[re-anti-analysis]]：脱壳后提取干净镜像的标准动作
@@ -130,7 +131,7 @@ capabilities: [memory-dump]
 ## 常见坑与陷阱
 
 - **vsyscall/vdso 读取失败正常**：`[vsyscall]` 只可执行、`[vdso]` 部分页不可读，gdb/pread 访问报错是预期行为——按 maps 过滤后提取，别当 bug 排查
-- **转储时机过早 = 壳的初始状态**：在壳解密前 dump 拿到的是压缩/加密数据——脱壳样本必须等到 OEP 后（见 [[platform-tips]] 关键经验）
+- **转储时机过早 = 壳的初始状态**：在壳解密前 dump 拿到的是压缩/加密数据——脱壳样本必须等到 OEP 后（见 [[re-analyze/platform-tips]] 关键经验）
 - **/proc/pid/mem 无脑 open 必报错**：直接 `open('/proc/pid/mem').read()` 会失败（偏移非法/权限）——必须 maps 定址 + SIGSTOP + chunked pread
 - core 文件可达数 GB——先 `file out` 确认是 ELF core，再按需定向提取，别整文件导入工具
 - **从转储重建进程时 vDSO 不可移植**：现象——重建/复现进程镜像后程序仍跳回原 vDSO 地址，或 `call *%gs:0x10` 间接调用断掉；原因——vDSO 地址记录在进程栈 auxv 的 `AT_SYSINFO`/`AT_SYSINFO_EHDR`，且 glibc 有缓存，修补 auxv 也不一定能重定位；对策——重建镜像时把 vDSO 相关调用视为必然失效（该页直接跳过），分析以其余映射为准

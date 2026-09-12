@@ -19,11 +19,11 @@ capabilities: [tee-analysis]
 - 不用：目标只是普通加密数据（走 [[re-crypto-*]] 系列，无 TEE 组件时不必进本技能）
 - 不用：仅需判定「设备是否用了 TEE」（无镜像、无调用面可分析）——特征级证据即可，不进深度流程
 - 不用：EL2 hypervisor/虚拟化域（走 [[re-hypervisor]]，TEE 是 EL1/EL3 域）
-- 注意：**secure world 内动态调试通常不可行**（见坑 3）——默认静态分析 + 主机侧观察；主机侧动态执行按 [[platform-tips]] 最高原则在沙箱内进行
+- 注意：**secure world 内动态调试通常不可行**（见坑 3）——默认静态分析 + 主机侧观察；主机侧动态执行按 [[re-analyze/platform-tips]] 最高原则在沙箱内进行
 
 ## 工具准备
 
-静态分析（镜像解析/反编译）免沙箱；主机侧动态（跑 client、hook ioctl）按 [[platform-tips]] 最高原则进沙箱；secure world 内动态不做（见坑 3），默认以静态 + 主机侧观察为主。
+静态分析（镜像解析/反编译）免沙箱；主机侧动态（跑 client、hook ioctl）按 [[re-analyze/platform-tips]] 最高原则进沙箱；secure world 内动态不做（见坑 3），默认以静态 + 主机侧观察为主。
 
 ### 反编译工作台（[[re-ghidra]] / [[re-ida]]，ARM64）
 
@@ -106,7 +106,7 @@ capabilities: [tee-analysis]
 - [[re-frida]]：主机侧动态观察（client 库/ioctl 插桩，沙箱原则）
 - [[re-drm]]：设备密钥/硬件信任根方向（DRM L1 类信任根在 TEE 内）
 - [[re-crypto-decrypt]]：加密 TA 载荷/secure storage 密文的解密还原
-- [[re-sandbox]] / [[platform-tips]]：主机侧动态执行隔离最高原则
+- [[re-sandbox]] / [[re-analyze/platform-tips]]：主机侧动态执行隔离最高原则
 
 ## 常见坑与陷阱
 

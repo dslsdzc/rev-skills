@@ -92,6 +92,6 @@ strings -n 6 <App.app> | grep -iE 'http|api|key'  # 加密二进制里字符串�
 
 ## 使用注意
 
-- 静态可免沙箱；越狱设备/模拟器动态分析按 [[platform-tips]] 最高原则在受控环境执行
-- 每步产物（解密 ipa、头文件、签名信息）对照 [[re-triage]] 入档；结论写 [[analysis-contract]]
+- 静态可免沙箱；越狱设备/模拟器动态分析按 [[re-analyze/platform-tips]] 最高原则在受控环境执行
+- 每步产物（解密 ipa、头文件、签名信息）对照 [[re-triage]] 入档；结论写 [[re-analyze/analysis-contract]]
 - 免费开发者签名 7 天过期——签名相关结果注明时间戳，避免误判

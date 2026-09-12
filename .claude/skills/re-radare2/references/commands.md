@@ -110,6 +110,6 @@ dc; px @ <地址>             # 命中后看解密输出
 
 ## 使用注意
 
-- 全部在沙箱内执行（[[platform-tips]] 最高原则）；`rizin -d` 调试属于动态执行
-- 分析结论对照 [[re-triage]] 初勘值入档，写 [[analysis-contract]]
+- 全部在沙箱内执行（[[re-analyze/platform-tips]] 最高原则）；`rizin -d` 调试属于动态执行
+- 分析结论对照 [[re-triage]] 初勘值入档，写 [[re-analyze/analysis-contract]]
 - 带壳目标先 [[re-anti-analysis]] 脱壳再分析；批量任务注意 `-q` 静默与退出码

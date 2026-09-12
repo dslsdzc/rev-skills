@@ -33,5 +33,5 @@
 
 ## 使用注意
 
-- 全部在沙箱内执行（[[platform-tips]] 最高原则）；`rizin -d` 调试属动态执行默认沙箱
+- 全部在沙箱内执行（[[re-analyze/platform-tips]] 最高原则）；`rizin -d` 调试属动态执行默认沙箱
 - 命令细节以目标版本实际行为为准（`rz -v` 查版本）；不同版本差异优先查 Rizin Book

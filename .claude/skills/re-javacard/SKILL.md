@@ -20,7 +20,7 @@ capabilities: [bytecode-parser]
 
 ## 工具准备
 
-所有工具先验证再使用。静态解析可免沙箱；涉及真实卡片与读卡器交互先确认授权边界（卡片归属与分析目的），动态执行默认沙箱（[[platform-tips]] 最高原则）。
+所有工具先验证再使用。静态解析可免沙箱；涉及真实卡片与读卡器交互先确认授权边界（卡片归属与分析目的），动态执行默认沙箱（[[re-analyze/platform-tips]] 最高原则）。
 
 ### CAP 文件解析（开源解析器或自写脚本）
 
@@ -47,7 +47,7 @@ capabilities: [bytecode-parser]
 
 - **Ghidra / IDA 无原生 CAP 加载器与处理器模块**——CAP 字节码需脚本化解析：Ghidra Python / IDA Python 按本技能组件结构导入，或先用解析器导出反汇编再人工对照
 - **读卡器（泛化选购）**：接触式 ISO7816（PC/SC CCID 免驱类）与无接触 ISO14443（NFC）两类；选购关注：PC/SC 驱动完备性（CCID 免驱 vs 厂商私有驱动）、SIM 卡座形式与适配器（全尺寸 / micro-SIM 等）、T=0/T=1 协议支持、供电稳定性
-- **授权边界**：读卡、提取、写卡均需确认卡归属与分析目的授权；对第三方卡做只读接触也视为需授权场景（[[platform-tips]] 最高原则）
+- **授权边界**：读卡、提取、写卡均需确认卡归属与分析目的授权；对第三方卡做只读接触也视为需授权场景（[[re-analyze/platform-tips]] 最高原则）
 
 ## 操作步骤
 
@@ -113,7 +113,7 @@ capabilities: [bytecode-parser]
 - [[re-crypto-id]] / [[re-crypto-keys]] / [[re-crypto-decrypt]]：applet 内加密算法识别、密钥提取与数据解密（智能卡应用常见）
 - [[re-variant]]：同 applet 多版本 CAP 对比定位差异（升级/补丁分析）
 - [[re-patching]]：改动 CAP 字节码后重打包重装（需对应安装/签名授权）
-- [[re-sandbox]]：一切动态执行/读卡交互强制前置（[[platform-tips]] 最高原则）
+- [[re-sandbox]]：一切动态执行/读卡交互强制前置（[[re-analyze/platform-tips]] 最高原则）
 - [[re-triage]]：初勘前置（文件类型/熵/哈希/架构识别）
 
 ## 常见坑与陷阱
@@ -124,4 +124,4 @@ capabilities: [bytecode-parser]
 - **Import 外部引用断链**：现象——调用点 token 解不出目标方法名，逻辑断在框架调用处；原因——applet 的依赖在外部包（框架包/其他 CAP），本 CAP 只含引用 token；对策——Import 组件列外部包 AID，外部符号经 Export 组件或 SDK .exp 文件解析；javacard.framework 的方法名与常量按 SDK 导出文件对照
 - **卡片 dump 是密文或片段**：现象——「CAP」魔数不对或组件解不开，内容熵高；原因——dump 被卡 OS 加密（GlobalPlatform 域密钥/安全消息封装），或截断/跨区提取不完整；对策——先用熵与魔数判断明文/加密负载，加密走 [[re-crypto-id]] / [[re-crypto-keys]] 思路；用 Directory 大小表核对组件完整性，从固件提取时同样核对
 - **只还原 process 忽略 install 与 AID**：现象——分派表还原了但行为对不上，或同包多应用互相混淆；原因——install() 的安装参数（初始化数据/持卡人数据）写入静态字段或文件系统，影响后续分支；Applet 组件可含多个 applet AID（同包多实例）；对策——从 install 开始跟踪参数写入点，按 AID 区分实例；AID 格式：5 字节 RID + 0-11 字节 PIX（总长 5-16，ISO/IEC 7816-5；0xA0 开头为国际注册 RID，如 SIM/USIM 应用通用 RID A000000087，PIX 为应用自定义）
-- **读卡/写卡授权越界**：现象——对真实卡片读写分析未确认归属与目的；对策——第三方卡接触默认需授权，优先实验室样本与文档资料（[[platform-tips]] 最高原则）
+- **读卡/写卡授权越界**：现象——对真实卡片读写分析未确认归属与目的；对策——第三方卡接触默认需授权，优先实验室样本与文档资料（[[re-analyze/platform-tips]] 最高原则）

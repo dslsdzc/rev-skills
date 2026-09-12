@@ -15,11 +15,11 @@ capabilities: [bytecode-parser]
 - 用：鸿蒙应用含 native 库（libs/ 下 .so），需要静态/动态联动分析
 - 不用：普通 Android APK（走 [[re-apk]]；dex/smali 体系与本技能不同）
 - 不用：纯 Web/前端应用（非鸿蒙容器，脚本/Web 路径走 [[re-script-deob]] 或 [[re-browser-ext]]）
-- 注意：**动态执行默认沙箱（[[platform-tips]] 最高原则）**——静态解包/反汇编免沙箱；模拟器/真机运行观察必须进 [[re-sandbox]]
+- 注意：**动态执行默认沙箱（[[re-analyze/platform-tips]] 最高原则）**——静态解包/反汇编免沙箱；模拟器/真机运行观察必须进 [[re-sandbox]]
 
 ## 工具准备
 
-参考 [[platform-tips]]——静态分析（解包、字符串、反汇编）免沙箱；动态步骤按最高原则进沙箱。
+参考 [[re-analyze/platform-tips]]——静态分析（解包、字符串、反汇编）免沙箱；动态步骤按最高原则进沙箱。
 
 ### hap 解包（zip 容器，通用思路）
 
@@ -83,7 +83,7 @@ capabilities: [bytecode-parser]
 
 5. **动态侧（沙箱）**：
    - 模拟器/真机运行时观察，编排走 [[re-mobile]]：安装 hap（官方部署工具）→ 启动观察 → 抓包/日志 → hook 运行时取明文，与静态反汇编互证
-   - 一律在 [[re-sandbox]]（模拟器快照 / 受控设备 + 网络隔离）内执行，遵循 [[platform-tips]] 默认沙箱原则
+   - 一律在 [[re-sandbox]]（模拟器快照 / 受控设备 + 网络隔离）内执行，遵循 [[re-analyze/platform-tips]] 默认沙箱原则
 
 ## 跨域联合
 
@@ -92,7 +92,7 @@ capabilities: [bytecode-parser]
 - [[re-java]]：jadx 类反编译器思路复用（abc 侧对应 ArkCompiler 反汇编工具）
 - [[re-mobile]]：动态侧编排（模拟器/真机 + hook + 抓包），本技能挂靠该网关域
 - [[re-script-deob]]：提取出的明文 JS/TS 业务资源去混淆
-- 底座：native so → [[re-binary-core]]（[[re-format-elf]] / [[re-ghidra]]）；初勘 → [[re-triage]]；动态沙箱 → [[re-sandbox]]；沙箱原则 → [[platform-tips]]
+- 底座：native so → [[re-binary-core]]（[[re-format-elf]] / [[re-ghidra]]）；初勘 → [[re-triage]]；动态沙箱 → [[re-sandbox]]；沙箱原则 → [[re-analyze/platform-tips]]
 
 ## 常见坑与陷阱
 

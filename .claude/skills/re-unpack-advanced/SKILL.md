@@ -18,9 +18,9 @@ capabilities: [unpack]
 
 ### 调试器（按 OS）
 
-- Linux / Wine 下调试 PE: [[re-gdb]] —— `apt install gdb` / `dnf install gdb` / `pacman -S gdb`；**Wine 直读**：`wine sample.exe` 后 `gdb -p <pid>` attach（见 [[platform-tips]] Linux 分支）
+- Linux / Wine 下调试 PE: [[re-gdb]] —— `apt install gdb` / `dnf install gdb` / `pacman -S gdb`；**Wine 直读**：`wine sample.exe` 后 `gdb -p <pid>` attach（见 [[re-analyze/platform-tips]] Linux 分支）
 - Windows: [[re-x64dbg]] —— 官方 release zip；x64dbg 对强壳的附加/断点支持更好，强壳场景优先
-- WSL: 无法 attach Windows 进程，走 Windows 侧工具（[[platform-tips]] WSL 分支）
+- WSL: 无法 attach Windows 进程，走 Windows 侧工具（[[re-analyze/platform-tips]] WSL 分支）
 - 验证: `gdb --version`；x64dbg 能载入样本并单步
 
 ### Scylla（IAT 修复，含重定向处理）
@@ -56,7 +56,7 @@ capabilities: [unpack]
    - OEP 特征：函数序言（`push ebp; mov ebp,esp`）+ 密集正常 API 引用。记录 OEP 地址与镜像基址。
 
 3. **转储（默认转储优先）**：
-   - Linux/Wine：运行到 OEP 后 `gcore -o out <pid>`（默认转储优先，完整流程见 [[re-memdump]]；转储前按 maps 过滤 vsyscall/vdso；时机见 [[platform-tips]] 关键经验）。
+   - Linux/Wine：运行到 OEP 后 `gcore -o out <pid>`（默认转储优先，完整流程见 [[re-memdump]]；转储前按 maps 过滤 vsyscall/vdso；时机见 [[re-analyze/platform-tips]] 关键经验）。
    - Windows：x64dbg 到 OEP → Scylla → Attach → 填 OEP → Dump。
    - 转储前后各存 sha256，便于对比验证。
 

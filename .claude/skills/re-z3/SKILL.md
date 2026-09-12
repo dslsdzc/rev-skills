@@ -14,11 +14,11 @@ capabilities: [constraint-solving]
 - 不用：输入在长循环里逐字节校验、循环未展开——先 [[re-angr]] 符号执行或先人工展开（本技能要求约束先还原成表达式，见坑 2）
 - 不用：约束含哈希 / 非对称验签等不可逆运算——Z3 对 SHA / RSA 验签无能为力（见坑 3）
 - 不用：需要整条路径条件而非约束集合——[[re-angr]] 更合适
-- 注意：建模必须逐行对照反编译伪代码（[[re-ghidra]] / [[re-ida]] / [[re-radare2]] 产物）；求解出的结果跑原程序验证（沙箱，[[platform-tips]] 最高原则）
+- 注意：建模必须逐行对照反编译伪代码（[[re-ghidra]] / [[re-ida]] / [[re-radare2]] 产物）；求解出的结果跑原程序验证（沙箱，[[re-analyze/platform-tips]] 最高原则）
 
 ## 工具准备
 
-参考 [[platform-tips]] 最高原则——求解本身不执行目标，但用求解结果运行目标验证时默认沙箱。
+参考 [[re-analyze/platform-tips]] 最高原则——求解本身不执行目标，但用求解结果运行目标验证时默认沙箱。
 
 ### z3-solver（pip 安装）
 
@@ -88,7 +88,7 @@ capabilities: [constraint-solving]
 - [[re-angr]]：姊妹技能——长循环逐字节校验用 angr 符号执行；已展开 / 无循环的约束集合用本技能更轻更快；angr 求解慢时对约束子集转 z3
 - [[re-keygen]] / [[re-license]]：注册机场景——序列号 = f(用户名 / 机器码) 的等式集合建模求解（re-keygen 工具准备将 z3 列为可选方案；re-cracking 网关将其作为不可逆算法之外的硬推手段）
 - [[re-crypto-id]] / [[re-crypto-decrypt]]：自定义加密的密钥 / 明文推导（等式可逆部分建模；纯哈希部分见坑 3）
-- [[re-sandbox]]：求解结果的运行验证沙箱（[[platform-tips]] 最高原则）
+- [[re-sandbox]]：求解结果的运行验证沙箱（[[re-analyze/platform-tips]] 最高原则）
 - [[re-patching]]：约束不可解（含不可逆段）时转补丁绕过验证
 
 ## 常见坑与陷阱

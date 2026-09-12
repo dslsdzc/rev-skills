@@ -5,7 +5,7 @@
 - **插件/脚本不通用**：OllyDbg 的插件（.dll/.opa）与 OllyScript 脚本不能直接用于 x64dbg——x64dbg 有独立插件 API 与脚本引擎（Script 视图，命令见 [[commands]]）；移植需按新 API 重写
 - **条件断点语法近似但不等价**：x64dbg 表达式体系更完整（寄存器/`[内存]`/位运算/字符串格式化），OllyDbg 的 `cond` 条件不能照抄，按 x64dbg 表达式重写
 - **调试数据库格式不同**：OllyDbg 的 .udd vs x64dbg 的 .dd64/.dd32，不通用；x64dbg 数据库按模块保存在同名 `.dd*` 文件
-- **位数**：OllyDbg 仅 32 位；x64dbg 同一包内 x64dbg.exe（64 位目标）+ x32dbg.exe（32 位目标），别开错进程（见 [[platform-tips]] Windows 分支）
+- **位数**：OllyDbg 仅 32 位；x64dbg 同一包内 x64dbg.exe（64 位目标）+ x32dbg.exe（32 位目标），别开错进程（见 [[re-analyze/platform-tips]] Windows 分支）
 
 ## Scylla 使用注意
 
@@ -24,7 +24,7 @@
 - **调试器自身特征可被指纹化**：x64dbg 模块名/窗口类/DLL 名/内存特征都可被枚举——目标只在 x64dbg 下崩溃时按特征检测处理（见 SKILL.md 坑 6）
 - **TLS 回调/入口前逻辑**：启动模式下默认停在系统断点，TLS 回调可能已执行——要断入口前逻辑需勾选 Options > Events 的事件断点（TLS callbacks/entry breakpoint），错过就无法重放
 - **时序类检测绕过不了就静态 patch**：时间差/执行计数类检测在调试器里改比较点只能一次一次来，高频校验目标直接静态 patch 更省事（见 [[re-patching]]）
-- **内核态检测（驱动层）不在调试器能力内**：x64dbg 是用户态调试器，PPL 进程与驱动层校验无法附加/绕过——按 [[platform-tips]] Windows 分支准备内核调试能力或放弃
+- **内核态检测（驱动层）不在调试器能力内**：x64dbg 是用户态调试器，PPL 进程与驱动层校验无法附加/绕过——按 [[re-analyze/platform-tips]] Windows 分支准备内核调试能力或放弃
 
 ## 版本差异
 
@@ -35,5 +35,5 @@
 
 ## 使用注意
 
-- 全部在沙箱内执行（见 [[platform-tips]] 最高原则）；attach 需管理员权限
+- 全部在沙箱内执行（见 [[re-analyze/platform-tips]] 最高原则）；attach 需管理员权限
 - 版本相关行为（内置 Scylla 版本、脚本语法）以目标版本实际表现为准

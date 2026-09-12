@@ -89,6 +89,6 @@ idb2pat 从某已知库构建 .pat → sigmake 转 .sig → 应用到样本
 
 ## 使用注意
 
-- 静态分析免沙箱；IDA 调试器动态调试按 [[platform-tips]] 最高原则沙箱内执行
+- 静态分析免沙箱；IDA 调试器动态调试按 [[re-analyze/platform-tips]] 最高原则沙箱内执行
 - 动态分析前先 [[re-triage]] 初勘（哈希/壳识别），FLIRT 只对脱壳后库有效
-- 结论写入 [[analysis-contract]] 数据契约；带壳目标先 [[re-anti-analysis]]
+- 结论写入 [[re-analyze/analysis-contract]] 数据契约；带壳目标先 [[re-anti-analysis]]

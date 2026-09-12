@@ -56,7 +56,7 @@ capabilities: [decompilation]
    ```
    - 结构：`typeinfo` → `__class_type_info` 派生链 → 每个类的完整继承路径
    - 脚本化：Ghidra/IDA 遍历 _ZTI 引用，重建类继承图（父子关系表）
-   - 产出：类名 → 继承链映射（写入会话 symbols_known，见 [[analysis-contract]]）
+   - 产出：类名 → 继承链映射（写入会话 symbols_known，见 [[re-analyze/analysis-contract]]）
    - MSVC：`??_R0<类名>` TypeDescriptor 符号 + `_RTTICompleteObjectLocator`（COL）遍历重建继承图
 
 3. **虚表恢复**：
@@ -93,8 +93,8 @@ capabilities: [decompilation]
 - [[re-binary-core]] 网关：本技能归属（re-binary-core 选择树已挂载）
 - [[re-ghidra]] / [[re-ida]]：反编译底座与脚本化
 - [[re-deobfuscate]]：混淆与 ABI 分析衔接
-- [[analysis-contract]]：类继承图/符号表按数据契约传递
-- [[rerouting]]：RTTI/异常表特征触发本技能（A 表已挂）
+- [[re-analyze/analysis-contract]]：类继承图/符号表按数据契约传递
+- [[re-analyze/rerouting]]：RTTI/异常表特征触发本技能（A 表已挂）
 
 ## 常见坑与陷阱
 

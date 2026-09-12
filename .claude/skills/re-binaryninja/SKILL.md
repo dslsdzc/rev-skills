@@ -20,7 +20,7 @@ capabilities: [decompilation]
 
 ## 工具准备
 
-参考 [[platform-tips]]——Binary Ninja 静态分析免沙箱；脚本触发动态执行时默认沙箱内。
+参考 [[re-analyze/platform-tips]]——Binary Ninja 静态分析免沙箱；脚本触发动态执行时默认沙箱内。
 
 ### Binary Ninja（商业，有个人版）
 
@@ -87,7 +87,7 @@ capabilities: [decompilation]
    - 场景: 追踪密钥/标志位从加载到比较的完整路径；DFG 比逐条读 MLIL 快，适合「这个值从哪来/去哪了」问题
    - 配合 `x`/右键 `Show References` 交叉验证调用边界；DFG 视图 `Esc` 退出返回原视图
 
-7. **证据核对（收尾）**：重命名/类型/注释随 `bv.save()` 落盘存档；无头导出产物（函数清单/HLIL 文本）与 [[re-triage]] 初勘值对照；关键结论写 [[analysis-contract]]——标注要能还原成报告，别只留在项目里
+7. **证据核对（收尾）**：重命名/类型/注释随 `bv.save()` 落盘存档；无头导出产物（函数清单/HLIL 文本）与 [[re-triage]] 初勘值对照；关键结论写 [[re-analyze/analysis-contract]]——标注要能还原成报告，别只留在项目里
 
 8. **交叉验证（多反编译器互证）**：同一函数用 [[re-ghidra]] / [[re-ida]]（若有）反编译对比——MLIL 与 Ghidra 伪代码结构一致时结论可信度提升；差异大时回 LLIL/汇编核对，优先相信汇编层证据
 

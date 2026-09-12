@@ -41,7 +41,7 @@ capabilities: [dex-parser, jni-analysis, frida-instrumentation, mobile-forensics
 
 - 移动 App 含原生库：[[re-mobile]] → [[re-binary-core]]（[[re-format-elf]] / [[re-ghidra]] 反编译 JNI/OC 底层逻辑）；Android native 专项 [[re-android-native]]；iOS 越狱环境 [[re-ios-jb]]（越狱检测 / tweak / lldb 远程）
 - 移动 App 加固/带壳：[[re-mobile]] → [[re-anti-analysis]]（Android 脱壳）；iOS 加密二进制 [[re-ios]] 脱壳
-- 动态分析默认沙箱：模拟器快照 / 受控越狱设备 + 网络隔离（[[platform-tips]] 最高原则）
+- 动态分析默认沙箱：模拟器快照 / 受控越狱设备 + 网络隔离（[[re-analyze/platform-tips]] 最高原则）
 - 移动恶意样本/回连：[[re-mobile]] → [[re-malware]]（行为分析见 [[re-sandbox]]）
 - 本网关被 [[re-analyze]] 的 triage.md「移动 App 分析」路径调用（re-mobile → re-apk / re-ios → re-frida → 若含原生库 re-binary-core）
 
@@ -49,7 +49,7 @@ capabilities: [dex-parser, jni-analysis, frida-instrumentation, mobile-forensics
 
 - 拿到 APK 直接 jadx 出 Java 就下结论 → 加固样本 jadx 只看到壳壳 —— 先 [[re-apk]] 识别加固，再转脱壳域（[[re-anti-analysis]]）或动态取内存 DEX
 - iOS 加密二进制当普通静态目标分析 → class-dump/otool 只见壳或密文 —— 先按 [[re-ios]] 查 `cryptid` 并脱壳再继续
-- 移动动态分析直接上真机裸跑 → 设备环境不可控、证据难复现 —— 优先模拟器快照 / 受控越狱设备，网络隔离（[[platform-tips]] 最高原则）
+- 移动动态分析直接上真机裸跑 → 设备环境不可控、证据难复现 —— 优先模拟器快照 / 受控越狱设备，网络隔离（[[re-analyze/platform-tips]] 最高原则）
 - 忽略原生库 → 只分析了 Java/OC 层，核心逻辑（JNI、反调试、敏感算法）全在 .so/dylib —— 见 `lib/` 与 Framework 即转 [[re-binary-core]]
 - 选择树跳步 → 静态没做完就 frida，或动态手段全用上还是没进展 —— 按工作流 1→6 顺序推进，每步证据存档后再进下一步
 

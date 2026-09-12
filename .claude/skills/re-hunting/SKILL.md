@@ -85,7 +85,7 @@ capabilities: [threat-intel]
    - 误报排除：白名单核对、环境解释（合法变更/维护窗口）、与业务方确认
    - 排除后留档：误报判定记录（为什么排除），复查不重复分析
    - 白名单是动态资产：确认合法后入白名单（附原因），环境变化定期复查
-   - 证据存档：按 [[analysis-contract]] 复核格式（结论/证据/置信度）
+   - 证据存档：按 [[re-analyze/analysis-contract]] 复核格式（结论/证据/置信度）
    - 闭环输出：确认命中 → 事件报告（含 IOC 沉淀，可转 [[re-ioc]]）；未命中 → 假设归档（可复跑，标注盲区）
    - 命中后扩大复查：同 TTP/同源再扫一遍（狩猎是迭代不是一次性）
    - 复盘产出：假设命中率统计（下轮优先级依据）
@@ -101,7 +101,7 @@ capabilities: [threat-intel]
 - [[re-netcap]]：网络遥测深挖
 - [[re-ioc]]：命中指标沉淀（YARA/规则）
 - [[re-triage]]：产物存档规范（路径 + sha256）
-- [[analysis-contract]]：结论按复核格式交付
+- [[re-analyze/analysis-contract]]：结论按复核格式交付
 
 ## 常见坑与陷阱
 

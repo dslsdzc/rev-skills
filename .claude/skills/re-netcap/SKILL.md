@@ -19,7 +19,7 @@ capabilities: [network-capture]
 
 ## 工具准备
 
-所有工具先验证再使用。运行样本抓包默认在沙箱内（[[re-sandbox]] 网络隔离，[[platform-tips]] 最高原则）——捕获环境与隔离环境要同时就绪。
+所有工具先验证再使用。运行样本抓包默认在沙箱内（[[re-sandbox]] 网络隔离，[[re-analyze/platform-tips]] 最高原则）——捕获环境与隔离环境要同时就绪。
 
 ### tcpdump —— 命令行抓包主力
 
@@ -100,7 +100,7 @@ capabilities: [network-capture]
 5. **沙箱内隔离抓包（[[re-sandbox]] 网络隔离）**：
    - 前置：按 [[re-sandbox]] 步骤 2 做网络隔离——断网（Host-only / `--net=none`）/ fake DNS（/etc/hosts 或 dnsmasq 指向本机）/ INetSim（沙箱 DNS 指向 INetSim 主机）
    - 抓包点：INetSim 主机侧抓全量（`tcpdump -i eth0 -w c2.pcap`），同时拿到样本请求与模拟响应——C2 分析标准做法
-   - 验证: 沙箱内样本回连被 INetSim 记录且 pcap 有对应流量；`ping 8.8.8.8` 不通确认无真实外联（[[platform-tips]] 最高原则）
+   - 验证: 沙箱内样本回连被 INetSim 记录且 pcap 有对应流量；`ping 8.8.8.8` 不通确认无真实外联（[[re-analyze/platform-tips]] 最高原则）
    - 需要透明代理（mitmproxy）时用 nat REDIRECT 引流到其监听端口（mitmproxy 不消费 NFQUEUE 队列）:
      ```sh
      sudo sysctl -w net.ipv4.ip_forward=1
@@ -120,7 +120,7 @@ capabilities: [network-capture]
 - [[re-protocol]]：本技能是其工作流第 1 步（捕获）——所有协议分析的原料入口
 - [[re-malware]]：C2 回连捕获——re-malware 工作流第 4 步的捕获环节，配合 [[re-sandbox]] INetSim/fake DNS 环境
 - [[re-firmware]]：固件通信捕获——仿真环境的虚拟网卡抓包（[[re-fw-emulate]] 启动后在本机抓）
-- [[re-sandbox]]：网络隔离是捕获的前置（INetSim / fake DNS / 断网），防真外联（[[platform-tips]] 最高原则）
+- [[re-sandbox]]：网络隔离是捕获的前置（INetSim / fake DNS / 断网），防真外联（[[re-analyze/platform-tips]] 最高原则）
 - 捕获产物供 [[re-proto-rev]]（明文）与 [[re-crypto-decrypt]]（密文）消费
 
 ## 常见坑与陷阱

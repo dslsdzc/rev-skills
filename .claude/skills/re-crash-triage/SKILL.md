@@ -18,7 +18,7 @@ capabilities: [debugging]
 
 ## 工具准备
 
-所有工具先验证再使用。复现崩溃是动态执行，默认沙箱内跑（[[platform-tips]] 最高原则，见 [[re-sandbox]]）。
+所有工具先验证再使用。复现崩溃是动态执行，默认沙箱内跑（[[re-analyze/platform-tips]] 最高原则，见 [[re-sandbox]]）。
 
 ### ASAN / UBSAN —— 内存与未定义行为检测（clang/gcc 内置）
 
@@ -117,7 +117,7 @@ capabilities: [debugging]
 - [[re-fuzzing]]：其崩溃产出（`out/crashes/`）交本技能分析（本技能也反向使用其 afl-tmin/cmin 工具链）
 - [[re-binary-core]]：定位后补符号/读函数逻辑走底座（[[re-ghidra]] / [[re-ida]] / [[re-radare2]]）；[[re-triage]] 提供存证方法
 - [[re-memdump]]：进程已死 / 已有 core 文件需更多上下文时转储分析（崩溃 core → memdump）
-- [[re-sandbox]] / [[platform-tips]]：复现是动态执行，默认沙箱内跑
+- [[re-sandbox]] / [[re-analyze/platform-tips]]：复现是动态执行，默认沙箱内跑
 
 ## 常见坑与陷阱
 
