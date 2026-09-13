@@ -29,6 +29,7 @@ shmem_id 才是共享对象 identity          ≠ 两个 VM 里的映射地址
 
 ## 何时使用 / 何时不用
 
+- 前置：**先判是哪一类虚拟化**（宿主厂商串 / 配置格式 / 结构性证据）→ [[re-analyze/system-fingerprints]] 的 Hypervisor 段
 - 用：目标是 hypervisor / VMM 二进制或驱动（恶意 hypervisor、rootkit 虚拟化、VM-based 保护）
 - 用：样本/程序检测自己是否运行在虚拟机或嵌套虚拟化中（CPUID 指纹、时序检测）
 - 用：分析 VT-x（VMX）或 SVM 相关的启动代码、VMCS/VMCB 布局、EPT 相关操作

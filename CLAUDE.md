@@ -53,6 +53,8 @@ re-analyze（entry，唯一入口）
 | `re-analyze/references/preferences.md` | 偏好询问分级（Level 0 用默认值直接开始 / Level 1 完整问 5 项） |
 | `re-analyze/references/analysis-contract.md` | 分析契约：上下文清单（按域展开）、数据契约（核心字段 + 域扩展字段两层）、独立复核、调查预算 |
 | `re-analyze/references/platform-tips.md` | 平台经验库（最高原则：默认沙箱；内存读取默认转储优先） |
+| `re-analyze/references/system-fingerprints.md` | 系统识别指纹表（载体格式 → 家族 → 系统 → 易混淆对 → 负判据；新增系统分支须同步加行） |
+| `re-analyze/references/cross-system-models.md` | 跨系统误判总表（十类误判 / 共同规律 A–F / 异常速查表；判定 hook·dead code·恶意 前的强制前置） |
 | `re-analyze/references/capabilities.md` | 能力注册表（`capabilities` frontmatter 的合法标签全集） |
 | `re-analyze/references/probe.sh` | 环境探测脚本（OS/ARCH/CORES/MEM/工具清单） |
 

@@ -556,3 +556,56 @@
 - `node validate.mjs`：`OK: 122 skills validated`；`npm test`：41 项全过
 - `re-hypervisor` 分支 8 → 9（拆分后），`re-rtos` 14、`re-kernel` 23；全部有 SKILL.md 入链
 - 措辞检查：新写内容经"最 X"筛查并改写（`questv` / `ose-oseck` 各一处）
+
+---
+
+## 补充 21：系统识别指纹表（2026-09-13）
+
+### 一、缺口与落地
+
+**缺口**：库里有"运行模型 + 误判表 + 异常速查表"，但**没有"怎么认出这是哪个系统"**这一层——rerouting A 表要求你已经知道目标是什么。
+
+**落地**：新增入口级控制文件 **`re-analyze/references/system-fingerprints.md`**（199 行），**覆盖本库全部 55 个系统**（脚本自检：按显示名逐个核，55/55 命中）。
+
+### 二、结构：五层流程
+
+```
+① 载体与格式（PE / ELF 是否 ET_REL / Mach-O / 无容器镜像 / 配置 / 转储 / 流量）
+② 超家族收敛（几条问题归到某一族）
+③ 家族内指认（9 张表：UNIX 与 Windows 系内核驱动 / capability 与用户态驱动型 /
+   RTOS / 分区与安全 RTOS / Hypervisor / 固件引导 / 主机大型机 / 车载 / unikernel）
+④ 易混淆对（15 组专项判据）
+⑤ 负判据（"看到 X 就不是 Y"）
+```
+
+**判据强度分级**：**[强]**（唯一判据，可单独定案）与 **[弱]**（需组合）——文件里明确写了"弱判据单独使用会把无关系统卷进来"，并给出例子（"有 Kconfig"无法区分 Zephyr 与 NuttX）。
+
+### 三、本轮新核验的事实地基
+
+| 事实 | 核验结果 |
+|---|---|
+| **ELF note 段标识** | NetBSD：`.note.netbsd.ident`，note 名 `"NetBSD"`，`NT_NETBSD_IDENT` = 1；OpenBSD：`.note.openbsd.ident`，note 名 `"OpenBSD"`，`NT_OPENBSD_IDENT` = 1；FreeBSD：`.note.ABI-tag`，note 名 `"FreeBSD"`，`NT_FREEBSD_ABI_TAG` = 1（GNU ABI 标签里另有 FREEBSD=3、NETBSD=4、SOLARIS=2、LINUX=0、HURD=1） |
+| **`EI_OSABI` 现行取值** | NONE=0、HPUX=1、**NETBSD=2**、LINUX=3、HURD=4、86OPEN=5、**SOLARIS=6**、AIX=7、IRIX=8、**FREEBSD=9**、TRU64=10、MODESTO=11、**OPENBSD=12**、**OPENVMS=13**、NSK=14、ARM=97、STANDALONE=255。（**注意**：2000 年曾有 FREEBSD=4/NETBSD=5/OPENBSD=6 的提案，与现行值不同；本表按现行值写） |
+| **OpenBSD note 的强制程度** | 讨论中一度写作"通常包含"后改为移除该措辞；无 note 的二进制会执行失败，但最终未写成"必须"——本表据此只把它当**强判据之一**而非唯一依据 |
+
+### 四、处理原则（重要）
+
+- **判据全部取自本库已核验的分支**（各分支文末"工具与验证"节），本文件**不引入新断言**；文中已写明这一来源约定
+- **两处检索未命中**（hypervisor 配置产物特征、RTOS 识别串）**未改用外部猜测**，而是改用库内已核验内容（如 ACRN 的 `IVSHMEM_ENABLED`、Jailhouse 的 `.cell` 与控制台串、Bao 的 `struct config`、RTOS 的对象头魔数与 API 前缀）
+- **判据薄的两个系统**（LynxSecure / Quest-V）在表中明确标注"不要靠字符串定案"，改为结构性与行为判据
+- 新增了**维护约定**：新增系统分支时须同步往本表加一行（载体/强判据/结构线索三列必填）
+
+### 五、挂载
+
+| 位置 | 内容 |
+|---|---|
+| `re-analyze/SKILL.md` 第二步 | "先认目标"段（含"判不出不要硬判"） |
+| `triage.md` 前置 | 认系统先于查表；家族已定系统未定时按家族级分支推进 |
+| `cross-system-models.md` | 互为前后置：先定身份、再查该身份允许哪些"正常异常" |
+| `CLAUDE.md` 控制文件表 | 新增两行（fingerprints / cross-system-models） |
+| 5 个技能 | re-kernel / re-rtos / re-hypervisor / re-uefi / re-automotive 的「何时使用」各加一条前置回链 |
+
+### 六、本轮校验
+
+- `node validate.mjs`：`OK: 122 skills validated`；`npm test`：41 项全过
+- 覆盖度自检：按 55 个系统显示名逐个核对，**55/55 命中**（脚本核对方式记于本节，后续加系统时可复用）

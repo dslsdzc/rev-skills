@@ -73,6 +73,7 @@ capabilities: [rtos-analysis]
 
 ## 何时使用 / 何时不用
 
+- 前置：**先用特征串/魔数/符号确认是哪一个 RTOS**（本家族内极易互认）→ [[re-analyze/system-fingerprints]] 的 RTOS 段与易混淆对
 - 用：MCU/IoT 固件跑 RTOS——定位任务表/TCB、按任务拆分反编译、还原队列/信号量/互斥/定时器等内核对象
 - 用：拿到的是裸镜像（无文件系统、无符号），需要从启动代码链找出调度器与全部任务入口
 - 用：商业 RTOS 固件（VxWorks/QNX/RTEMS/INTEGRITY）——车机中控、航电、工控场景，同样从任务/线程控制块定位出发，按进程/分区/任务拆分分析

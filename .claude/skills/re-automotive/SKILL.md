@@ -11,6 +11,7 @@ capabilities: [automotive-analysis]
 
 ## 何时使用 / 何时不用
 
+- 前置：拿到 ARXML 或车载软件包但不确定是 Classic 还是 Adaptive → [[re-analyze/system-fingerprints]] 的车载段
 - 用：拿到车辆 CAN 总线流量（candump 日志 / .asc / .blf）需要解析报文与信号
 - 用：车载设备（车机、T-Box、IVI、ECU 升级包）逆向
 - 用：OBD-II / UDS 诊断会话分析（读 DTC、安全访问、标定读写）

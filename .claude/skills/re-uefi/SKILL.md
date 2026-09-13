@@ -41,6 +41,7 @@ SEC → PEI → DXE → BDS → OS / Runtime（+ SMM 独立一路）
 
 ## 何时使用 / 何时不用
 
+- 前置：拿到固件镜像但不确定是 UEFI/PI 结构还是嵌入式镜像 → [[re-analyze/system-fingerprints]] 的固件段（FV → FFS → section 层次）
 - 用：固件镜像内含 EFI 结构（Firmware Volume / FFS 文件 / DXE 驱动）——BIOS 更新包（.fd/.rom/.bin）、UEFI 驱动、EFI 应用
 - 用：bootkit 定位（SMM handler、定时器回调、启动路径挂钩）与验证
 - 用：Secure Boot / 启动链相关分析（签名、证书、NVRAM 变量）——需合法授权，见坑 4
