@@ -1,6 +1,15 @@
 {
   "name": "rev-skills",
-  "version": "0.0.6",
+  "version": "0.0.7",
+  "files": [
+    ".claude/skills",
+    ".claude-plugin",
+    "bin",
+    "lib",
+    "README.md",
+    "README_EN.md",
+    "AGENTS.md"
+  ],
   "description": "通用逆向工程 AI 技能库：122 个技能 + 多工具安装器（Claude Code/Gemini/Cline/Codex/Cursor/Copilot/Windsurf）",
   "type": "module",
   "bin": {
