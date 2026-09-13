@@ -202,6 +202,24 @@
 - **核对**：实际结构 **122 = 1 entry + 12 gateway + 109 atomic**，与文档现值一致
 - **结果**：`npm test` 41 项通过；`OK: 122 skills validated`
 
+### 批 3 补充 13：macOS 低层分支加深（#49，用户提供，已落地）
+
+- **背景**：用户补充 macOS 低层逆向的失败模式——macOS 的坑在于**三套完全不同的模型混在一起**（KEXT+IOKit 内核态 / DriverKit·DEXT 用户态 / System Extension 框架），且四个事实最容易让整条分析链跑偏：① codeless KEXT 可能根本没代码 ② 磁盘 KEXT 与当前运行的可能不是同一版本（AuxKC）③ arm64e 指针不能当普通 64 位指针（PAC）④ `IOServiceOpen` 失败可能停在 entitlement/activation 层，根本没走到 UserClient
+- **形态**：`macos-kernel.md` 从 55 行扩到 **286 行**（现为该技能最大分支）；主干平台表 macOS 行改为「三套模型」，失败模式决策表加 3 行（符号化偏移 / kext 加载不了的完整条件 / UserClient 与 dispatch）
+- **新增要点**（相对旧版）：`Info.plist` 的 IOKitPersonalities 匹配键全集与"Info.plist 先行"顺序；**IOKit class graph 优先于 call graph**（OSMetaClass/vtable；unresolved virtual calls 常因缺 kernel/superclass type universe）；dispatch 字段的 **`check` 前缀**与 `kIOReturnBadArgument` 可能是**框架层拒绝**（含 completion 需要有效通知 Mach port）；dext 的停手信号与按用户态调试；System Extension ≠ DriverKit 同义词；Host app 与 dext 两边都要逆；六态生命周期（bundle→registered→approved→activated→matched→started）；**Rosetta 不翻译 kext**（`KMErrorDomain Code=71`）；Kernel Collection；**panic 符号化的 `__TEXT_EXEC.vmaddr` 偏移**与 UUID/KDK build 匹配；UAKL / Reduced Security / AuxKC / SIP 与签名校验的关系；**KIP** 机制；rootkit 的年代差异（10.x Intel → 11+ Apple Silicon）；KEXT 双机调试 vs DEXT 本机调试
+- **核验（6 项上游）**：Apple 文档的 dispatch 字段名（确认带 `check` 前缀，与 arguments 字段区分）、`kIOReturnBadArgument` 的端口成因（StackOverflow 实例为 `checkCompletionExists=true` + 错误端口）、panic 符号化 `__TEXT_EXEC`（Apple 开发者论坛 DTS 工程师答复，含 `otool`/`atos` 完整命令）、AuxKC/UAKL/1TR/签名校验（Apple 平台安全指南）、KIP 机制（内核初始化后启用、内存控制器拒写受保护区、MMU 双向限制、使能硬件启动后锁定）、Rosetta 不翻译 kernel extension（官方 Rosetta 文档 + `Incompatible architecture` 报错）
+- **结果**：`npm test` 41 项通过；`OK: 122 skills validated`
+- **体量备注**：`re-kernel` 现 **1094 行 / 8 文件**（主干 105 + 七份 references），已达"平台分支各自可成技能"的规模——是否拆分由用户判断，本轮未动
+
+### 批 3 补充 14：Windows 驱动分支加深（#50，用户提供，已落地）
+
+- **背景**：用户补充 Windows 驱动分析的失败模式（33 点 + 决策树），核心是"**先识别 driver model，再恢复 callback / 设备栈 / I/O 路径**"，并点名七个最易产生事实性错误的点（把所有 `.sys` 当 WDM / `GsDriverEntry` 当入口 / `MajorFunction` 空当"无 I/O" / 不知道 KMDF·NDIS·minifilter 的 callback registration / 不知道 IRP completion 是异步控制流 / 不知道 IOCTL 的 Method 决定 buffer 语义 / 2026 年仍用旧签名假设）
+- **形态**：`windows-kernel.md` 从 76 行扩到 **501 行**（技能内最大文件）；同时**接回两个旧 Windows reference 的链路**（`windows-gotchas` / `windows-decision-tree` 在重写后一度成为孤儿——它们含独占内容：版本差异组与证据分级，故补链而非删除）
+- **新增要点**：驱动模型分类（WDM/KMDF/UMDF/minifilter/NDIS/StorPort/PortCls/AVStream）；`GsDriverEntry`；WDM 的 `DRIVER_OBJECT` 赋值图；KMDF 的 Evt* 与 `WDF_*_CONFIG` dataflow（`!drvobj` 指 Wdf01000.sys 属正常）；miniport 架构与 NDIS callback 图（网卡驱动无 READ/WRITE 正常）；device stack 与 **INF 的栈位置**（UpperFilters/LowerFilters/AddFilter）；minifilter 的 altitude 与 pre/post 流水线；`CTL_CODE`/`METHOD_*` 语义与 **NEITHER 用户指针**；**completion edge 与 `STATUS_PENDING`**；`PAGE` section 的 IRQL 语义与偶发 0xD1；**Driver Verifier 的故障注入**与 0xC9 的追链法；PE relocation；PDB public≠private 与 signature+age；`!analyze -v` 只是入口；**UMDF/Wudfhost**（`!wdfkd.wdfumdevstacks`、`%ProgramData%\Microsoft\WDF`）；**2026 驱动签名策略**；**HVCI 兼容要求**与 Test Mode 仍需签名；x64 patching 禁忌；callback-registration graph；IRP flow graph；minifilter unload 四态
+- **核验（3 项上游，均带时间点）**：① Microsoft Windows Driver Policy——**2026-04 安全更新后旧 cross-signed 驱动默认不再受信**，默认只认 WHCP 签名（另有 curated allow list）；**先行评估模式**（约 100 小时运行 + 2–3 次启动相关条件才转强制；期间发现不合规驱动则继续评估并重置计数）；企业可用 Application Control for Business 覆盖（须由 Secure Boot PK/KEK 权威签名）；适用 Win11 24H2/25H2/26H1 + Server 2025。② HVCI 官方 checklist（NX 默认、`NonPagedPoolNx`、不用 W+X 段、不直接改可执行系统内存、**内核不用动态代码**、数据不当代码、0x1000 对齐）+ **Test Mode 在 HVCI 下仍要求签名**（失败码 0xC0000428 / CodeIntegrity 219）+ Microsoft 计划 **2026-10-13** 起在符合条件设备默认启用 Memory Integrity。③ UMDF（`!wdfkd.wdfumdevstacks` 的 `!process`→`.process /P`→命令工作流；dump 路径 `%ProgramData%\Microsoft\WDF`，UMDF 2.15/Win10 1507 起；WER 三类事件 WUDFHostProblem/UnhandledException/VerifierFailure；`wdfumtriage`/`wdfldr`/`wdfumirps`/`wdflogdump`）
+- **结果**：`npm test` 41 项通过；`OK: 122 skills validated`；re-kernel 全部 references 均可达（孤儿检查通过）
+- **体量**：`re-kernel` 现 **1522 行 / 8 文件**（windows-kernel 501 / macos 286 / linux 277 / sel4 201 / android 42 + 主干 108 + 两份 Windows 附录）——拆分与否待用户决定
+
 ## 需澄清（非误报，但审查表述需修正）
 
 1. **candump `-f` 确实存在**：上游 can-utils 当前版本有 `-f <fname>`（写日志文件），Debian bookworm 打包的 manpage（can-utils 2020.11.0）尚未收录该选项——核验时以源码为准。#10 的结论（原命令会写文件而非过滤）成立。
@@ -243,3 +261,45 @@
 审查提出把验证体系分四层：Syntax → API/CLI validity → Format/spec assertion → behavior fixture，即对 API 名做静态符号表比对、对 CLI 示例跑 `--help`、对格式常量做 spec 断言、对关键结论建最小 fixture（如生成最小 safetensors 验证前 8 字节、起 `-S -s` QEMU 验证 $pc、用脱敏备份验证 fileID 派生）。
 
 可选落点：与 TODO「增量审查机制」合并设计——finding 记录（本文档格式）+ 高风险技能的 fixture 子集，先覆盖 ABI/offset/格式字段/API 名四类断言。
+
+---
+
+## 补充 15：特殊系统深化波次（2026-09-13，QNX / Fuchsia-Zircon / UEFI-PI / VxWorks / Zephyr / RTEMS / FreeBSD / illumos）
+
+来源为外部整理的特殊系统调研（8 个系统的"核心模型 + 最危险误判"），按**每一条具体机制先核验上游、再入库**处理。本波次**不是缺陷修复**（原文无事实性错误），而是**事实补全与边界条件补足**，性质同"补充 1–14"。
+
+### 落地位置（8 → 3 个技能，不新增技能）
+
+| 系统 | 落点 | 形态 |
+|---|---|---|
+| QNX Neutrino | `re-rtos/references/qnx.md` | 新增分支（该技能原为单文件） |
+| VxWorks | `re-rtos/references/vxworks.md` | 新增分支 |
+| Zephyr | `re-rtos/references/zephyr.md` | 新增分支 |
+| RTEMS | `re-rtos/references/rtems.md` | 新增分支 |
+| UEFI / PI / EDK2 | `re-uefi/references/pi-stages.md` | 新增分支（该技能原为单文件） |
+| Fuchsia / Zircon | `re-kernel/references/zircon-kernel.md` | 新增分支（与 sel4-kernel 并列为 capability 系统） |
+| FreeBSD | `re-kernel/references/freebsd-kernel.md` | 新增分支 |
+| illumos / Solaris | `re-kernel/references/illumos-kernel.md` | 新增分支 |
+
+挂载点：`re-rtos` / `re-uefi` / `re-kernel` 的 SKILL.md（运行模型差异表 / 阶段判定表 / 失败模式决策表 / 分支指针）；`re-analyze/references/rerouting.md` A 表新增 9 条"异常信号 → 换路"行。
+
+### 核验中发现并写入的**边界条件修正**（通行说法不完整之处）
+
+| # | 常见说法 | 核验后的准确表述 | 依据 |
+|---|---|---|---|
+| 1 | FreeBSD linker set 是 `struct linker_set {ls_length, ls_items[]}`，以 NULL 结尾 | 那是 **a.out 时代**的结构；**现代 ELF** 由 `__start_set_<名>` / `__stop_set_<名>` 定界，**列表不再以 NULL 结尾**——按结尾 NULL 扫描会越界；且 2001 年起宏已隐藏实现 | freebsd-src 提交 f10fa038（"gensetdefs past its use-by date"）+ `sys/linker_set.h` 语义 |
+| 2 | illumos `attach()` 的命令值包含 `DDI_PM_RESUME` | 现行文档命令值为 **`DDI_ATTACH` / `DDI_RESUME`**；`DDI_PM_RESUME` 属**已废弃的 PM 接口**（配套 `DDI_PM_SUSPEND`），**是年代线索而非标准写法** | `attach(9E)`（illumos/Oracle 现行页）+ `pm(9P)` 声明原 PM 接口过时 |
+| 3 | QNX 服务端"继承客户端优先级" | 提升**可发生在发送时刻**（不等 server 收到）；**回复后不自动恢复**（直到被新消息/pulse 改变或显式设置）；另有 **server boost**（无 RECEIVE-blocked 线程时）；`ChannelCreate()` 的 **`_NTO_CHF_FIXED_PRIORITY`** 可关闭继承 | QNX《Priority inheritance and messages》《Server boost》+ `MsgSend()`/`ChannelCreate()` 参考页 |
+| 4 | `zx_channel_write` 失败时 handle 归还原主 | **失败也会消费**（handle 被丢弃而非归还）——改动后语义为"始终消费"；另：`channel_write_etc` 的 `ZX_HANDLE_OP_MOVE`/`DUPLICATE`、rights 只能收窄、in-transit handle 随 channel 销毁而关闭 | Zircon `docs/handles.md`、`channel_write`（含 ZX-2204 语义变更）、`channel_write_etc` |
+| 5 | `dlopen` 的 `RTLD_LAZY` 会推迟符号解析 | **RTEMS 上两者行为相同**：`dlopen` 返回前**全部重定位已完成**；且**未解析符号不导致失败**（需 `dlinfo(RTLD_DI_UNRESOLVED)` 查）、**重名符号判错**、不支持符号版本 | RTEMS `cpukit/libdl`（`rtl.h`）与 RTEMS C User's Manual 的 runtime link editor 章节 |
+| 6 | DXE 侧"不应修改 HOB"是约定 | HOB 构造调用在 DXE 阶段**会断言失败**（PEI HOB 对 DXE 只读）；DXE 跨阶段状态只能走复位调用 | PI Spec Vol.1 §9（PEI to DXE Handoff）+ EDK2 `HobLib.h` 注释 |
+| 7 | Zephyr 的 early init"不调用内核服务"是弱约定 | `PRE_KERNEL_1/2` **运行于中断栈的内核初始化上下文**，服务本就不可用——符合设计；反之出现线程/互斥/睡眠应先怀疑阶段判错 | Zephyr `include/zephyr/init.h` 的 level 语义 + 设备/`SYS_INIT` init 基础设施拆分 |
+| 8 | VxWorks 模块"链接不完整"即损坏 | DKM（`.out`）**动态链接到内核符号表**，独立观察必然大量 unresolved；`undefined symbol` 的真实成因是 **VIP 未包含该组件**；同版本 ≠ 同 ABI 环境（随 VSB/VIP 变化） | VxWorks 7 SDK Application Developer Guide + VSB/VIP 构建说明 |
+
+其余事实（QNX `dispatch_create`/`resmgr_attach`/`iofunc_*` 序列、io-pkt 的 `devnp-*.so` 与 `devnp-shim.so`、单线程栈上下文与 `nw_pthread_create`；DFv2 的 driver manager/host/index/runtime 与同驻本地通道；PI 阶段与 `DXE_RUNTIME_DRIVER` 生命周期、`EVT_SIGNAL_VIRTUAL_ADDRESS_CHANGE`/`ConvertPointer`；Zephyr iterable sections 与 LLEXT/`llext_add_domain`；RTEMS `confdefs.h`/`CONFIGURE_INIT` 唯一性与 `rtems_driver_address_table` 的 major=表索引；FreeBSD `SYSINIT` 排序键与 `SI_SUB_KLD` 合并时机；illumos `nulldev`/`nodev` 语义差异）均按上游文档或官方头文件核验后写入，逐条依据见各分支文末"工具与验证"。
+
+### 本轮校验
+
+- `node validate.mjs`：`OK: 122 skills validated`（含新分支的链接规则与路由能力校验）
+- `npm test`：41 项全过；`node bin/capindex.mjs` 重生成后无差异（本波次未增删能力标签）
+- 未做：行为 fixture（LLEXT 装载、io-pkt 加载、OVMF 阶段切换等需真实目标或构建环境）——沿用"后续机制建议"的四层体系，先落在可选层

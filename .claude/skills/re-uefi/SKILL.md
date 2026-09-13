@@ -1,12 +1,43 @@
 ---
 name: re-uefi
 description: >
-  UEFI/BIOS 固件：DXE 驱动、UEFI 模块、bootkit。
-  触发词：UEFI、BIOS、DXE、bootkit、Secure Boot、EFI 固件
+  UEFI/BIOS 固件：SEC/PEI/DXE/BDS 阶段判定、DXE 驱动、UEFI 模块、bootkit。
+  触发词：UEFI、BIOS、DXE、PEI、SEC、PEIM、HOB、bootkit、Secure Boot、EFI 固件、runtime driver
 capabilities: [uefi-analysis]
 ---
 
 # UEFI 固件逆向（DXE 驱动 / UEFI 模块 / bootkit）
+
+<CORE RULE>
+**看到 PE32/PE32+ 就按普通 Windows PE 应用分析，是本域首要要排除的判断错误。**
+
+第一步永远是**判阶段与模块类型**：
+
+```
+SEC → PEI → DXE → BDS → OS / Runtime（+ SMM 独立一路）
+```
+
+同一份固件里，不同阶段的模块运行在**完全不同的执行环境**：可用内存不同、可调用的服务不同（PPI / Protocol / Runtime Services）、生命周期不同（`DXE_DRIVER` 与 `DXE_RUNTIME_DRIVER` 不是一回事）。
+
+所以顺序是：**先判阶段与类型，再谈逻辑**——类型判错，后面所有"它为什么这么写"的推理都会错。详见 [[pi-stages]]。
+</CORE RULE>
+
+## 阶段与模块类型（先分类）
+
+| 类型 | 阶段 | 服务形式 / 生命周期 |
+|---|---|---|
+| SEC | 最早 | 安全与初始化入口，无通用内存环境 |
+| PEIM | PEI | **PPI**；PEI 主要任务之一是建立永久内存 |
+| DXE driver | DXE | **Protocol**；仅存在于 boot services 环境 |
+| **DXE runtime driver** | DXE + Runtime | **跨生命周期**：`ExitBootServices()` 后仍存在，`SetVirtualAddressMap()` 时被重定位 |
+| UEFI driver / application | DXE/BDS 之后 | 跑在 UEFI 环境里的驱动/应用，与固件内建模块不是一回事 |
+| SMM/MM driver | 独立 | SMM 内执行，特权层级与生命周期自成一套 |
+
+三条高频判据（细节与决策树见 [[pi-stages]]）：
+
+- **读一串没有 producer xref 的结构** → 先想 **HOB**（PEI→DXE 单向交接，DXE 侧只读）
+- **`LocateProtocol(&guid)`** → 做 **GUID 字典解析**，恢复成 `EFI_XXX_PROTOCOL_GUID` 与接口 vtable；**协议图比直接调用图更有意义**
+- **固件地址 ≠ OS runtime 地址** → 不一定是 hook 或重定位错误，先确认比对的是哪个阶段的映射
 
 ## 何时使用 / 何时不用
 
@@ -116,6 +147,10 @@ capabilities: [uefi-analysis]
    - 无真实固件时 OVMF 就是基线环境（无 Secure Boot 签名约束，见坑 4）；仿真细节与用户态替代见 [[re-fw-emulate]]
    - 动态行为确认（回调触发/变量篡改）→ 沙箱 + 快照（[[re-sandbox]]），行为分析转 [[re-malware]]；每步产物存证
 
+## 分支（references）
+
+- [[pi-stages]] —— **PI 阶段模型**：SEC/PEI/DXE/BDS/Runtime/SMM 的判定与执行环境差异；**HOB**（PHIT 开头、PEI 单向生产、DXE 只读、`Build*Hob` 在 DXE 会断言）；**GUID 字典解析**（Protocol/PPI/FFS/HOB/变量命名空间/配置表）；**FV → FFS → section → PE** 层次（别按 PE 魔数直接 carve）；**`DXE_DRIVER` vs `DXE_RUNTIME_DRIVER`**（`ExitBootServices` 后 boot services 全不可用、`EVT_SIGNAL_VIRTUAL_ADDRESS_CHANGE` 通知函数禁调任何服务、`ConvertPointer`、`EFI_RUNTIME_ARCH_PROTOCOL` 的 `VirtualMode`/`AtRuntime` 判据）
+
 ## 跨域联合
 
 - [[re-firmware]]：本技能由 re-firmware 网关引用——UEFI 固件分支；整体流程仍按网关 提取→rootfs→仿真 编排
@@ -132,3 +167,6 @@ capabilities: [uefi-analysis]
 - **压缩/填充区遮挡内容**：现象——FFS 文件段显示为压缩数据或 FREE_SPACE/FIXED 填充，看不到 PE32 代码；原因——厂商对整个 DXE 卷做压缩（EFI/LZMA 压缩节），留空区是正常布局；对策——UEFITool/UEFIExtract 会自动解压并显示解压后的 Section（用它看，别用 binwalk 的原始字节）；binwalk 结果里"找不到代码"不代表没有，回 UEFITool 确认
 - **PE 头在 FFS 内偏移**：现象——从固件里抠出的"文件"直接 file/IDA 打开失败或反编译全是乱码；原因——FFS File Header（24/32 字节）+ Section Header + 对齐填充后才是 PE32 主体，PE 头不在文件偏移 0；对策——用 UEFITool 右键 Extract body / `uefiextract fw.bin <GUID> -m body` 导出裸 PE，导出后 `file` 确认输出含 "PE32+ executable (EFI boot service driver)" 再进反编译器；手工提取要按 Section 布局算偏移
 - **Secure Boot 签名验证绕过分析需合法授权**：现象——想"绕过 Secure Boot"/"给固件重签名"来做实验，动真实签名固件出问题；原因——签名绕过、固件密钥/证书提取、在真实设备上验证 bootkit 都涉及法律与授权边界；对策——默认在 OVMF 开发固件（无签名约束）里分析与验证行为；对真实固件动手前确认授权范围（自有设备、漏洞研究授权），未授权不碰；报告里明确边界（与 [[re-hardware-io]] 的授权边界同类表述）
+- **把跨阶段数据当缺失 producer 的普通全局变量**：现象——某函数读的一串结构找不到构造点，怀疑被裁剪或代码不完整；原因——那可能是 **HOB**（PEI→DXE 的单向交接，DXE 侧只读，构造调用还会断言）；对策——先按 HOB list 解析，建立"哪个阶段生产、谁消费"的对应（[[pi-stages]]）
+- **把 GUID 当无语义 UUID**：现象——大量 GUID 常量无法解释，分析停在"传了个常量进去"；原因——GUID 可能是 Protocol/PPI/FFS 文件/HOB/变量命名空间/配置表中的任意一种；对策——建 GUID→符号字典，把 `LocateProtocol` 一类调用还原成语义名与接口 vtable，**用协议图补足调用图**
+- **不区分 `DXE_DRIVER` 与 `DXE_RUNTIME_DRIVER`**：现象——拿固件里的地址与 OS runtime 阶段抓到的地址比对，判定被 hook；原因——runtime driver 在 `ExitBootServices()` 后仍存在、并会按 `SetVirtualAddressMap()` 的映射被重定位，固件地址本就不等于 runtime 地址；对策——先判模块类型与所处生命周期（`EFI_RUNTIME_ARCH_PROTOCOL` 的 `VirtualMode`/`AtRuntime` 是现成判据），再谈一致性（[[pi-stages]]）

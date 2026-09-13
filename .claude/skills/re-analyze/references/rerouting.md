@@ -43,6 +43,15 @@
 | VT-x/SVM 指令（VMXON/VMREAD）或 VMCS 结构 | `hypervisor-analysis` | [[re-hypervisor]] |
 | BPF ELF section（.maps/.BTF/.rel*，kprobe/tracepoint 命名节） | `ebpf-analysis` | [[re-ebpf]] |
 | VxWorks/QNX 特征串（任务表符号/内核对象命名） | `rtos-analysis` | [[re-rtos]] |
+| 进程注册了 pathname 并循环收消息、无内核模块却控制硬件 | `rtos-analysis` | [[re-rtos]]（QNX 资源管理器模型） |
+| 驱动既不是独立进程也不是内核模块（在网络栈进程内加载） | `rtos-analysis` | [[re-rtos]] → [[re-rtos/qnx]] |
+| init/设备对象没有直接 xref、一段规则排列的结构体（链接期注册） | `rtos-analysis` | [[re-rtos/zephyr]] |
+| 独立模块大量 unresolved symbols、同版本系统之间行为不一致 | `rtos-analysis` | [[re-rtos/vxworks]] |
+| dlopen 语义不像 Unix 共享库、设备分派看不到 file_operations | `rtos-analysis` | [[re-rtos/rtems]] |
+| 跨阶段数据结构找不到 producer、runtime 地址与固件地址对不上 | `uefi-analysis` | [[re-uefi/pi-stages]] |
+| handle 数值跨进程比对无效、传送后原值失效、同驻驱动有 IPC 无系统调用 | `kernel-analysis` | [[re-kernel/zircon-kernel]] |
+| init 函数没有调用者、一段指针数组所在 section 名为 set_* | `kernel-analysis` | [[re-kernel/freebsd-kernel]] |
+| 驱动入口为 _init/_fini/_info + modlinkage/dev_ops/cb_ops 骨架 | `kernel-analysis` | [[re-kernel/illumos-kernel]] |
 | .NSO/.NPDM 容器结构（Switch 加密分区） | `console-analysis` | [[re-console]] |
 | asar 结构（resources/app.asar + 内部 files 树） | `electron-analysis` | [[re-electron]] |
 | CAP 内 Header 组件魔数（DE CA FF ED，文件整体为 ZIP，Java Card 12 组件） | `bytecode-parser` | [[re-javacard]] |

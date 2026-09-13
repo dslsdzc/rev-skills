@@ -1,16 +1,55 @@
 ---
 name: re-rtos
-description: RTOS 结构分析：FreeRTOS/ThreadX/Zephyr/RT-Thread/VxWorks/QNX/INTEGRITY 任务表与 TCB 定位、内核对象还原、按任务拆分反编译。触发词：RTOS、FreeRTOS、ThreadX、Zephyr、VxWorks、QNX、INTEGRITY、任务表、TCB、固件调度、MCU 固件
+description: RTOS 结构分析：FreeRTOS/ThreadX/Zephyr/RT-Thread/VxWorks/QNX/RTEMS/INTEGRITY 运行模型判定、任务表与 TCB 定位、内核对象还原、按任务拆分反编译。触发词：RTOS、FreeRTOS、ThreadX、Zephyr、VxWorks、QNX、RTEMS、INTEGRITY、任务表、TCB、固件调度、MCU 固件、confdefs、devicetree、DKM、resource manager
 capabilities: [rtos-analysis]
 ---
 
-# RTOS 结构分析（FreeRTOS / ThreadX / Zephyr / RT-Thread / VxWorks / QNX / INTEGRITY）
+# RTOS 结构分析（FreeRTOS / ThreadX / Zephyr / RT-Thread / VxWorks / QNX / RTEMS / INTEGRITY）
+
+<CORE RULE>
+**RTOS 之间的差异不只是"换个 TCB 布局"，而是"驱动/服务在哪个地址空间、什么时候被注册"。**
+
+各内核形态不同（链表任务表 / 编译期设备图 / 全局符号环境 / 用户态 server / 构建期配置），但共性是：**注册模型决定你能看到什么**——一个函数"没有直接交叉引用"，在不同 RTOS 上可能分别意味着"正常（linker 注册）"、"正常（装载时符号解析）"、"正常（用户态 server）"或"真的没被引用"。
+
+所以顺序永远是：**先判这个 RTOS 的运行与注册模型，再谈任务与内核对象。**
+</CORE RULE>
+
+## 运行模型差异（不是同义替换）
+
+| 平台 | "驱动/服务"在哪 | 注册与发现机制 | 先判什么 |
+|---|---|---|---|
+| FreeRTOS / ThreadX / RT-Thread | 与内核同镜像；任务 + 内核对象表 | 显式创建 API + 静态对象实例 | 任务表/TCB（本主文档） |
+| **Zephyr** | 与内核同镜像，但**设备图在编译期生成** | devicetree + Kconfig + **iterable sections**、`SYS_INIT` | 是否 linker 注册（[[zephyr]]） |
+| **VxWorks** | **两种**：DKM 内核态 / RTP 用户态 | DKM 动态加载 + **全局符号环境**；RTP 走标准 ELF/`.so` | 先分 DKM 还是 RTP（[[vxworks]]） |
+| **QNX** | **用户态 server**；网络驱动是 io-pkt 内的共享对象 | **pathname 注册** + 消息传递 | 先判形态（[[qnx]]） |
+| **RTEMS** | 与内核/应用同处**单一地址空间** | 构建期配置（`confdefs.h`）+ 设备驱动表 + 运行期链接器 | 配置与驱动表（[[rtems]]） |
+| INTEGRITY | 分区（空间 + 时间隔离） | 全静态配置，运行期无动态创建 | 分区/进程表（见步骤 3） |
+
+## 失败模式决策表（本技能的主入口）
+
+**当"找不到调用关系""这段代码像死的""模块加载不了"时，按这张表先怀疑、再排除**：
+
+| 症状 | 优先怀疑 | 处理方向 |
+|---|---|---|
+| 某个 init / 设备对象**没有直接 xref** | 注册机制：iterable section / `SYS_INIT` / `DEVICE_DEFINE`（Zephyr） | 到 linker section 与 map 文件里裁决，**别标 dead code**（[[zephyr]]） |
+| 一整段**规则排列**的函数指针或结构体 | 同上：linker 生成的注册表 | 先按注册表理解，再考虑 vtable / jump table / 混淆（[[zephyr]]） |
+| early init 里不调用内核服务 | `PRE_KERNEL_*` 阶段服务尚不可用（设计如此） | 别判"被裁剪"；反之出现线程/互斥/睡眠应先怀疑阶段判错（[[zephyr]]） |
+| 一个进程**没有内核模块却控制硬件** | QNX 用户态 resource manager | 找 `resmgr_attach` / `dispatch_*` / `MsgReceive` 与注册的 pathname（[[qnx]]） |
+| 网络驱动**既不是进程也不是模块** | 被 io-pkt 加载的 `devnp-*.so` | 找加载它的 io-pkt，确认原生还是经 shim 的旧驱动（[[qnx]]） |
+| 线程优先级在采样中**突然变化** | QNX 消息驱动的**优先级继承** / server boost | 不是主动调 `pthread_setschedparam`（[[qnx]]） |
+| 线程**长时间阻塞在 IPC** | `MsgSend` 本就同步等待（正常状态） | 找"谁该 reply"；pulse 才是非阻塞那类（[[qnx]]） |
+| 独立模块里**大量 unresolved symbols** | VxWorks DKM 链接到**目标镜像的全局符号环境** | 先定位 image 与 VSB/VIP 配置，别判 malformed（[[vxworks]]） |
+| 模块在**同版本** VxWorks 上不工作 | 具体 image configuration 不同 | 核对 VSB/VIP 而不是版本字符串（[[vxworks]]） |
+| `dlopen()` 行为**不像 Unix 动态库** | RTEMS 运行时链接器 | 重定位进当前地址空间；对象名可为 `libfoo.a:bar.o`（[[rtems]]） |
+| 找不到设备回调的 `file_operations` | RTEMS 设备驱动表（major = 表索引） | 恢复 `rtems_driver_address_table` 与 `rtems_io_register_name`（[[rtems]]） |
+| 任务数/调度器**找不到运行期创建点** | RTEMS 构建期配置生成 | 找定义 `CONFIGURE_INIT` 的那个翻译单元（[[rtems]]） |
 
 ## 何时使用 / 何时不用
 
 - 用：MCU/IoT 固件跑 RTOS——定位任务表/TCB、按任务拆分反编译、还原队列/信号量/互斥/定时器等内核对象
 - 用：拿到的是裸镜像（无文件系统、无符号），需要从启动代码链找出调度器与全部任务入口
-- 用：商业 RTOS 固件（VxWorks/QNX/INTEGRITY）——车机中控、航电、工控场景，同样从任务/线程控制块定位出发，按进程/分区/任务拆分分析
+- 用：商业 RTOS 固件（VxWorks/QNX/RTEMS/INTEGRITY）——车机中控、航电、工控场景，同样从任务/线程控制块定位出发，按进程/分区/任务拆分分析
+- 用：**"驱动/服务不以内核模块形式存在"**或**"注册关系不在源码里成立"**的情形——先判定运行模型（用户态 server / 全局符号环境 / linker 注册 / 构建期配置），见分支与决策表
 - 不用：裸机固件（无任务表/调度器，按普通 MCU 镜像分析，[[re-fw-extract]] → [[re-binary-core]]）
 - 不用：Linux/Windows 内核（走 [[re-kernel]]）
 - 不用：只需动态跑起来观察行为（走 [[re-fw-emulate]]）
@@ -87,6 +126,15 @@ capabilities: [rtos-analysis]
    - 每任务一个入口独立分析：任务创建 API 的 entry 参数 → 函数 → 重命名为 task_<优先级>_<名字>，Ghidra 中逐任务标记入口
    - 任务内阻塞点（延时/等信号量/收队列/等事件）是调度切换点，按阻塞点把任务逻辑切成状态段分析
    - 任务间通信对象（队列/信号量）连接不同任务：先画"任务-对象-任务"关系图，再按图逐个深挖
+
+## 平台分支（references）
+
+以下四个平台的"驱动/服务模型"与通用任务表方法差异足够大，单独成篇——**先读分支判定运行模型，再回到本主文档做任务与对象分析**：
+
+- [[qnx]] —— **用户态 server 模型**：resource manager（`dispatch_create` → `resmgr_attach` → `dispatch_block/handler`，底层是 `MsgReceive`）、`connect`/I/O 两张函数表与 `iofunc_*` 默认实现的区分、`devctl` 与 `_IO_DEVCTL`、**io-pkt 与 `devnp-*.so`（含单线程栈上下文）**、消息驱动的**优先级继承**与 server boost、`MsgSend` 同步阻塞 vs pulse
+- [[vxworks]] —— **DKM（`.out`，内核态）vs RTP（`.vxe`，用户态）**、DKM 与**全局符号环境**的链接关系、`undefined symbol` 的真实成因（VIP 未含组件）、独立模块 unresolved 属常态、VSB/VIP 与"同版本不同 ABI 环境"
+- [[zephyr]] —— **编译期设备图**：`DEVICE_DEFINE`/`DEVICE_DT_DEFINE` 与 linker section、`SYS_INIT` 的 level/prio 与**返回值后果**、**iterable sections**（规则排列的结构体未必是混淆表）、`/chosen` 与 `/aliases` 不是硬件节点、map 文件裁决归属、**LLEXT**（导出符号表、`llext_unload` 后指针失效、User Mode 下需 `llext_add_domain`）
+- [[rtems]] —— **单地址空间 + 构建期配置**：`confdefs.h` 与 `CONFIGURE_INIT` 唯一性、`rtems_driver_address_table` 六入口与 **major = 表索引**、`rtems_io_register_name`、**运行时链接器不是 Unix 共享库模型**（`libfoo.a:bar.o`、懒/立即绑定等价、未解析不报错、重名即错误、基镜像需 `rtems-syms`）
 
 ## 跨域联合
 
