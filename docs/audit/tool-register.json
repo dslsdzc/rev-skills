@@ -1,0 +1,1498 @@
+{
+  "$comment": "第三方命令/API 登记表。last_verified=null 表示「已登记但尚未核验当前 CLI/API 形态」——这不是缺失，而是明确的待核验积压；check 统计它、stale 按超期排序。新增技能引用新工具时 check 会列为候选。",
+  "tools": [
+    {
+      "name": "aapt2",
+      "kind": "cli",
+      "where": [
+        "re-apk"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "adb",
+      "kind": "cli",
+      "where": [
+        "re-apk",
+        "re-flutter",
+        "re-frida",
+        "re-mobile-forensics",
+        "re-mobile-pack"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "afl-clang-fast",
+      "kind": "cli",
+      "where": [
+        "re-fuzzing"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "afl-cmin",
+      "kind": "cli",
+      "where": [
+        "re-crash-triage",
+        "re-fuzzing"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "afl-fuzz",
+      "kind": "cli",
+      "where": [
+        "re-fuzzing"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "afl-tmin",
+      "kind": "cli",
+      "where": [
+        "re-crash-triage"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "apksigner",
+      "kind": "cli",
+      "where": [
+        "re-apk"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "apktool",
+      "kind": "cli",
+      "where": [
+        "re-apk"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "arm-linux-gnueabi-readelf",
+      "kind": "cli",
+      "where": [
+        "re-fw-rootfs"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "atos",
+      "kind": "cli",
+      "where": [
+        "re-kernel"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "binwalk",
+      "kind": "cli",
+      "where": [
+        "re-console",
+        "re-fw-extract",
+        "re-packer-id",
+        "re-shellcode",
+        "re-stego"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "blkls",
+      "kind": "cli",
+      "where": [
+        "re-disk-forensics"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "canbusload",
+      "kind": "cli",
+      "where": [
+        "re-automotive"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "candump",
+      "kind": "cli",
+      "where": [
+        "re-automotive"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "cansniffer",
+      "kind": "cli",
+      "where": [
+        "re-automotive"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "capinfos",
+      "kind": "cli",
+      "where": [
+        "re-netcap"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "class-dump",
+      "kind": "cli",
+      "where": [
+        "re-ios"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "codesign",
+      "kind": "cli",
+      "where": [
+        "re-format-macho",
+        "re-ios",
+        "re-macos"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "cpuid",
+      "kind": "cli",
+      "where": [
+        "re-hypervisor"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "cramfsck",
+      "kind": "cli",
+      "where": [
+        "re-fw-rootfs"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "dd",
+      "kind": "cli",
+      "where": [
+        "re-disk-forensics",
+        "re-fw-extract",
+        "re-memdump",
+        "re-shellcode"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "defaults",
+      "kind": "cli",
+      "where": [
+        "re-macos"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "dexdump",
+      "kind": "cli",
+      "where": [
+        "re-mobile-pack"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "diec",
+      "kind": "cli",
+      "where": [
+        "re-packer-id"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "docker",
+      "kind": "cli",
+      "where": [
+        "re-sandbox"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "dotnet",
+      "kind": "cli",
+      "where": [
+        "re-dotnet"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "dotnet-dump",
+      "kind": "cli",
+      "where": [
+        "re-dotnet"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "dpkg-deb",
+      "kind": "cli",
+      "where": [
+        "re-ios-jb"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "driverquery",
+      "kind": "cli",
+      "where": [
+        "re-anti-cheat"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "eu-stack",
+      "kind": "cli",
+      "where": [
+        "re-memdump"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "ffprobe",
+      "kind": "cli",
+      "where": [
+        "re-drm"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "firejail",
+      "kind": "cli",
+      "where": [
+        "re-sandbox"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "flashrom",
+      "kind": "cli",
+      "where": [
+        "re-hardware-io"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "fls",
+      "kind": "cli",
+      "where": [
+        "re-disk-forensics"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "fltmc",
+      "kind": "cli",
+      "where": [
+        "re-anti-cheat"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "frida",
+      "kind": "cli",
+      "where": [
+        "re-crypto-id",
+        "re-frida",
+        "re-frida-script-author"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "frida-dexdump",
+      "kind": "cli",
+      "where": [
+        "re-mobile-pack"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "frida-trace",
+      "kind": "cli",
+      "where": [
+        "re-frida"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "fsstat",
+      "kind": "cli",
+      "where": [
+        "re-disk-forensics"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "gcore",
+      "kind": "cli",
+      "where": [
+        "re-crypto-keys",
+        "re-memdump"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "gdb",
+      "kind": "cli",
+      "where": [
+        "re-address-space",
+        "re-crash-triage",
+        "re-gdb",
+        "re-memdump"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "gdb-multiarch",
+      "kind": "cli",
+      "where": [
+        "re-fw-emulate"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "Get-WinEvent",
+      "kind": "cli",
+      "where": [
+        "re-evasion"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "ghc",
+      "kind": "cli",
+      "where": [
+        "re-fp-runtime"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "hackrf_transfer",
+      "kind": "cli",
+      "where": [
+        "re-sdr"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "hbc-decompiler",
+      "kind": "cli",
+      "where": [
+        "re-hybrid-app"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "hbc-disassembler",
+      "kind": "cli",
+      "where": [
+        "re-hybrid-app"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "hbc-file-parser",
+      "kind": "cli",
+      "where": [
+        "re-hybrid-app"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "hexdump",
+      "kind": "cli",
+      "where": [
+        "re-fw-extract",
+        "re-stego"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "icat",
+      "kind": "cli",
+      "where": [
+        "re-disk-forensics"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "idevicebackup2",
+      "kind": "cli",
+      "where": [
+        "re-mobile-forensics"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "iproxy",
+      "kind": "cli",
+      "where": [
+        "re-ios",
+        "re-ios-jb"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "iptables",
+      "kind": "cli",
+      "where": [
+        "re-netcap"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "jadx",
+      "kind": "cli",
+      "where": [
+        "re-apk",
+        "re-mobile-pack"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "jar",
+      "kind": "cli",
+      "where": [
+        "re-java"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "java",
+      "kind": "cli",
+      "where": [
+        "re-java"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "javap",
+      "kind": "cli",
+      "where": [
+        "re-java"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "jdb",
+      "kind": "cli",
+      "where": [
+        "re-java"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "jq",
+      "kind": "cli",
+      "where": [
+        "re-browser-ext",
+        "re-ti"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "js-beautify",
+      "kind": "cli",
+      "where": [
+        "re-hybrid-app"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "jtool2",
+      "kind": "cli",
+      "where": [
+        "re-format-macho"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "keytool",
+      "kind": "cli",
+      "where": [
+        "re-apk"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "ld64.lld",
+      "kind": "cli",
+      "where": [
+        "re-format-macho"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "lipo",
+      "kind": "cli",
+      "where": [
+        "re-format-macho"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "lldb",
+      "kind": "cli",
+      "where": [
+        "re-ios-jb",
+        "re-lldb"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "llvm-nm",
+      "kind": "cli",
+      "where": [
+        "re-format-macho",
+        "re-swift"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "llvm-objdump",
+      "kind": "cli",
+      "where": [
+        "re-format-macho"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "llvm-readobj",
+      "kind": "cli",
+      "where": [
+        "re-cpp-abi"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "logman",
+      "kind": "cli",
+      "where": [
+        "re-evasion"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "ltrace",
+      "kind": "cli",
+      "where": [
+        "re-tracing"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "mactime",
+      "kind": "cli",
+      "where": [
+        "re-disk-forensics"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "mitmproxy",
+      "kind": "cli",
+      "where": [
+        "re-netcap"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "mmls",
+      "kind": "cli",
+      "where": [
+        "re-disk-forensics"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "modprobe",
+      "kind": "cli",
+      "where": [
+        "re-automotive",
+        "re-hypervisor"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "mono",
+      "kind": "cli",
+      "where": [
+        "re-dotnet"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "mp4dump",
+      "kind": "cli",
+      "where": [
+        "re-drm"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "netron",
+      "kind": "cli",
+      "where": [
+        "re-ai-model"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "nm",
+      "kind": "cli",
+      "where": [
+        "re-go",
+        "re-imports",
+        "re-rust"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "npx",
+      "kind": "cli",
+      "where": [
+        "re-electron"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "objcopy",
+      "kind": "cli",
+      "where": [
+        "re-flutter",
+        "re-shellcode"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "objdump",
+      "kind": "cli",
+      "where": [
+        "re-crypto-id",
+        "re-format-elf",
+        "re-format-pe",
+        "re-imports",
+        "re-packer-id",
+        "re-pwn",
+        "re-shellcode",
+        "re-triage",
+        "re-whitebox"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "ocamlc",
+      "kind": "cli",
+      "where": [
+        "re-fp-runtime"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "ocamlobjinfo",
+      "kind": "cli",
+      "where": [
+        "re-fp-runtime"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "ocamlopt",
+      "kind": "cli",
+      "where": [
+        "re-fp-runtime"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "olevba",
+      "kind": "cli",
+      "where": [
+        "re-doc-malware",
+        "re-script-deob"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "one_gadget",
+      "kind": "cli",
+      "where": [
+        "re-pwn"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "openocd",
+      "kind": "cli",
+      "where": [
+        "re-hardware-io"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "openssl",
+      "kind": "cli",
+      "where": [
+        "re-tls"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "otool",
+      "kind": "cli",
+      "where": [
+        "re-format-macho",
+        "re-imports",
+        "re-ios",
+        "re-kernel",
+        "re-macos",
+        "re-swift"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "palera1n",
+      "kind": "cli",
+      "where": [
+        "re-ios-jb"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "panoramix",
+      "kind": "cli",
+      "where": [
+        "re-blockchain"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "pdf-parser",
+      "kind": "cli",
+      "where": [
+        "re-doc-malware"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "pdfid.py",
+      "kind": "cli",
+      "where": [
+        "re-doc-malware"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "photorec",
+      "kind": "cli",
+      "where": [
+        "re-disk-forensics"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "picocom",
+      "kind": "cli",
+      "where": [
+        "re-hardware-io"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "powershell",
+      "kind": "cli",
+      "where": [
+        "re-fileless"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "procdump",
+      "kind": "cli",
+      "where": [
+        "re-evasion",
+        "re-memdump"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "pwsh",
+      "kind": "cli",
+      "where": [
+        "re-script-deob"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "pycdc",
+      "kind": "cli",
+      "where": [
+        "re-python"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "pyinstaller",
+      "kind": "cli",
+      "where": [
+        "re-python"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "qemu-arm",
+      "kind": "cli",
+      "where": [
+        "re-fw-emulate"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "qemu-system-arm",
+      "kind": "cli",
+      "where": [
+        "re-fw-emulate"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "qemu-system-mips",
+      "kind": "cli",
+      "where": [
+        "re-fw-emulate"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "qemu-system-x86_64",
+      "kind": "cli",
+      "where": [
+        "re-hypervisor",
+        "re-uefi"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "readelf",
+      "kind": "cli",
+      "where": [
+        "re-address-space",
+        "re-android-native",
+        "re-arm",
+        "re-cpp-abi",
+        "re-drm",
+        "re-flutter",
+        "re-format-elf",
+        "re-fp-runtime",
+        "re-fw-extract",
+        "re-go",
+        "re-imports",
+        "re-mips",
+        "re-nim",
+        "re-riscv",
+        "re-swift",
+        "re-triage",
+        "re-zig"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "rg",
+      "kind": "cli",
+      "where": [
+        "re-fw-rootfs"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "rizin",
+      "kind": "cli",
+      "where": [
+        "re-radare2"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "ROPgadget",
+      "kind": "cli",
+      "where": [
+        "re-exploit"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "ropper",
+      "kind": "cli",
+      "where": [
+        "re-exploit"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "rr",
+      "kind": "cli",
+      "where": [
+        "re-crash-triage"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "rtfobj",
+      "kind": "cli",
+      "where": [
+        "re-doc-malware"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "rtl_sdr",
+      "kind": "cli",
+      "where": [
+        "re-sdr"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "rz-diff",
+      "kind": "cli",
+      "where": [
+        "re-variant"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "rz-pm",
+      "kind": "cli",
+      "where": [
+        "re-radare2"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "schtasks",
+      "kind": "cli",
+      "where": [
+        "re-fileless"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "sdkmanager",
+      "kind": "cli",
+      "where": [
+        "re-android-native"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "spctl",
+      "kind": "cli",
+      "where": [
+        "re-macos"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "strace",
+      "kind": "cli",
+      "where": [
+        "re-loader",
+        "re-tracing"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "sysctl",
+      "kind": "cli",
+      "where": [
+        "re-crash-triage",
+        "re-gdb",
+        "re-netcap"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "systemctl",
+      "kind": "cli",
+      "where": [
+        "re-ios-jb"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "tcpdump",
+      "kind": "cli",
+      "where": [
+        "re-netcap"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "testdisk",
+      "kind": "cli",
+      "where": [
+        "re-disk-forensics"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "tshark",
+      "kind": "cli",
+      "where": [
+        "re-crypto-decrypt",
+        "re-drm",
+        "re-ics",
+        "re-iot-proto",
+        "re-netcap",
+        "re-proto-rev",
+        "re-shellcode",
+        "re-tls"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "tsk_recover",
+      "kind": "cli",
+      "where": [
+        "re-disk-forensics"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "uefiextract",
+      "kind": "cli",
+      "where": [
+        "re-uefi"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "ueifind",
+      "kind": "cli",
+      "where": [
+        "re-uefi"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "unblob",
+      "kind": "cli",
+      "where": [
+        "re-fw-extract"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "unsquashfs",
+      "kind": "cli",
+      "where": [
+        "re-fw-rootfs"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "upx",
+      "kind": "cli",
+      "where": [
+        "re-unpack-simple"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "VBoxManage",
+      "kind": "cli",
+      "where": [
+        "re-sandbox"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "vmrun",
+      "kind": "cli",
+      "where": [
+        "re-sandbox"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "vol",
+      "kind": "cli",
+      "where": [
+        "re-mem-forensics"
+      ],
+      "last_verified": "2026-09-13",
+      "source": "volatility3 readthedocs：windows.registry.* 插件路径与弃用别名移除日期；符号获取机制（Windows 走 PDB/Microsoft 符号服务器，Linux·macOS 走 kernel banner + ISF）"
+    },
+    {
+      "name": "wasm-decompile",
+      "kind": "cli",
+      "where": [
+        "re-wasm"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "wasm-objdump",
+      "kind": "cli",
+      "where": [
+        "re-wasm"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "wasm2wat",
+      "kind": "cli",
+      "where": [
+        "re-wasm"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "wasm3",
+      "kind": "cli",
+      "where": [
+        "re-wasm"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "wasmtime",
+      "kind": "cli",
+      "where": [
+        "re-wasm"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "yara",
+      "kind": "cli",
+      "where": [
+        "re-ioc"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "zig",
+      "kind": "cli",
+      "where": [
+        "re-zig"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
+      "name": "zsteg",
+      "kind": "cli",
+      "where": [
+        "re-stego"
+      ],
+      "last_verified": null,
+      "source": ""
+    }
+  ],
+  "ignore": [
+    "main",
+    "let",
+    "ent",
+    "cast",
+    "stop",
+    "print",
+    "import",
+    "type",
+    "name",
+    "age",
+    "proc",
+    "nim",
+    "Select",
+    "go",
+    "sc",
+    "ip",
+    "GHIDRA",
+    "pwn",
+    "Class",
+    "Data",
+    "Version",
+    "Machine",
+    "Entry",
+    "Start",
+    "Size",
+    "Number",
+    "Program",
+    "File",
+    "Load",
+    "cmd",
+    "header",
+    "end",
+    "module",
+    "thread",
+    "struct",
+    "class",
+    "task",
+    "reg",
+    "key",
+    "data",
+    "from",
+    "def",
+    "var",
+    "const",
+    "fn",
+    "arg",
+    "out",
+    "inp",
+    "off",
+    "size",
+    "flags",
+    "target",
+    "version",
+    "service",
+    "driver",
+    "filter",
+    "protocol",
+    "miniport",
+    "server",
+    "handle",
+    "frame",
+    "expr",
+    "boot",
+    "root",
+    "guest",
+    "CPU",
+    "IRQ",
+    "OS",
+    "ELF",
+    "Section",
+    "API",
+    "TEE",
+    "VT",
+    "SEC",
+    "POST",
+    "Magic",
+    "IRP_MJ_READ",
+    "IRP_MJ_WRITE",
+    "IRP_MJ_CREATE",
+    "IRP_MJ_CLOSE",
+    "IRP_MJ_DEVICE_CONTROL",
+    "IRP_MJ_SET_INFORMATION",
+    "IRP_MJ_PNP",
+    "Symbol",
+    "RVA",
+    "VA",
+    "String",
+    "Strings",
+    "code",
+    "branch",
+    "kernel",
+    "load",
+    "parts",
+    "params",
+    "mod",
+    "result",
+    "context",
+    "db",
+    "dc",
+    "dr",
+    "xQueueSend",
+    "xTaskNotifyGive",
+    "taskENTER_CRITICAL",
+    "BaseType_t",
+    "xQueueSendFromISR",
+    "syscall",
+    "ISR",
+    "TimerCallback",
+    "VxWorks",
+    "PikeOS",
+    "POSIX",
+    "Level",
+    "Nucleus",
+    "FLAT",
+    "PROTECTED",
+    "getpid",
+    "CREATE_PROCESS",
+    "early",
+    "NimStrPayload",
+    "NIM_CHAR",
+    "fatal.nim",
+    "comment",
+    "help",
+    "wanted_name",
+    "wanted_hotkey",
+    "pkts",
+    "cnt",
+    "fields_desc",
+    "XShortField",
+    "ByteField",
+    "ShortField",
+    "StrFixedLenField",
+    "pkt",
+    "pyver",
+    "cookie",
+    "start",
+    "archive",
+    "pos",
+    "blob",
+    "except",
+    "KIND",
+    "STDLIB",
+    "changed",
+    "immutable",
+    "tag",
+    "val",
+    "offset",
+    "fmt",
+    "cls",
+    "rows",
+    "res",
+    "bv",
+    "s",
+    "ql",
+    "mu",
+    "opts",
+    "p",
+    "sol",
+    "simgr"
+  ]
+}

@@ -93,12 +93,13 @@ capabilities: [jni-analysis]
    readelf --dyn-syms app/lib/arm64-v8a/libtarget.so | grep -i JNI     # JNI_OnLoad / JNI_OnUnload
    ```
    - **JNIEnv 是函数表指针**：`JNIEnv* env` 实际指向 `JNINativeInterface` 函数表（jni.h 定义），函数调用是 `(*env)->GetStringUTFChars(env, ...)` 形式的表槽访问——反编译里看到"从结构体偏移取函数指针再调用"就是 JNI API，见坑 1
-   - Ghidra/IDA 载入 jni.h 类型后，按名称还原：`GetStringUTFChars`（C 串→UTF-8）、`NewStringUTF`（返回）、`CallVoidMethod`/`CallBooleanMethod`（回调 Java）、`GetJavaVM`（进程内拿 JavaVM）
+   - Ghidra/IDA 载入 jni.h 类型后，按名称还原：`GetStringUTFChars`（**Java jstring → Modified UTF-8 字节序列**）、`NewStringUTF`（**Modified UTF-8 → Java String**）、`CallVoidMethod`/`CallBooleanMethod`（回调 Java）、`GetJavaVM`（进程内拿 JavaVM）
+   - **是 Modified UTF-8，不是标准 UTF-8**：两者在空字符编码（`0xC0 0x80`）与增补字符（代理对）上不同——按标准 UTF-8 解析会得到错误字符串，按字节数做的 `strlen` 类操作也会对不上（字符数要用 JNI 自己的长度接口拿）
    - 还原目标：native 函数签名（`(JNIEnv*, jclass/jobject, 业务参数...)`）——第一个参数是 env、第二个是 jclass（静态）或 jobject（实例），业务参数从第三个起
 
 3. **注册方式（静态 JNI_OnLoad / 动态 RegisterNatives）**：
    - 静态注册：函数名 `Java_包名_类名_方法名`（下划线转义），直接出现在导出表（步骤 2 可看到）
-   - 动态注册：`JNI_OnLoad` 里调 `RegisterNatives(env, clazz, methods, count)`，`methods` 是 `JNINativeMethod{name, signature, fnPtr}` 数组——**函数地址不在导出表**（见坑 2），反编译定位 `JNI_OnLoad` 后沿 RegisterNatives 第三参数数组逐项还原
+   - 动态注册：`JNI_OnLoad` 里调 `RegisterNatives(env, clazz, methods, count)`，`methods` 是 `JNINativeMethod{name, signature, fnPtr}` 数组——**三个字段都是指针，宽度随 ABI 变**（64 位下各 8 字节；**armeabi-v7a / x86 等 32 位 ABI 下各 4 字节**，数组步长 12 字节）——**函数地址不在导出表**（见坑 2），反编译定位 `JNI_OnLoad` 后沿 RegisterNatives 第三参数数组逐项还原
    - 机制要点（知识层）：`JNIEnv*` 指向 `JNINativeInterface` 函数表（见坑 1），`RegisterNatives` 是表中一个槽——**槽号是易变参数**（随 jni.h 声明序/NDK/ART 版本变化），不在核心流程硬编码
    - frida 观察运行时注册（spawn 目标 App）：脚本模板与槽位探测策略（锚点定位 / runtime 校验 / ABI 分支）见 [[probes]]——易变数值一律以运行时探测为准
      ```
@@ -132,7 +133,7 @@ capabilities: [jni-analysis]
 ## 常见坑与陷阱
 
 - **JNIEnv 是函数表指针（不是直接调用）**：现象——反编译里 JNI 函数调用点看起来像"从结构体偏移取出函数指针再调用"，参数对不上，或按普通函数分析 `GetStringUTFChars` 直接当字符串函数用错；原因——`JNIEnv` 指向 `JNINativeInterface` 函数表，所有 JNI API 都是表槽中的函数指针，C 写法 `(*env)->fn(env, ...)`；对策——Ghidra/IDA 载入 jni.h 类型（Data Type Manager 导入），`JNIEnv` 声明为 `JNINativeInterface**`，反编译自动还原成 `env->GetStringUTFChars(env, str)` 形式；没有类型库时手工按 `JNINativeInterface` 槽位索引建结构体
-- **动态注册函数地址不在导出表**：现象——`readelf --dyn-syms` / strings 里找不到 `Java_*` 或业务函数名，IDA 里全是地址没名字；原因——动态注册时函数是静态/局部符号，运行时才由 `RegisterNatives` 把地址与 Java 方法绑定；对策——`JNI_OnLoad` 是可选的库加载钩子、非必有导出：存在则反编译看 `RegisterNatives` 第三参数数组逐项还原（name/signature/fnPtr 各 8 字节）；不存在（或导出表无它）时从 `RegisterNatives` 的其他调用点、JNI 函数表 xref、字符串定位，或 frida spawn 后 hook RegisterNatives（步骤 3 脚本）直接拿运行时注册表
+- **动态注册函数地址不在导出表**：现象——`readelf --dyn-syms` / strings 里找不到 `Java_*` 或业务函数名，IDA 里全是地址没名字；原因——动态注册时函数是静态/局部符号，运行时才由 `RegisterNatives` 把地址与 Java 方法绑定；对策——`JNI_OnLoad` 是可选的库加载钩子、非必有导出：存在则反编译看 `RegisterNatives` 第三参数数组逐项还原（name/signature/fnPtr **各为一个指针**：64 位 8 字节、32 位 4 字节）；不存在（或导出表无它）时从 `RegisterNatives` 的其他调用点、JNI 函数表 xref、字符串定位，或 frida spawn 后 hook RegisterNatives（步骤 3 脚本）直接拿运行时注册表
 - **混淆 native（OLLVM）**：现象——反编译全是控制流平坦化（switch 调度器）、字符串全加密、函数巨大难读；原因——游戏/加固厂商用 OLLVM（变脸、bcf、sub）或商业混淆（VMP 类）保护 native 代码；对策——先确认混淆类型（平坦化 vs 指令虚拟化），平坦化按 [[re-deobfuscate]] 还原（状态变量 + 情况块），字符串加密定位解密函数后脚本批量解密；仍不行就 frida 动态拿运行时明文（hook 解密函数读内存）
 - **多 ABI 架构差异**：现象——按 arm64 分析的偏移/指令套到 armeabi-v7a 全错，或模拟器 x86_64 上行为与真机不同；原因——APK 每个 ABI 一份 so，编译优化/指令集/调用约定不同（arm64 用 x0-x7 传参，arm32 有 thumb 指令，x86_64 用 rdi/rsi...），部分 so 还会按 ABI 返回不同实现（如 arm64 真机 vs x86_64 模拟器分支）；对策——`file`/`readelf -h` 先确认目标 ABI，分析以真机 ABI（arm64-v8a）为准，x86_64 结果仅参考；JNI 类型宽度跨 ABI 一致（jlong=64 位、jint=32 位）但 C 层 `long` 宽度不同，注意反编译里的类型标注
 - **加固 so（壳壳）**：现象——静态分析 so 只见一小段 stub / 壳代码，`JNI_OnLoad` 反编译是脱壳流程；原因——so 被加固（厂商加壳 / 商用壳），真实逻辑运行时才解密到内存；对策——先识别加固（[[re-apk]] 加固识别 + 熵值），静态脱壳按 [[re-mobile-pack]]，或运行时 [[re-memdump]] 提内存中已解密的 so 再分析；脱壳产物 sha256 存档后回到步骤 1 复跑

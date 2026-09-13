@@ -55,7 +55,7 @@ capabilities: [symbolic-execution]
      | argv（命令行参数） | `project.factory.full_init_state(args=["./target", claripy.BVS("arg1", 64*8)])` |
      | file（文件输入） | `state.fs.insert('/tmp/in', angr.SimFile('in', content=claripy.BVS('in', 32*8)))`——fopen 后即符号化；按 fd 操作用 `state.posix.fd[0]`（fd 0=stdin；fd 1/2 是 stdout/stderr，勿混） |
      | memory（mmap/堆/全局缓冲区） | 直接符号化目标内存区：`state.memory.store(addr, claripy.BVS('buf', n*8))`——程序从该地址读入即符号化（mmap 文件、解密缓冲、共享内存通用） |
-     | network buffer（网络包/recv） | hook `recv`/`read` 使缓冲符号化：`state.memory.store(buf_addr, BVS('pkt', len*8))` 或 hook 返回符号指针——网络解析器目标通用 |
+     | network buffer（网络包/recv） | hook `recv`/`read`：**按调用约定取 buf 参数**（x86-64 SysV 是 RSI=buf、RDX=len），把符号字节写进该地址，**返回值是 ssize_t 字节数而不是 buffer 指针**——返回符号长度才能让 `if (recv(...) > 0)` 一类控制流可变。照"返回符号指针"实现会把后续控制流全部建歪 |
      | jni argument（Android native 入参） | 对 `JNIEnv` 方法参数做符号化：从 `GetByteArrayElements`/`GetStringUTFChars` 返回处符号化（配合 [[re-android-native]]/[[re-frida]] 确认入参形态） |
      | custom VM bytecode（自定义 VM 指令流） | 把字节码缓冲区整体符号化 + 约束操作码范围（0x00-0x0F 类）——VM 逆向的符号执行路径（[[re-deobfuscate]] 联动） |
 

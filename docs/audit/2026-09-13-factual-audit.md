@@ -641,3 +641,100 @@
 
 - `node validate.mjs`：`OK: 122 skills validated`；`npm test`：41 项全过
 - 二维标注落地自检：`独有·` / `高·` / `弱·` 共 62 处
+
+---
+
+## 补充 23：对 22a76dc 的抽样审查——网络隔离 / 工具生命周期 / ABI（2026-09-13）
+
+来源为同源外部审查（第二批，抽查 re-netcap / re-proto-rev / re-android-native / re-angr / re-ai-model / re-malware / re-mem-forensics + validate.mjs 与测试）。10 条全部处理，其中 1 条**核验后与审查意见相反**。
+
+### 一、P0：两处操作级 bug
+
+| # | 位置 | 问题 | 修正 |
+|---|---|---|---|
+| 1 | `re-netcap` 步骤 5 与坑表 | **沙箱断网验证不成立**——把"断网 / fake DNS / INetSim"并列，并用 `ping 8.8.8.8` 不通作为"无真实外联"的验证。**ICMP 被阻断 ≠ TCP/UDP 被阻断**；**fake DNS 挡不住硬编码 IP 的 C2**；纯断网又抓不到 C2 | 改为**默认拒绝出站（default-deny egress）+ 白名单到分析基础设施**，并给出 iptables 落地示例；验证改为**三条独立验证**（TCP / UDP / 硬编码 IP 直连），明确写"`ping 不通`不构成任何一条"。坑表同步改写 |
+| 1b | `re-sandbox` 步骤 1 与 `re-malware` | "VM 快照 > 容器 > firejail"的排序容易被当作"容器是一般恶意样本的后备隔离层"，但**容器与 firejail 都共享宿主内核** | 在层级说明处明确：**中低两档只适用于已知低风险样本**；样本存在内核攻击面（提权/内核漏洞/驱动载荷）时这两档不构成隔离边界；**默认承载未知高威胁样本的是 VM 快照** |
+| 2 | `re-netcap` 步骤 5 | **mitmproxy 透明代理规则只重定向了 80**——上下文在处理 HTTPS/TLS，但 PREROUTING/OUTPUT 两条都是 `--dport 80`，目标访问 443 时**根本不会进入 mitmproxy** | 改为 `-m multiport --dports 80,443`，并注明"只写 80 是最常见的失误"；补充非标准 TLS 端口（8443 等）需按实际观测补齐 |
+
+### 二、P1：工具操作层（Volatility 3 三连）
+
+| # | 问题 | 核验与修正 |
+|---|---|---|
+| 5 | **符号获取机制混了 Windows 与 Linux/macOS** | 核验：**Windows** 按 PDB GUID/age 在 `symbols/windows/` 找 ISF，**找不到时自动从 Microsoft 符号服务器下载 PDB 并转换**；**Linux/macOS 靠 kernel banner 精确匹配**（banner 编码在 ISF 内、文件名不重要），获取途径是社区预构建包或自行构建（`dwarf2json` 需调试内核 / `btf2json` 用 `vmlinuz` BTF + `System.map`）。原文"首次运行从 volatilityfoundation.org 下载、Linux 也是对应内核版本"**两侧都错**，已按上述改写并补"先跑 `banners` 拿 banner"的工作流 |
+| 6 | **插件命名漂移** | 核验：`windows.hashdump` / `lsadump` / `cachedump` **确已迁到 `windows.registry.*`**，旧名为弃用别名（v2.27 标记 **2026-09-25** 移除——距今 12 天），已改命令与坑表。**但审查关于 malfind 的部分与核验相反**：malfind 的**源码目录**在 `windows/malware/` 下，**命令行调用名仍是 `windows.malfind`**（`malware` 不进入调用名）——**照"迁到 windows.malware.malfind"改会引入新错误**，故未改；并把这条区别写进了坑表（"源码目录变了 ≠ 调用名变了"） |
+| 7 | **凭据来源统一写成"LSASS 内存"不准确** | 核验：三个插件都是 **registry-hive 派生**——hashdump ← SAM + SYSTEM（boot key）、lsadump/cachedump ← SECURITY（cachedump 用 **NL$KM** 解 MS-CACHEv2）。已改为分开记录：**registry-hive-derived** vs **LSASS process-memory** 两条路径，并写明取证报告里 provenance 写错后果较重 |
+
+### 三、P1：ABI 两处
+
+| # | 位置 | 问题 | 修正 |
+|---|---|---|---|
+| 3 | `re-android-native` | **JNI 字符串语义写反**（`GetStringUTFChars` 写成"C 串→UTF-8"）+ **`JNINativeMethod` 三个字段被硬编码成各 8 字节** | 语义改为 **jstring → Modified UTF-8** / **Modified UTF-8 → Java String**，并补"**是 Modified UTF-8 不是标准 UTF-8**"（空字符 `0xC0 0x80`、增补字符代理对上不同）；字段宽度改为"**各为一个指针**：64 位 8 字节、**32 位（armeabi-v7a/x86）4 字节**，数组步长 12 字节"。两处出现处均已改 |
+| 4 | `re-angr` | **recv/read hook 的 ABI 错误**——写成"或 hook 返回符号指针"，而 POSIX `recv`/`read` 的**返回值是 ssize_t 字节数** | 改为：**按调用约定取 buf 参数**（x86-64 SysV：RSI=buf、RDX=len）→ 写符号字节到该地址 → **返回符号长度**；并写明照原文实现会让 `if (recv(...) > 0)` 一类控制流全部建歪 |
+
+### 四、P2：两处内容错误
+
+| # | 位置 | 问题 | 修正 |
+|---|---|---|---|
+| 8 | `re-ai-model` | **"流式提取"名不副实**——`to_array()` 对 external data 张量会**完整 materialize**，且 `base_dir` 默认空字符串（权重不在 CWD 时直接失败） | 标题改为"**逐 tensor 惰性落地**"，代码里加 `base_dir="."` 与 `del arr`，并注明**不是流式**、峰值取决于最大张量；坑表同步 |
+| 9 | `re-proto-rev` | **Ethernet FCS 诊断错**——"帧短 14 字节"归因到 FCS，但 **FCS 是 4 字节、14 字节是典型以太网头部长度** | 重写为"**先量实际少了几字节**"：缺 4 字节查 FCS 剥离，缺 14 字节查以太网头/注入层；并删去"Scapy 不保留尾部"这类笼统断言（帧抽象随版本与配置而异） |
+
+### 五、结构性结论（写入 TODO）
+
+审查指出：**41 项测试与 `validate.mjs` 主要校验 schema 与路由图，不执行 Markdown 里的 shell/Python 示例，也不验证第三方 API/CLI 是否仍存在**——所以"122 skills validated / 41 tests pass"的准确含义是**结构与路由图健康**，而非"技能内容可执行"。本轮 Volatility 的过期命令即典型漏网类型。
+
+**趋势判断（记录）**：**领域知识已比工具操作层稳定**，新的主要缺陷来源转为「**命令/API 生命周期**」与「**示例代码没真正 smoke-test**」——与此前以事实性错误为主不同。
+
+已在 `TODO.md` 新增「工具 CLI/API 生命周期审查」条目，含最小方案（第三方命令/API 清单 + 版本漂移检查 + 示例可执行性 + 与增量审查机制合并设计）。
+
+### 六、本轮校验
+
+- `node validate.mjs`：`OK: 122 skills validated`；`npm test`：41 项全过
+- 涉及文件 7 个：`re-netcap` / `re-sandbox` / `re-mem-forensics` / `re-android-native` / `re-angr` / `re-ai-model` / `re-proto-rev`
+
+---
+
+## 补充 24：工具 CLI/API 生命周期机制落地（2026-09-13）
+
+上一节把"命令/API 生命周期"定为新的主要缺陷来源，本节实现其最小骨架。
+
+### 一、交付物
+
+| 文件 | 作用 |
+|---|---|
+| `docs/audit/tool-register.json` | **登记表**（140 项）：`name` / `kind` / `where`（引用它的技能） / `last_verified` / `source` + 一份 `ignore` 名单 |
+| `lib/tool-register.mjs` | 抽取（`extractCommands`）、扫描（`collectFromSkills`）、比对与时效（`checkRegister`）、探测（`smokeProbe`） |
+| `bin/toollife.mjs` | CLI：`check` / `candidates` / `stale` / `smoke`（与 `bin/capindex.mjs` 同构：lib 放逻辑、bin 做壳） |
+| `tests/toollife.test.mjs` | 10 项：抽取器各类边界 + 死条目/候选/时效/非法日期 + **仓库自身一致性** |
+
+`package.json` 增加 `npm run toollife`；`npm test` 通过 `tests/*.test.mjs` 自动纳入一致性检查。
+
+### 二、设计取舍（记录判断依据）
+
+- **抽取只认显式标注为 shell 的代码块**（```sh / ```bash / ```console / ```shell）。先按"所有代码块"试过一版：去重候选 **717** 个，其中大量是 python 体与结构体字段名（`print` / `import` / `onLoad` / `simgr.*`）；限定标注后降到 **159**，治理成本量级下降
+- **不做"每个命令都必须登记"的硬门**——那会把 `ls`/`cat`/`grep` 一类基础工具也拖进来。登记表只管**有生命周期风险的第三方工具**，基础工具在 `BASE_UTILS` 里直接过滤
+- **`last_verified: null` 是一等状态**：表示"已登记、尚未核验当前 CLI/API 形态"。当前 140 项里只有 1 项已核验（`vol`，本会话核过插件路径与符号机制），其余 **139 项是明确的待核验积压**——这不是缺陷，而是把真实状态显性化；`check` 三档统计（已核验 / 超期 / 待核验积压）
+- **超期与积压分开**：`stale` 只统计**已核验且超过 180 天**的项（避免把"从未核验"混进"该复核了"）；`pending` 单独列，供下一轮审查波分批消化
+- **`smoke` 不进 CI**：探测本机是否装某工具，在 CI 机器上必然大量缺失，只作本地报告
+- **死条目即失败**：登记为"在用"但技能里已找不到该命令 → `check` 报错。这是**唯一**做成硬门的检查——它无歧义、不会因正常编辑误报
+
+### 三、防漂移闭环
+
+```
+新增技能引用新第三方工具
+  → check 把该命令列为"未登记候选"
+  → 仓库自身一致性测试失败（npm test 红）
+  → 登记（或放入 ignore 并写明理由）
+  → 绿
+```
+
+同理，**删掉某工具的全部引用而不清理登记表**也会红（死条目）。
+
+### 四、未做（保留在 TODO）
+
+- **示例可执行性**：把技能里的 shell/Python 示例抽成最小可跑片段。需要权衡 fixture 与网络/工具依赖，单独评估
+- **逐项回填 `last_verified`**：按 `stale` 输出分批核验。当前积压 139 项
+
+### 五、本轮校验
+
+- `npm test`：`OK: 122 skills validated` + **51 项测试全过**（原 41 + 新增 10）
+- `npm run toollife`：`登记 140 项｜已核验 1｜超期 0｜待核验积压 139`，无错误、无未登记候选

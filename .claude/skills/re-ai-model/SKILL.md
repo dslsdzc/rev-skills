@@ -93,14 +93,18 @@ capabilities: [ai-model-analysis]
 3. **权重提取（张量 dump）**：
    ```sh
    mkdir -p weights
-   # ONNX：遍历 initializer（大模型见坑 1 流式处理）
+   # ONNX：逐 tensor 惰性落地（大模型见坑 1）
+   # 注意：这不是"流式"——to_array() 对使用 external data 的 tensor 会先把该张量【完整】读进 ndarray，
+   #       只是"一次一个张量"而不是"一次整个模型"；显存/内存峰值取决于最大的那个张量
    python3 - <<'PY'
    import onnx, numpy as np
-   m = onnx.load("model.onnx", load_external_data=False)     # 先不载外部权重
+   m = onnx.load("model.onnx", load_external_data=False)     # 只载图结构，不载外部权重
    for init in m.graph.initializer:
-       arr = onnx.numpy_helper.to_array(init)
+       # base_dir 默认为空字符串——外部权重不在 CWD 时必须显式指定其所在目录
+       arr = onnx.numpy_helper.to_array(init, base_dir=".")   # 该张量在此处被完整 materialize
        np.save(f"weights/{init.name.replace('/', '_')}.npy", arr)
        print(init.name, arr.shape, arr.dtype)
+       del arr                                                # 及时释放，为下一张量让出内存
    PY
    # Safetensors：惰性按张量读取（不整载内存）
    python3 - <<'PY'
@@ -155,7 +159,7 @@ capabilities: [ai-model-analysis]
 
 ## 常见坑与陷阱
 
-- **大模型文件巨大（GB 级）**：现象——`onnx.load`/`torch.load` 吃满内存卡死，netron 打开超时，`np.save` 批量写盘满；原因——权重数 GB，一次性整体加载到内存；对策——分析前先 `du -sh`/`sha256sum` 存档；ONNX 用 `onnx.load(..., load_external_data=False)` 只载图结构、按需用 `onnx.external_data_helper` 读单个 initializer；Safetensors 用 `safe_open` 惰性按张量读；PyTorch 大模型 `torch.load(..., mmap=True)`；处理对象是"结构摘要 + 定向张量"，不是整个文件
+- **大模型文件巨大（GB 级）**：现象——`onnx.load`/`torch.load` 吃满内存卡死，netron 打开超时，`np.save` 批量写盘满；原因——权重数 GB，一次性整体加载到内存；对策——分析前先 `du -sh`/`sha256sum` 存档；ONNX 用 `onnx.load(..., load_external_data=False)` 只载图结构，再**逐 tensor** 取值——注意 `numpy_helper.to_array()` 对该 tensor **是完整读出**（不是流式），所以峰值取决于最大的张量，且用 external data 时要**显式给 `base_dir`**（默认空字符串，权重不在 CWD 时直接失败）；Safetensors 用 `safe_open` 惰性按张量读；PyTorch 大模型 `torch.load(..., mmap=True)`；处理对象是"结构摘要 + 定向张量"，不是整个文件
 - **pkl 反序列化风险（不要直接 torch.load 未知 pkl）**：现象——load 后进程反弹 shell/文件被删，或报诡异 `AttributeError`/`ModuleNotFoundError`；原因——pickle 协议可注入任意代码（`__reduce__`/`__setstate__`），torch.load 底层就是 pickle，恶意模型是投毒载荷载体；对策——**安全提示：未知模型绝不直接 `torch.load`**；先 `unzip -l`/`xxd`/`strings` 粗查（zip 头 PK vs 裸 pickle、条目有无可疑模块名），用 `weights_only=True`（PyTorch 2.6+ 默认）加载，需要全功能加载时在隔离环境（[[re-sandbox]]）执行；可转 safetensors 的样本直接转（纯数据无代码执行）
 - **图优化混淆层结构**：现象——onnx-simplifier/TensorRT/onnxruntime 优化后的模型算子序列与训练态对不上（Conv+BN 融合成一个 Conv、常量折叠、名字全改），结构相似度误判；原因——优化器做算子融合/常量折叠，图结构与训练态不同，producer 字段会变；对策——先读 `m.producer_name`/`m.producer_version` 识别优化器与版本（融合 ConvBN 的特征：BN 层消失且 scale 并入 conv 权重）；架构比较前先规范化算子序列（按算子类别抽象，忽略名字与常量差异）；可用 onnx-simplifier/onnxruntime `graph_optimization_level` 对比优化前后 diff 还原原始层
 - **水印鲁棒性（剪枝后仍存）**：现象——精确值比对未命中就下"无水印"结论，或两个无关模型在个别层数值巧合相似被误判"窃取"；原因——鲁棒水印经剪枝/量化/重训练后仍存活（设计目标），精确匹配必漏；正常模型同架构同数据权重分布相似，单层巧合是假阳性；对策——水印检测用"统计异常"（低比特位扰动/数值分布特异层）而非"精确相等"，窃取判定用多维度证据 + 阈值（步骤 5 纪律），结论标注置信度与证据强度

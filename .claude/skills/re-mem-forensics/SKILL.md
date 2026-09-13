@@ -24,7 +24,11 @@ capabilities: [memory-forensics]
 - 全平台: `pip install volatility3`（命令为 `vol`）；官方要求 **Python 3.8+**（README 表述），2026 实测 2.28.0 在 Python 3.14 可安装且插件正常加载——先 `python3 --version` 确认，版本不匹配用 pyenv/venv 建对应环境再装
 - Windows/WSL: 同上 pip 方案（WSL 内可分析 Windows dump，见 [[re-analyze/platform-tips]] WSL 分支）
 - 验证: `vol -h`；`vol -f dump.raw windows.info` 能输出镜像信息且不报符号错误
-- 符号文件：首次运行对应插件时从 https://downloads.volatilityfoundation.org/ 下载符号表（Linux 为 `linux/` 下对应内核版本），网络受限或下载失败时用 `--offline` + 预置符号目录，否则插件报 MissingSymbol 类错误
+- 符号文件（ISF）：**Windows 与 Linux/macOS 的获取机制完全不同，不要混为一谈**
+  - **Windows**：按目标内核 PDB 的 **GUID/age** 在 `symbols/windows/` 下找 ISF；**找不到时自动从 Microsoft 符号服务器下载 PDB 并转换为 ISF**——这是唯一"能自动在线获取"的一侧（网络受限即失败）
+  - **Linux / macOS**：靠 **kernel banner 精确匹配** ISF（banner 编码在 ISF 内部，**文件名不重要**）。获取途径：① 社区预构建包（按发行版/架构/内核组织的 ISF 集合）② 自行构建——`dwarf2json`（**需带调试符号的内核**）或 `btf2json`（用 `vmlinuz` 的 BTF + `System.map`，**不需要完整调试内核**）
+  - **先跑 `banners` 拿到内核 banner**，再按 banner 找或构建对应 ISF；`isfinfo` 查看已识别符号表，banner 未命中时用 `-vvv` 确认
+  - 离线/受限环境：`--offline` + 预置符号目录，否则插件报 MissingSymbol 类错误
 - 依赖补充：凭据类插件（hashdump/lsadump/cachedump）需要 pycryptodome、yarascan 需要 yara-python——2026 实测 2.28.0 缺这两依赖时对应插件加载失败（`vol --help` 里直接缺失），装完 `pip install pycryptodome yara-python` 重试
 
 ### 7zip（可选，解 .7z 压缩转储）
@@ -80,11 +84,13 @@ capabilities: [memory-forensics]
 
 5. **凭据线索与可疑对象提取**：
    ```sh
-   vol -f dump.raw windows.hashdump          # 本地账户 NT/LM 哈希（SAM 缓存）
-   vol -f dump.raw windows.lsadump           # LSA 凭据（缓存密码/域凭据，mimikatz 同源线索）
-   vol -f dump.raw windows.cachedump         # 域缓存凭据
+   vol -f dump.raw windows.registry.hashdump     # 本地账户 NT/LM 哈希（改自 SAM + SYSTEM hive、boot key）
+   vol -f dump.raw windows.registry.lsadump      # LSA secrets（SECURITY hive）
+   vol -f dump.raw windows.registry.cachedump    # 域缓存凭据 MS-CACHEv2（SECURITY hive 的 NL$KM 密钥）
+   # 旧写法 windows.hashdump / windows.lsadump / windows.cachedump 是弃用别名（v2.27 标记 2026-09-25 移除）
    ```
-   - hashdump/lsadump 命中即凭据泄露证据，记录来源（Lsass 内存）与时间戳；离线破解交给 hashcat/john 等密码工具，本技能不破解
+   - **凭据来源要分两套记录，别一律写"LSASS 内存"**：上面三个插件都是 **registry-hive 派生**（hashdump ← SAM + SYSTEM、lsadump/cachedump ← SECURITY）——报告里的 provenance 应写作 **registry-hive-derived**；从 **LSASS 进程内存**提取凭据是**另一条路径**（进程转储 + 相应工具），两者证据来源不同
+   - 命中即凭据泄露证据，记录来源与时间戳；离线破解交给 hashcat/john 等密码工具，本技能不破解
    - 提取可疑对象：`windows.dumpfiles`（指定文件）或 malfind/pslist `--dump`（`vol -f dump.raw windows.pslist --dump --pid <pid>` 导出进程内存）；每个对象算 sha256 存档
    - 文件对象池扫描：`vol -f dump.raw windows.filescan | grep -i <关键词>` 找已删除/可疑文件对象，命中后 `windows.dumpfiles` 提取（配合 `windows.svcscan`/`windows.amcache` 交叉确认）
    - YARA 规则直扫：`vol -f dump.raw yarascan.YaraScan --yara-file <规则.yar>` 扫内核内存（进程内扫 VAD 用 `windows.vadyarascan.VadYaraScan --yara-file <规则.yar> --pid <pid>`；均需 yara-python）——把 [[re-ioc]] 的规则直接作用于转储
@@ -102,7 +108,7 @@ capabilities: [memory-forensics]
 
 ## 常见坑与陷阱
 
-- **profile/符号文件错误 → 解析全错**：现象——`vol` 报 `Missing Symbol` / 解析出的进程列表明显荒谬（系统进程缺失、地址全 0）；原因——volatility3 虽自动选 profile，但对应平台符号表（windows 各版本 / linux 各内核）首次运行需在线下载，失败则插件无法解析；对策——网络可及时先 `vol -f dump.raw windows.info` 触发下载一次；受限环境用 `--offline` + 预置符号目录；Linux 转储确认内核版本与符号匹配，否则换对应版本再跑
+- **符号表不匹配 → 解析全错**：现象——`vol` 报 `Missing Symbol` / 解析出的进程列表明显荒谬（系统进程缺失、地址全 0）；原因——volatility3 会自动选 profile，但**符号表（ISF）必须与目标精确匹配**：Windows 按 PDB GUID/age（缺失时可自动从 Microsoft 符号服务器取），**Linux/macOS 必须匹配 kernel banner 且没有自动获取**——依赖社区预构建包或自行用 `dwarf2json`（需调试内核）/`btf2json`（vmlinuz BTF + System.map）构建；对策——先 `banners` 拿内核 banner；Windows 侧网络可及时直接跑 `windows.info` 触发 PDB 下载，受限环境 `--offline` + 预置符号目录；**Linux/macOS 侧必须先按 banner 找到或构建出对应 ISF**，banner 不命中时换版本或构建，别反复重试同一份
 - **dump 不完整（vsyscall 段污染）→ 分析偏差**：现象——malfind 命中大量 0xffffffffff6xxxxx 地址的"注入"，或提取对象全是对齐垃圾；原因——转储时未按 maps 过滤 `[vsyscall]`/`[vdso]`/`[vvar]`（见 [[re-analyze/platform-tips]] Linux 内存转储极端段），垃圾页混入；对策——取 dump 阶段就过滤极端段；分析时按地址区间跳过 0xffffffffff6xxxxx，别把垃圾页当证据
 - **malfind 误报 → 假阳性**：现象——`windows.malfind` 命中大量私有执行页，但 dlllist 无异常模块、提取对象跑不了；原因——加载器/垃圾回收器/JIT 的正常 RWX 页也会被判定"异常"，malfind 只看内存属性不看执行语义；对策——用 dlllist 路径、hollow 检测、提取对象实际反编译（[[re-binary-core]]）三重交叉确认后再定论
 - **只信 pslist 漏掉已终止进程**：现象——pslist 干净但网络/文件行为指向某 PID 已消失；原因——进程已被终止，常规列表不含；对策——补跑 `windows.psscan`（池扫描找残留对象），取证要求尽量全。
@@ -110,4 +116,5 @@ capabilities: [memory-forensics]
 - **内存内函数补丁型绕过 → 常规插件全干净**：现象——malfind/dlllist 全部干净，但样本的 ETW/AMSI 明显被抑制（日志缺失/扫描无响应）；原因——绕过不是注入新代码，而是改写已加载模块的函数头（如 `EtwEventWrite` 前 4 字节 patch 成 `ret 14`、`AmsiScanBuffer` 前 3 字节改成 `return 0`、`send` 开头跳到匿名私有内存），不产生新执行页也不改页权限，malfind 无感；对策——跑内置 `windows.etwpatch`（检测 ETW 补丁技术，vol3 2.28 起自带），或把内存中模块 dump 出来与磁盘原始 DLL 对照函数头字节
 - **睡眠混淆 → 转储里载荷"消失"**：现象——转储中找不到植入体（无注入页、无落地文件），行为分析却确认 C2 植入体在运行；原因——Ekko/Foliage 类睡眠混淆在休眠期把 VAD 权限翻转为 `PAGE_NOACCESS`/`PAGE_READWRITE` 并把内容加密，唤醒瞬间才还原执行；对策——用 vadinfo 找权限翻转/NOACCESS 的区段，按轮转密钥还原休眠中的加密页，或配合 [[re-emulation]] 在唤醒点模拟执行抓取明文
 - **BitLocker FVEK 可从 RAM 恢复（主版本无此插件）**：现象——拿到加密磁盘镜像+内存转储但没有密码，数据提取停滞；原因——系统运行时全卷加密密钥（FVEK）残留在 RAM（未被安全擦除），但主版本 Volatility 3 没有内置插件；对策——用社区 `volatility3-bitlocker` 插件跑 `windows.bitlocker.BitlockerFVEKScan`（`--tags FVEc Cngb`）提取 FVEK，再用 `dislocker -k` 挂载解密；v3 插件对旧内核结构报错时回退 Volatility 2 + breppo/Volatility-BitLocker
-- **插件列表缺凭据/YARA 类条目**：现象——`vol --help` 里没有 windows.hashdump/lsadump/cachedump 或 yarascan；原因——缺 pycryptodome / yara-python 依赖，加载失败的插件被静默跳过（2026 实测 2.28.0 表现）；对策——`pip install pycryptodome yara-python` 后重跑 `vol --help` 确认条目出现，再跑对应插件
+- **插件列表缺凭据/YARA 类条目**：现象——`vol --help` 里没有 `windows.registry.hashdump`/`lsadump`/`cachedump` 或 yarascan；原因——缺 pycryptodome / yara-python 依赖，加载失败的插件被静默跳过（2026 实测 2.28.0 表现）；对策——`pip install pycryptodome yara-python` 后重跑 `vol --help` 确认条目出现，再跑对应插件
+- **拿旧插件名跑命令 → 命令不存在或即将失效**：现象——按旧资料写 `windows.hashdump` 能跑但告警，或某天直接报找不到插件；原因——volatility3 的插件路径在持续重组（注册表类插件已归入 `windows.registry.*`，旧名以弃用别名形式保留并标注移除日期，如 `windows.hashdump` 标记 2026-09-25 移除）；对策——**用当前路径**（见步骤 3），并在报告里记下所用版本；注意区分"**源码目录**变了"与"**命令行调用名**变了"——两者不一定同步（如 malfind 源码在 `windows/malware/` 下，但**调用名仍是 `windows.malfind`**）

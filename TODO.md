@@ -28,6 +28,19 @@
   - [ ] 复核后回填状态（fixed → verified），本批结果作为「增量审查机制」首批记录
   - [ ] 待定：是否给全部 27 个历史文档统一加头部横幅（当前只标注了含已知错误的 2 个）
 
+- [ ] **工具 CLI/API 生命周期审查**（2026-09-13 记录，来源：外部抽样审查的结论）
+
+  观察：**领域知识本身已比工具操作层稳定**——新的主要缺陷来源变成「命令/API 生命周期」与「示例代码没真正 smoke-test」。样例：Volatility 3 的插件路径重组（`windows.hashdump` → `windows.registry.hashdump`，旧别名标记 2026-09-25 移除）；同一工具族的**符号获取机制**在 Windows 与 Linux/macOS 完全不同，写成一套即错。
+
+  > 关键区别：**"源码目录变了"不等于"命令行调用名变了"**——malfind 的源码在 `windows/malware/` 下，但调用名仍是 `windows.malfind`。按目录结构改命令会引入新错误。
+
+  - [x] **第三方命令/API 清单**（2026-09-13）：`docs/audit/tool-register.json`（140 项，含工具名 / kind / 引用它的技能 / 上次核验日期 / 核验来源 / ignore 名单）+ `lib/tool-register.mjs`（抽取与比对）+ `bin/toollife.mjs`（check / candidates / stale / smoke）
+  - [x] **版本漂移检查**（2026-09-13）：`check` 报"已核验 / 超期 / 待核验积压"三档 + **死条目即失败**（登记为在用但技能里已找不到）；`stale` 按超期排序供下一轮审查波取用；`smoke` 做本机存在性探测（仅报告，不进 CI——CI 机器不必装这些工具）
+  - [x] **候选发现**（2026-09-13）：技能里出现但未登记且不在 ignore 名单的命令会被列为候选，仓库自身的那条已作为测试常驻（`tests/toollife.test.mjs`）——**新增第三方工具而不登记会直接让 `npm test` 失败**
+  - [ ] **示例可执行性**（未做）：把技能里的 Python/shell 示例抽成最小可跑片段（有 fixture 的优先），至少验证"语法与 API 名仍然存在"——需要 fixture 与网络/工具依赖的取舍，单独评估
+  - [ ] 逐项填充 `last_verified`：当前 140 项里只有 1 项已核验（vol），其余是**明确的待核验积压**——按 `stale` 的输出分批核验并回填
+  - [ ] 与「增量审查机制」合并设计：两者共用"变更检测 + 记录状态"的骨架（登记表的 `last_verified` + 状态即该骨架的首个落地）
+
 - [ ] **增量审查机制**（2026-08-29 记录，来源：aiskillstore skill-report.json 机制调研）
 
   > 2026-09-13 更新：批 1 finding 已按本机制的状态机（open → fixed → verified）记录，见 `docs/audit/2026-09-13-factual-audit.md`——可作为首个落地样例参考。

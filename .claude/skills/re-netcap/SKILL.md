@@ -98,14 +98,29 @@ capabilities: [network-capture]
    - 目标进程需要代理时: 设置 `HTTP_PROXY`/`HTTPS_PROXY` 环境变量或系统代理；不走代理的进程用透明模式
 
 5. **沙箱内隔离抓包（[[re-sandbox]] 网络隔离）**：
-   - 前置：按 [[re-sandbox]] 步骤 2 做网络隔离——断网（Host-only / `--net=none`）/ fake DNS（/etc/hosts 或 dnsmasq 指向本机）/ INetSim（沙箱 DNS 指向 INetSim 主机）
+   - 前置：按 [[re-sandbox]] 步骤 2 做**默认拒绝出站（default-deny egress）**——只放行分析基础设施（INetSim / 代理 / 抓包主机）的白名单，其余出站一律丢弃。**不要用"断网 / fake DNS / INetSim 三选一"的心智模型**，三者解决的不是同一件事：
+     - **纯断网**（Host-only / `--net=none`）：样本根本无法回连——**要抓 C2 就不能纯断网**
+     - **fake DNS**（/etc/hosts 或 dnsmasq）：只影响域名解析，**挡不住硬编码 IP 的 C2**
+     - **INetSim**：模拟服务，但如果不是"默认拒绝 + 只放行它"，样本仍可能直连真实网络
+     - 正确形态：**默认拒绝 + 白名单到 INetSim**（示例按实际网段调整）：
+       ```sh
+       sudo iptables -P FORWARD DROP                        # 默认拒绝转发（或等价的路由/防火墙策略）
+       sudo iptables -A FORWARD -d <INetSim_IP> -j ACCEPT   # 只放行到分析基础设施
+       sudo iptables -A FORWARD -s <INetSim_IP> -j ACCEPT
+       ```
    - 抓包点：INetSim 主机侧抓全量（`tcpdump -i eth0 -w c2.pcap`），同时拿到样本请求与模拟响应——C2 分析标准做法
-   - 验证: 沙箱内样本回连被 INetSim 记录且 pcap 有对应流量；`ping 8.8.8.8` 不通确认无真实外联（[[re-analyze/platform-tips]] 最高原则）
+   - 验证：**必须分三条独立验证，且 `ping 不通`不构成任何一条**（ICMP 与 TCP/UDP 是不同通路，被分别放行/阻断是常态）：
+     - **TCP 出站**：从沙箱内 `nc -zv <外部IP> 443` 应失败
+     - **UDP 出站**：从沙箱内 `nc -zuv <外部IP> 53` 应失败（UDP 最常被漏测）
+     - **硬编码 IP 直连**：不依赖 DNS 直接连外部 IP，仍应失败（对应"fake DNS 挡不住硬编码 C2"）
+   - 同时确认：沙箱内样本回连被 INetSim 记录，且 pcap 有对应流量（[[re-analyze/platform-tips]] 最高原则）
    - 需要透明代理（mitmproxy）时用 nat REDIRECT 引流到其监听端口（mitmproxy 不消费 NFQUEUE 队列）:
      ```sh
      sudo sysctl -w net.ipv4.ip_forward=1
-     sudo iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080   # 网关入口
-     sudo iptables -t nat -I OUTPUT -p tcp --dport 80 -j REDIRECT --to-port 8080       # 本机出站（按需）
+     # 明文 HTTP 与 TLS 两条都要引——只写 80 是最常见的失误：目标访问 443 时根本不会进入 mitmproxy
+     sudo iptables -t nat -I PREROUTING -p tcp -m multiport --dports 80,443 -j REDIRECT --to-port 8080   # 网关入口
+     sudo iptables -t nat -I OUTPUT     -p tcp -m multiport --dports 80,443 -j REDIRECT --to-port 8080   # 本机出站（按需）
+     # 样本可能使用非标准 TLS 端口（8443 等）或纯明文的其它端口——按实际观测补齐，或直接对全部 TCP 引流
      ```
      mitmproxy 以透明模式监听 8080 承接；分析完清理 nat 规则并还原 ip_forward
    - NFQUEUE 仅留给显式绑定的用户态 handler（如 python `netfilterqueue` 对每个包返回 verdict），无 handler 时流量阻塞:
@@ -125,7 +140,7 @@ capabilities: [network-capture]
 
 ## 常见坑与陷阱
 
-- **沙箱网络不隔离 → 真外联**：现象——样本真实访问了外网 C2，行为结果与流量都不可信；原因——跳过 [[re-sandbox]] 网络隔离直接联网跑（NAT 默认允许出站外联）；对策——抓包前先按步骤 5 隔离（断网/fake DNS/INetSim），验证 `ping 8.8.8.8` 不通再跑样本
+- **沙箱网络不隔离 → 真外联**：现象——样本真实访问了外网 C2，行为结果与流量都不可信；原因——跳过 [[re-sandbox]] 网络隔离直接联网跑（NAT 默认允许出站），**或只做了"断网 / fake DNS / INetSim"其中之一就以为隔离完成**（三者不等价：纯断网抓不到 C2、fake DNS 挡不住硬编码 IP）；对策——抓包前落地**默认拒绝出站 + 白名单到分析基础设施**，并**分别**验证 TCP、UDP、硬编码 IP 直连三条路径都不通——**只测 `ping` 不构成结论**（ICMP 与 TCP/UDP 是不同通路）
 - **TLS/HTTPS 抓包只见密文**：现象——pcap 里全是 TLS 握手与加密记录，看不到明文协议内容；原因——没有中间人，TLS 会话两端加密；对策——步骤 4 上 mitmproxy 透明/常规代理，目标信任 mitmproxy CA 后再抓，界面应出现明文
 - **过滤表达式写错漏关键流**：现象——抓了半天 pcap 里没有目标流量（比如只按了 IP 没按端口，或 `and/or` 优先级用错）；原因——BPF 语法组合错误且没先屏显验证；对策——先不带 `-w` 屏显跑几秒确认命中目标（IP/端口/方向都对）再写盘
 - **抓包文件巨大 → 分析卡死**：现象——全量抓包 pcap 几十 GB，tshark 统计/导出长时间无响应；原因——没先过滤就存盘（步骤 2 的正确做法是先过滤再存）；对策——用 BPF 过滤 + `-c` 限包数 + `-s` 限捕获长度，先按会话统计缩小范围再导出子集（步骤 3）

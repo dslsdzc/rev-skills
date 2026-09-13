@@ -21,6 +21,11 @@ node --test --test-name-pattern="good-skill" tests/*.test.mjs   # 按用例名�
 node bin/capindex.mjs                           # 重新生成能力索引（改 capabilities 声明后必跑）
 node bin/capindex.mjs --check                   # 只校验索引是否过期（npm test 已含）
 
+node bin/toollife.mjs check                     # 命令/API 登记表一致性 + 时效（npm run toollife；npm test 已含一致性）
+node bin/toollife.mjs candidates                # 技能里出现但未登记的命令候选
+node bin/toollife.mjs stale                     # 按超期排序的待核验项
+node bin/toollife.mjs smoke                     # 本机探测（仅报告，CI 机器不必装）
+
 npx rev-skills install --target <claude|gemini|cline|codex|cursor|copilot|windsurf|all> \
   [--global|--project] [--dry-run] [--link] [--force]
 node bin/convert.mjs --target <cursor|copilot|windsurf> --out <dir>   # 技能 → 规则文件转换（调试用）
