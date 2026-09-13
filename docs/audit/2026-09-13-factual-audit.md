@@ -609,3 +609,35 @@
 
 - `node validate.mjs`：`OK: 122 skills validated`；`npm test`：41 项全过
 - 覆盖度自检：按 55 个系统显示名逐个核对，**55/55 命中**（脚本核对方式记于本节，后续加系统时可复用）
+
+---
+
+## 补充 22：对 d4a5348 的抽样审查——2 处事实 + 4 处元规则（2026-09-13）
+
+来源为同源外部审查（针对当前 HEAD 抽样）。审查自身给出的定位值得记下：**"不是内容事实性质量崩了，更像是扩张得很快以后，少量表述过强 + 元规则开始比具体知识更容易制造误判。"** 本轮 6 条全部处理。
+
+### 一、事实性修正（2 条）
+
+| # | 位置 | 原文 | 问题 | 修正 | 核验 |
+|---|---|---|---|---|---|
+| 1 | `analysis-contract.md` constants 步 | "有语义的 magic number（如 **ELF 头 0x202**）" | ELF 魔数是 `\x7fELF`，`0x202` 与 ELF 无关 | 改为 `ELF 魔数 \x7fELF（小端读作 0x7f454c46）` | 定义级事实 |
+| 2 | `system-fingerprints.md` §二 | "`.note.ABI-tag`(FreeBSD)" | **把 note type 与 section name 混了** | 改为 `.note.tag`（note 名 `"FreeBSD"`、`NT_FREEBSD_ABI_TAG`=1），并注明**早年版本曾用 `.note.ABI-tag`**，识别时应两者都看 | FreeBSD `lib/csu/common/crtbrand.S`：`.section .note.tag,"aG",%note,.freebsd.noteG,comdat`；note 名 `NOTE_FREEBSD_VENDOR`；描述符为 `__FreeBSD_version`。**上一次搜索之所以出错**：官方头文件的注释写的是 "Values for FreeBSD **.note.ABI-tag** notes"，而实际生成的 section 是 `.note.tag`——**注释与实现不一致** |
+
+### 二、元规则修正（4 条）
+
+| # | 位置 | 问题 | 修正 |
+|---|---|---|---|
+| 3 | `system-fingerprints.md` 判据标注 | **[强] 混了两个独立概念**——"对某系统高度特异"与"这个东西通常一定能观察到" | 拆成**二维**：**特异度**（`独有`/`高`/`弱`）× **可观测性**（`稳定`/`视构建`/`仅运行期`），标注形如 `独有·稳定`；并写明典型误用：把 `独有·视构建` 当"一定能看到"，于是对 strip 过的产物得出"不是该系统"的错误结论（举 Haiku `driver_v1`/`device_v1` 为例）。全文 62 处标注完成 |
+| 4 | `system-fingerprints.md` §二 | "ELF + ET_REL → **[强]** Linux 内核模块"**过强**——ET_REL 只说明"可重定位 ELF"，后半句"或同类可重定位模块"已自认这一点 | 降为 **[弱·稳定]**：ET_REL 仅指示"可重定位 ELF"；**需再命中 `.modinfo` / `__this_module` / `vermagic` 才升到 Linux 可加载内核模块** |
+| 5 | `system-fingerprints.md` 缺**证据归属**维度 | 固件里可能同时有 Linux rootfs、MCU blob、guest 镜像、编译期 sysroot——**找到 `procnto`/ARXML/`seL4_*`/FreeRTOS 特征串中的任何一个，都不能回答"主体是哪个系统"**。指纹表越丰富，这类假命中越多 | 新增**第 ⓪ 层 `evidence_scope`**（`container` / `executable` / `embedded payload` / `guest` / `dependency` / `toolchain artifact` / `documentation`），规则：**先判证据属于谁，再判它是哪个系统**；跨 scope 命中只记"存在性"，不作主体身份依据。同步改流程图（五层 → ⓪+四层）与入口 SKILL.md 的"先认目标"段 |
+| 6 | `analysis-contract.md` 两条规则过硬 | ① "每目标**不超过 8 次**工具调用"当全局硬上限——大型固件/内核/协议/混淆程序会被强行截断；② "五步严格顺序、不可跳步、**禁止先反编译再倒推**"与真实 RE 的迭代性质冲突（类型恢复常常要先粗反编译拿 field-use / call-shape / switch / allocation size 才有线索） | ① 改**软预算**：8 次为一档，**到档必须重新评估**（继续 / 换路 / 收束三选一，结论记录在案），评估通过进入下一档；② 改**收敛循环**：`初次反编译 → 四类信息交替恢复 → 重新反编译 → 定点`，并把"decompilation"从终步改为**收敛判据**（四条同时满足才算定点：类型全解析 / 常量有名 / 虚调用目标已识别 / 签名带参数名）。**保留的约束**是"禁止只反编译不复核就交付" |
+
+### 三、审查确认无问题的两处（本轮无需改动）
+
+- **Haiku `driver_v1`/`device_v1` 后缀**：得到官方文档支持（本库此条早已如此写）
+- **ThreadX `TX_THREAD_ID` = `0x54485244`('THRD')**：与当前 upstream 一致（本库此前已纠正过旧资料的 TIMR/EVEN 写法）
+
+### 四、本轮校验
+
+- `node validate.mjs`：`OK: 122 skills validated`；`npm test`：41 项全过
+- 二维标注落地自检：`独有·` / `高·` / `弱·` 共 62 处
