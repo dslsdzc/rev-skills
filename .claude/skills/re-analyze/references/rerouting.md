@@ -52,6 +52,40 @@
 | handle 数值跨进程比对无效、传送后原值失效、同驻驱动有 IPC 无系统调用 | `kernel-analysis` | [[re-kernel/zircon-kernel]] |
 | init 函数没有调用者、一段指针数组所在 section 名为 set_* | `kernel-analysis` | [[re-kernel/freebsd-kernel]] |
 | 驱动入口为 _init/_fini/_info + modlinkage/dev_ops/cb_ops 骨架 | `kernel-analysis` | [[re-kernel/illumos-kernel]] |
+| 同版本内核每次启动布局都不同、两份二进制逐字节不一致 | `kernel-analysis` | [[re-kernel/openbsd-kernel]] |
+| 模块自己出现/消失却没有加载者、模块加载失败但文件正常 | `kernel-analysis` | [[re-kernel/netbsd-kernel]] |
+| 服务名相同却像连到不同对象、capability 数值被当全局 ID、配额与系统剩余内存矛盾 | `kernel-analysis` | [[re-kernel/genode]] |
+| 驱动进程消失又出现、IPC 里的整数疑似 grant、更新期出现两个相同实例 | `kernel-analysis` | [[re-kernel/minix3]] |
+| 同名路径访问到不同对象、目录内容像多层叠加、出现不依赖内核模块的新文件系统 | `kernel-analysis` | [[re-kernel/plan9]] |
+| PV 设备找不到寄存器窗口、grant ref/event-channel port 被当地址与 IRQ | `hypervisor-analysis` | [[re-hypervisor/xen]] |
+| guest 的 MMIO/BAR 与真实硬件对不上、跨 VM 共享区通不了、越权访问后程序突然停住 | `hypervisor-analysis` | [[re-hypervisor/qnx-hypervisor]] / [[re-hypervisor/jailhouse]] / [[re-hypervisor/acrn]] / [[re-hypervisor/bao]] |
+| 同一 API 在不同样本里形态完全不同（极短函数 + 立即 trap）、地址权限时有时无 | `rtos-analysis` | [[re-rtos/nuttx]] |
+| ISR 里混用 task 版 API、访问权限随运行阶段变化（MPU） | `rtos-analysis` | [[re-rtos/freertos-context]] |
+| 大量「填 request ID → 跳公共 dispatcher」、代码地址落在模块内存区之外 | `rtos-analysis` | [[re-rtos/threadx-modules]] |
+| ISR 只清状态位就返回、没有线程入口却被反复调用的函数 | `rtos-analysis` | [[re-rtos/ecos]] |
+| 高优先级线程不运行且无竞争、采样/队列语义混淆、固定地址的 APEX 服务表 | `rtos-analysis` | [[re-rtos/partitioned-rtos]] |
+| 无 caller 的 runnable、隐式访问读到旧值、服务返回 E_OS_ACCESS | `automotive-analysis` | [[re-automotive/autosar-classic]] |
+| 二进制已安装但进程不存在、进程清单与模型清单对不上 | `automotive-analysis` | [[re-automotive/autosar-adaptive]] |
+| 一个 OS thread 内出现大量"线程切换"（内核调度对不上） | `kernel-analysis` | [[re-kernel/helenos]] |
+| read/write 落到的东西不是文件系统、两侧句柄对不上 | `kernel-analysis` | [[re-kernel/redox]] |
+| 驱动启动时不在、访问某设备后才出现 | `kernel-analysis` | [[re-kernel/haiku]] |
+| 执行地址属于另一个地址空间、无调用者的例程却有行为 | `kernel-analysis` | [[re-kernel/zos]] / [[re-kernel/openvms]] |
+| 对象地址不像 DRAM 指针、存储抽象与 POSIX 不符 | `kernel-analysis` | [[re-kernel/ibmi]] |
+| 找不到 user→syscall→kernel 边界、syscall 没有特权切换 | `kernel-analysis` | [[re-kernel/unikraft-mirageos]] |
+| 中断尾部发生切换、task 就绪不切换、ISR 里调用未立即生效 | `rtos-analysis` | [[re-rtos/ucos-sysbios]] / [[re-rtos/safertos-rtx5]] |
+| 同一地址在不同 task 下可访问性不同、句柄不像指针 | `rtos-analysis` | [[re-rtos/safertos-rtx5]] |
+| 服务调用在任务里合法、在中断里被拒 | `rtos-analysis` | [[re-rtos/tkernel-toppers]] |
+| 消息/信号的对端找不到（疑似跨节点） | `rtos-analysis` | [[re-rtos/ose-oseck]] |
+| 小整数句柄被当地址、网络流量中途消失但功能正常 | `hypervisor-analysis` | [[re-hypervisor/hyperv-vmbus]] |
+| 找不到资源分配的重配置代码、计划切换不立即生效 | `hypervisor-analysis` | [[re-hypervisor/xtratum]] |
+| VM-exit 很少却没有隔离缺失、跨域时间戳对不上 | `hypervisor-analysis` | [[re-hypervisor/lynxsecure-questv]] |
+| 二进制在但进程不存在、服务发现空结果、无 crash 却重启、更新后数据保留或消失 | `automotive-analysis` | [[re-automotive/autosar-adaptive]] |
+| 线性地址下仍有隔离、同一地址权限随任务变、"partition" 一词含义不明 | `rtos-analysis` | [[re-rtos/nucleus]] |
+| 软件定时器回调里出现阻塞等待、任务被唤醒却没有资源 | `rtos-analysis` | [[re-rtos/ucos-sysbios]] |
+| 小整数句柄被当地址、删除句柄时阻塞、回调返回但资源未释放 | `hypervisor-analysis` | [[re-hypervisor/hyperv-vmbus]] |
+| ring 前进却没有通知、event unmask 行为异常、迁移后端口与 domid 变化 | `hypervisor-analysis` | [[re-hypervisor/xen]] |
+| 同一源码在不同构建下 I/O 完全不同、全部任务一起卡死 | `kernel-analysis` | [[re-kernel/unikraft-mirageos]] |
+| 模块带自描述元数据（UUID/端点/资源/依赖/签名）、IPC 呈入口页+位图+失败分支形态 | `kernel-analysis` | [[re-kernel/hic]] |
 | .NSO/.NPDM 容器结构（Switch 加密分区） | `console-analysis` | [[re-console]] |
 | asar 结构（resources/app.asar + 内部 files 树） | `electron-analysis` | [[re-electron]] |
 | CAP 内 Header 组件魔数（DE CA FF ED，文件整体为 ZIP，Java Card 12 组件） | `bytecode-parser` | [[re-javacard]] |

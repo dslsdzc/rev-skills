@@ -303,3 +303,206 @@
 - `node validate.mjs`：`OK: 122 skills validated`（含新分支的链接规则与路由能力校验）
 - `npm test`：41 项全过；`node bin/capindex.mjs` 重生成后无差异（本波次未增删能力标签）
 - 未做：行为 fixture（LLEXT 装载、io-pkt 加载、OVMF 阶段切换等需真实目标或构建环境）——沿用"后续机制建议"的四层体系，先落在可选层
+
+---
+
+## 补充 16：特殊系统第二批（2026-09-13，分层 hypervisor / 分区 RTOS / 组件 OS，18 类）
+
+来源为同源的外部整编（"再往外一层"两批：10 类 + 8 类）。处理方式同补充 15：**逐条机制先核验上游再入库**，属事实补全与边界条件补足，非缺陷修复。
+
+### 落地位置（18 → 4 个技能，不新增技能）
+
+| 类别 | 系统 | 落点 |
+|---|---|---|
+| 分区/嵌入式 hypervisor | Xen、QNX Hypervisor、Jailhouse、ACRN、Bao | `re-hypervisor/references/{xen,qnx-hypervisor,jailhouse,acrn,bao}.md` |
+| RTOS 家族 | NuttX、eCos、ThreadX Modules、FreeRTOS 上下文、INTEGRITY/ARINC 653/VxWorks 653/PikeOS | `re-rtos/references/{nuttx,ecos,threadx-modules,freertos-context,partitioned-rtos}.md` |
+| 通用 OS 内核 | OpenBSD、NetBSD、Genode、MINIX 3、Plan 9·9front | `re-kernel/references/{openbsd-kernel,netbsd-kernel,genode,minix3,plan9}.md` |
+| 汽车软件 | AUTOSAR Classic | `re-automotive/references/autosar-classic.md` |
+
+挂载：4 个 SKILL.md（平台差异/运行模型表 + 失败模式决策表 + 分支节 + description），`rerouting.md` A 表新增 15 行。
+
+### 核验中确认的**关键边界条件**（写入时以这些为准）
+
+| # | 主题 | 准确表述 | 依据 |
+|---|---|---|---|
+| 1 | OpenBSD KARL | **变的是内核内部布局，不是加载基址**（与 KASLR 区分）；启动代码可被 unmap 或"trash"；**手工把内核拷到 `/` 会使重链接脱开**（分析环境≠生产环境） | KARL 原始设计公开讨论 + locore 固定/其余 `.o` 随机重排的实现描述 |
+| 2 | OpenBSD pledge | 违规是**不可捕获的 SIGABRT**（非可捕获错误）；promise **只能削减不能恢复**，提升尝试返回 `EPERM`（继承 execpromises 场景下被忽略并返回成功）；**"不调用 pledge" ≠ `pledge("everything")`**；`error` promise 改为返回 `ENOSYS`；线索为 `ps` 状态 `p` 与 `lastcomm` 的 `P` 标志 | `pledge(2)` 手册页与其 ERRORS/承诺表 |
+| 3 | NetBSD 模块路径 | `KERNEL_DIR` 是 **2025-04-28 起**（UPDATING 20250427）的**可选**构建选项，**仅 i386/amd64**；旧 `/stand/<arch>/<版本>/modules` 与新 `<内核目录>/modules` 并存；另有 kern/59394（内核仍以文件形式放在 `/netbsd` 时 `kern.module.path` 报错） | NetBSD UPDATING、`wiki.netbsd.org/kernel_dir/`、kern/59394 |
+| 4 | Xen grant 撤销 | **映射期间 Xen 不支持撤销**：结束外来访问只阻止后续映射，须等 `GTF_reading`/`GTF_writing` 清零；grant reference = 本域 grant table 条目下标（条目含 flags/domid/frame-MFN） | Xen `docs/misc/grant-tables.txt` + 接口文档 |
+| 5 | Xen event port | 端口整数**绑定到每 guest `shared_info` 的位掩码**（32 位 guest 1024 位、64 位 guest 4096 位）；**迁移/重连时稳定的是 remote port**，本地端口重新分配，且解绑后**可被重用** | 相关提交（save remote evtchn port, not local port）+ event channel 文档 |
+| 6 | QNX Hypervisor shmem | 工厂页**写 `size` 才触发创建**（首次使用时创建 → **各 guest 启动顺序无关**）；共享区可表现为 MMIO 或 PCI（默认 PCI）；**直通设备同一时刻只允许一个 resident 访问** | QNX 8 文档：shmem vdev、factory/control pages、configuring guests |
+| 7 | Jailhouse loadable | `JAILHOUSE_MEM_LOADABLE`（0x20）区域的映射**在 cell 启动时被撤销**；重装走 **Cell Set Loadable**（错误码 `-EPERM`/`-ENOENT`/`-EINVAL`，root cell 不可设为 loadable） | jailhouse `cell-config.h` + `control.c`（`cell_start`/`cell_set_loadable`） |
+| 8 | Jailhouse ivshmem | **设备不维护 pending 语义**：MSI-X 的 Pending Bit Array **恒返回 0**，INTx 的 Interrupt Status 位**从不置位**；事件状态应**从共享内存协议推导**；one-shot 模式下中断投递会清 Interrupt Control 的 bit 0；Doorbell 只写、读未定义 | `ivshmem-v2-specification.md` |
+| 9 | ACRN ivshmem | **dm-land 与 hv-land 可同时存在但永不互通**；前缀 `dm:/`（早期 `sos:/`）与 `hv:/`；**通知只在 hv-land 支持**（dm-land 无 doorbell）；dm-land 下 guest 重编程 BAR2 会使共享内存不可用 | ACRN ivshmem HLD 与 enable_ivshmem 指南 |
+| 10 | Bao 共享 identity | identity 是配置里的 **`shmem_id`**（IPC 的 `base` 只是本 VM 映射地址，**不应据地址相等/不等推断**）；IPC `size ≤ 对应 shmem 大小`；**cache coloring 默认未启用**、随平台可用颜色数截断、代价是**丧失大页**并抬高 TLB 压力 | Bao README/config 结构与 cache coloring 评估材料 |
+| 11 | NuttX 双堆 | 两个具体配置项（`CONFIG_MM_MULTIHEAP` + `CONFIG_MM_KERNEL_HEAP`），**`MM_KERNEL_HEAP` 在 flat 构建下默认关闭**；PROTECTED 的用户 API 由 `syscall/syscall.csv` 经 `tools/mksyscalls` 自动生成；驱动 upper half 在 `drivers/`，lower half 在 `arch/` 或 `boards/` | NuttX `mm/Kconfig`、Protected Build 指南、Device Drivers 文档 |
+| 12 | FreeRTOS 细节 | `pxHigherPriorityTaskWoken` **自 V7.3.0 起可选（可传 NULL）**，但取舍不同；`portYIELD_FROM_ISR` 通常是 **pend（Cortex-M 走 PendSV），真正切换在中断退出后**；MPU 区域**大小与对齐必须是同一个 2 的幂**；降权到用户模式**不可回退** | FreeRTOS 官方 API 参考（队列/MPU）与端口文档 |
+| 13 | ThreadX Modules | preamble **必在模块第一个地址**；properties 位区分特权/用户模式与 MPU/共享内存，并编码编译器 ID；**ARM 上非特权模块经 SVC 陷入**；支持 **XIP**（指令在 Flash、数据在 RAM）；**模块线程栈顶有线程入口信息结构需计入栈用量** | eclipse-threadx/rtos-docs 的 threadx-modules 第 1/2 章 |
+| 14 | eCos 三层 | ISR 返回 `CYG_ISR_CALL_DSR` 时调度 DSR；**DSR 会被调度器锁推迟**；**ISR 不允许使用 DSR 级锁**；**DSR 可 signal 条件变量但不能 wait** | eCos 参考手册：同步与驱动接口章节 |
+| 15 | ARINC 653 / PikeOS | COLD_START 与 WARM_START 的差别是**是否需要从非易失存储器拷代码到 RAM**；初始化模式（COLD/WARM）下**只有主进程可调度**；**refresh（周期）只对采样模式的接收有意义**；PikeOS 的 **APEX 服务经链接在固定地址的 API table 进入**，POSIX 内核把用户线程映射到**每核一个** system thread，分区支持 256 优先级 | ARINC 653 分区模式状态机材料、SYSGO POSIX/ARINC 653 产品文档 |
+| 16 | INTEGRITY | 内核空间**不做动态内存分配**，且**内核内存不用于消息/信号量等由进程请求创建的对象**；启动表定义资源归属、连接静态分配且不可绕过；多核共享资源争用可使 **WCET 增加 8–13 倍** | Green Hills INTEGRITY / INTEGRITY-178 tuMP 产品与安全材料 |
+| 17 | AUTOSAR `E_OS_ACCESS` | 确切条件：**对象未在配置时授予访问权**，或**对象属于另一个不处于可访问状态的 OS-Application**；**trusted 与非 trusted 一视同仁**（默认拒绝）；例外是检查类服务（`CheckObjectAccess` 等） | AUTOSAR OS SWS（SWS_Os_00056 / OS448 / OS509）与 RTE SWS |
+| 18 | MINIX 3 | 消息载荷**定长 56 字节**，超出部分走 grants；**`EPERM` = grant 无效**（含"页表走查失败也报 EPERM，以免 grantee 探测 granter 地址空间"），**`EFAULT` = 未映射**；live update 的授权方向是**内核（仅）授予新进程对旧进程地址空间的只读访问**，且**可回滚**、**旧/新实例可能同时存在**；活跃 direct grants 会使更新复杂化 | `minix/include/minix/ipc.h` 与 `safecopies.h`、MINIX 3 消息传递 wiki、live update 指南与相关论文 |
+| 19 | Genode | **quota 捐赠沿 session 路径被逐级扣减**（"系统还剩内存"与"该 child OOM"不矛盾）；**ROM session 在生命周期内可更新**（配置可动态改变）；服务名只在局部 parent 层级成立、label 可被重写 | Genode 架构文档（Interfaces and Mechanisms）、Foundations 手册 |
+| 20 | Plan 9 | **union 只有单层叠加**（查找返回第一个匹配，上层不存在的名字不会落到下层深树）；`bind` 的 `new` **在 bind 时求值**；`/srv` 是服务注册表；9P 的 **fid 是 session 内 client 侧句柄**（walk 绑给 newfid，库层拒绝重用已存在 fid） | `bind(1)`、`9p(2)`/`9p(3)`、`srv(3)` 手册页与 lib9p 文档 |
+
+### 本轮校验
+
+- `node validate.mjs`：`OK: 122 skills validated`；`npm test`：41 项全过
+- 分支挂载完整性检查：`re-rtos` 9 / `re-hypervisor` 5 / `re-automotive` 1 个 references 文件均有 SKILL.md 入链（`re-kernel` 的 `windows-gotchas` / `windows-decision-tree` 由同目录 `windows-kernel.md` 互链，非孤儿）
+- 未做：行为 fixture（KARL 重链接、Xen 迁移端口、MINIX live update 等需真实环境）
+
+---
+
+## 补充 17：跨系统误判总表 + 第三批特殊系统（2026-09-13）
+
+来源为同源的外部整编"合并后完整版本"：前半部分是**跨系统的总原则**（十类高频误判、共同规律、异常处理树），后半部分是**更多冷门系统**。两类内容分别处理。
+
+### 一、跨系统总原则 → 新的入口级控制文件
+
+新建 **`re-analyze/references/cross-system-models.md`**（跨系统运行模型与误判总表），内容：
+
+- **十类高频误判表**（现象 → 不要直接推断 → 必须先排除）
+- **共同规律 A–E**：本地句柄≠全局标识、ready≠有资格运行、无内核入口≠无 I/O、无 CFG 边/syscall≠没发生、磁盘≠运行
+- **跨系统异常处理树**（函数无 caller / 地址不一致 / 驱动无内核入口 / 线程不执行 / IPC 无 syscall / 内存访问故障 / binary 存在但不运行 / runtime≠disk）
+- **使用方式**：核对手段统一为 cross-view + configuration + runtime verification
+
+挂载：`re-analyze/SKILL.md` 第三步加入「**跨系统误判表（判定前强制前置）**」——**任何要写 hook / dead code / loader bug / 恶意 的时刻，先逐项排除该运行模型允许的正常机制，未排除完不写结论**。
+
+### 二、新增系统（22 类）的落地位置
+
+| 类别 | 系统 | 落点 |
+|---|---|---|
+| 通用 OS 内核 | HelenOS、Redox、Haiku、z/OS、IBM i、OpenVMS、Unikraft·MirageOS | `re-kernel/references/{helenos,redox,haiku,zos,ibmi,openvms,unikraft-mirageos}.md` |
+| RTOS | µC/OS、SYS/BIOS、SAFERTOS、CMSIS-RTX5、T-Kernel、TOPPERS、OSE·OSEck、Nucleus、Deos | `re-rtos/references/{ucos-sysbios,safertos-rtx5,tkernel-toppers,ose-oseck}.md`；Deos 并入 `partitioned-rtos.md`；Nucleus 入 SKILL.md 运行模型表（内容量不足以成篇） |
+| Hypervisor | Hyper-V·VMBus、XtratuM、LynxSecure、Quest-V | `re-hypervisor/references/{hyperv-vmbus,xtratum,lynxsecure-questv}.md` |
+| 汽车 | AUTOSAR Adaptive | `re-automotive/references/autosar-adaptive.md` |
+
+`rerouting.md` A 表新增 13 行。
+
+### 三、核验后的关键事实（写入依据）
+
+| 主题 | 核验后的表述 |
+|---|---|
+| HelenOS fibril | fibril 由**用户态库协作调度**，**内核完全不知道其存在**；devman 在用户态按 match id 评分匹配并启动驱动，`driver_ops` 由**通用连接处理器**在来连接时调用 |
+| Redox 句柄 | 内核把文件操作转成 **SQE/CQE** 消息；**scheme 侧 handle 描述符与客户端 fd 不是同一个**（内核在 `(进程, fd)` 与 `(进程, handle)` 间映射）；provider 初始化后常进入 **null namespace**（安全设计） |
+| Haiku 两层模块 | **driver module（`driver_v1`，绑定节点、认领 I/O 资源）与 device module（`device_v1`，暴露 `/dev` 接口）**；`B_FIND_CHILD_ON_DEMAND` 决定按需搜索；`suspend`/`resume` **从不被调用** |
+| Hyper-V GPADL | GPADL 是**描述并映射客户机缓冲区的句柄**；宿主对经 GPADL 共享的内存总量有上限（WS2019+ 约 1280 MB，更早约 384 MB） |
+| Hyper-V SR-IOV | **VF 数据面不经过 VMBus 与 hypervisor**，而 **VF 控制面仍走 VMBus** 回到 PF 驱动；拆除时 NetVSC 从 VF 解绑并迁回软件合成路径 |
+| SAFERTOS ESM | ACP（限制可调 API）与 OACP（限制可访问对象）**各自独立**；**间接对象 ID + 交叉引用表**取代指针式句柄；per-task 区域**大小须为 32 字节倍数、基址 32 字节对齐**，**每次上下文切换重新编程** |
+| CMSIS-RTX5 | Safety Class 的**动机**：RTOS 对象经"以数字 ID 为参数、在 handler 模式执行"的系统调用访问，**单靠 MPU 可被"用别的对象 ID 调 API"绕过**；**中断处理程序绕过 MPU 保护**；**ISR FIFO 溢出时系统状态已不一致**，对策是增大对象尺寸 |
+| µC/OS | `OSIntEnter`/`OSIntExit` **必须成对**且前者不得由任务级代码调用；**只有最后一个嵌套 ISR 退出时**才判断切换；Cortex-M 上切换仅触发 **PendSV**；直接递增计数只在"递增时中断已关闭"的架构安全 |
+| SYS/BIOS | **`Swi_disable()` 会连带禁用 Task 调度器**；Swi 调度器禁用期间**绝不能调用阻塞 API**（会不可恢复地损坏 Task 调度器状态）；**Hwi 与 Swi 共用系统中断栈**（默认 4096 字节） |
+| T-Kernel | 三种上下文（任务/准任务/任务独立）**合法性由规范规定**；设备驱动的六个处理函数**以准任务部分运行、必须可重入、且不保证互斥**；`tk_wai_dev` **只等待调用时刻正在处理的请求**，超时后处理仍在继续 |
+| TOPPERS | 四家族（ASP3/HRP3/FMP3/**HRMP3**）规范分开规定；HRMP3 就绪队列**按保护域 + 按处理器**；内核内**不做动态内存管理** |
+| AUTOSAR Adaptive | **Modelled Process ≠ OS 进程**，不可 1:1 比较；状态是"键"、清单是"表"、进程集合是"查表结果"；EM 启动后**不再自行发起**状态切换 |
+| Deos | 同一系统内**三类调度模型并存**（ARINC 653 APEX / RMS / POSIX），多核用 **BMP + 缓存分区** |
+| XtratuM | **Plan 0 保留给初始化、Plan 1 保留作维护**；计划切换在**当前计划剩余槽执行完之后**；**IPVI 每分区最多 8 个**；固定优先级**数值 0 最高** |
+| LynxSecure | 官方表述为**静态配置 + 固定资源分配 + 无中央管理内核 + 无共享内存 + 无集中调度**；（"初始化划分的 setup code 被移除"一说**未获公开资料证实，未写入**） |
+| Quest-V | **每个 sandbox 一个 monitor**（而非一个中央 hypervisor）；monitor 只在引导、故障恢复、建通道、初始化影子页表时介入；**设备中断直接投递给 sandbox kernel**；**无全局时钟**，跨 sandbox 时间戳不可直接比较 |
+| Unikraft | **native（API 兼容，syscall 变廉价函数调用）与 binary-compatible（捕获 Linux ELF 的 syscall）两条路线**；**非 PIE 决定地址布局且限单应用** |
+| MirageOS | 同一份源码换目标，**差别只在一个被替换的平台主模块 + 目标包集合** |
+| OpenVMS | 完成顺序为 **写 IOSB → 置事件标志 → 触发 AST**；**AST 不中止进行中的系统调用**；进程等待时 AST 投递后**原等待会被重新执行** |
+| z/OS | **SRB 不能调用 SVC（除 ABEND）或 WAIT**；**home 地址空间在整个执行期不变，`PSAAOLD` 总指向 home**；跨地址空间使用 TCB 指针是经典 **S0C4-11** 成因 |
+| IBM i | 内存与辅存**构成单一 64 位地址空间**；对象**按名字而非硬件地址**访问 |
+| OSE / OSEck | LINX **统一核内/处理器间/板间通信**，支持共享内存/DMA/RapidIO/以太网/PCI，**零拷贝共享内存**；（其 **XIP 能力本次未获证实，已在文件中标注"不要断言"**） |
+| Nucleus | **MMU（Cortex-A）/MPU（Cortex-M）子系统隔离 + 线性内存映射 + 动态 reload/restart/update 而不停机** |
+
+### 四、本轮校验
+
+- `node validate.mjs`：`OK: 122 skills validated`；`npm test`：41 项全过
+- 分支入链检查：`re-kernel` 22 / `re-rtos` 13 / `re-hypervisor` 8 / `re-automotive` 2 个分支文件均有 SKILL.md 入链（`windows-gotchas`/`windows-decision-tree` 由同目录互链）
+- **两处未证实内容已明确标注而非照写**：OSE 的 XIP、LynxSecure 的"setup code 被移除"
+- 未做：行为 fixture（fibril 调度、SR-IOV 切换、AST 投递等需真实环境）
+
+---
+
+## 补充 18：14 个分支的深度展开 + Nucleus 新增 + 入口速查表（2026-09-13）
+
+来源为同源外部整编的第三份材料：对 14 个系统的**机制级展开**（心智模型 → 特殊情况 → 下一步查什么）与一张汇总速查表。处理方式：**逐条核验后并入对应分支**，不新增技能（Nucleus 内容量已足以成篇，新增 1 个分支文件）。
+
+### 一、落地位置
+
+| 动作 | 对象 |
+|---|---|
+| **新增分支** | `re-rtos/references/nucleus.md`（线性映射 + entitlement / 固定块内存池 / 动态模块生命周期） |
+| **深度展开** | `autosar-adaptive`（清单三件套 / 服务发现 / PHM / UCM / Persistency）、`xen`（通知抑制 / 睡前再检查 / FIFO 事件 ABI / 迁移身份）、`hyperv-vmbus`（GPADL 删除阻塞 / packet 生命周期 / 外部数据待决）、`partitioned-rtos`（Deos 两级调度 / slack / SafeMC / 排错顺序）、`ucos-sysbios`（调度器锁嵌套 / 信号量与互斥量 / 定时器任务上下文 / PendAbort）、`safertos-rtx5`（权限模型 / ESM 拒绝语义）、`xtratum`（两种切换时机 / 采样刷新 / 掩蔽扩展中断）、`acrn`（MSI-X trap 路径三态 / 设备归属迁移）、`lynxsecure-questv`（LynxSecure 官方表述）、`unikraft-mirageos`（启动表 / shim 三层符号 / Lwt / 目标指纹） |
+| **入口级扩充** | `re-analyze/references/cross-system-models.md` 新增**异常速查表（约 40 行，按现象直查）** 与**版本/代际提示**节 |
+
+`rerouting.md` A 表新增 7 行。
+
+### 二、本轮核验后的关键事实
+
+| 主题 | 核验后的表述 |
+|---|---|
+| **AUTOSAR PHM** | 以**进程粒度**监督（不是任务级）；三类监督 Alive（周期内检查点数量）/ Deadline（起止检查点耗时区间）/ Logical（检查点顺序符合监督图，与时间无关）；本地状态含 **EXPIRED（终态）**；**监督模式 = `<machine state, function group state>`**；恢复动作含"请求看门狗驱动复位"；**PHM 自身不启停进程**；**PHM 还监督 EM 守护进程存活，其失败升级为看门狗/机器复位** |
+| **AUTOSAR Persistency** | `keepExisting` / `overwrite` / `delete` 三策略 + 清单约束（前两者要求存在初始值，`delete` 要求不存在）；**版本比较：清单版本更低时回滚**（存在有效备份时） |
+| **AUTOSAR 服务发现** | `FindService` 允许返回空；可用性变化时重新回调且**实现负责串行化同一 handler**；handle 可指向**远端** service instance |
+| **Xen 通知抑制** | 推送宏**只有越过对端设置的 `req_event` 阈值时才通知**；消费侧"无工作 → 设阈值 → 全屏障 → 再查"是**防丢唤醒**的协议核心（并附已知的索引回绕副作用与 NAPI 场景副作用） |
+| **Xen FIFO 事件 ABI** | 优先级 **0 最高 / 15 最低（默认 7）**，每 VCPU 16 个队列；事件字含 **PENDING / MASKED / LINKED / BUSY**；**unmask 在 PENDING 时必须投递通知**；**存在 2-level 与 FIFO 两套 ABI，记账布局不同**；**初始化控制块不会重投当前 pending 事件（会丢），应在绑定事件之前完成** |
+| **Hyper-V GPADL** | **删除在 GPADL 仍被 server 映射时会阻塞直到解除**；从 buffer 创建时该 buffer 被 probe 并锁定直到 GPADL 销毁 |
+| **Hyper-V packet 生命周期** | 完成调用**可立即也可稍后**发起，直到它被调用才清理映射/释放缓冲/（按需）发送完成 packet——**回调返回不是释放边界** |
+| **Hyper-V 外部数据** | 需要分页时返回 **STATUS_PENDING**，**必须从回调返回**，之后**可能在不同 IRQL 再次回调**；返回的 MDL **已锁定、不带任何虚拟地址、在完成调用时失效**且由内核库释放 |
+| **Nucleus** | **线性内存映射 + 受保护区域 + entitlement**（Cortex-A 用 MMU、Cortex-M 用 MPU）；**`NU_PARTITION_POOL` 是固定大小块分配器**（与"空间隔离域"同名的术语坑）；**分配是 O(1)、不可能碎片化，唯一失败模式是池耗尽**；`NU_SUSPEND` 下池空则任务挂起；非任务线程只能用 `NU_NO_SUSPEND` |
+| **µC/OS 定时器** | 回调**在内部定时器任务上下文中执行**（不是中断、不是创建者任务）、**使用定时器任务的栈**、且**绝不能阻塞/等待**（回调串行执行，阻塞会卡住整个定时器子系统） |
+| **µC/OS PendAbort** | 中止等待是**让任务就绪**而非正常投递；**只能由任务调用**；被唤醒任务带"等待被中止"的错误码返回 |
+| **Deos SafeMC** | **两级调度**：Level 1 是**跨核对齐的执行窗口**，Level 2 为每个核/window 指派 scheduler（ARINC 653 / Deos RMA / POSIX）；**Slack 通过滑动时间窗实现**（窗口可压缩/扩张/滑动）；**cache partitioning 为软件实现、做到应用/分区级、免去分区切换的 cache flush**，与内存池互补 |
+| **XtratuM** | 普通 plan 切换**要等当前计划槽跑完**，而**健康监控切维护计划可立即发生**（终止当前槽）；同 MAF 内多次请求可**最后一次生效**；采样端口刷新周期决定新鲜度、旧数据可标无效；**扩展中断在分区启动时默认掩蔽** |
+| **ACRN MSI-X** | **三类 VM 的 trap 路径不同**（Service VM → hypervisor handler；post-launched → Device Model handler 再涉及 hypervisor；pre-launched → hypervisor handler）；设备所有权在 Service VM 与 post-launched VM 之间**双向迁移** |
+| **Unikraft 启动表** | 三类表（早期 / 构造 / 初始化）+ **七级顺序（构造→早期→平台→库→rootfs→系统→晚期）**、**每级 10 个优先级**、条目在按名字排序的专用链接段中 |
+| **MirageOS Lwt** | 协作式轻量线程 + 事件循环；**不让出会饿死整个事件循环**（不需要互斥量或内核死锁）；后台异常交给 async 异常处理器，行为取决于其配置 |
+
+### 三、未证实 / 未直接命中的内容（已按此处理）
+
+| 内容 | 处理 |
+|---|---|
+| LynxSecure"用于初始配置的特权 setup code 随后被丢弃" | **未证实**——改为写入官方明确表述的部分（不可变 boot 分区、内核功能仅限分区/数据流/状态调解、I/O 全导出到 guest、无管理控制台登录、无动态系统修改），并标注该机制未被证实 |
+| TI SYS/BIOS 的"中断禁用期间多次发生、恢复后只服务一次" | **未命中上游**——未写入 |
+| Deos 的外部时钟同步 | **未直接命中上游**——以"候选解释之一，需在具体型号文档确认"的措辞写入 |
+| Hyper-V `GPADL_READ_ONLY` 非安全措施 | **未命中**——未写入（只写了已证实的删除阻塞与 buffer 锁定语义） |
+
+### 四、版本/代际提示（已写入入口文件）
+
+- 某平台规范公开版本已推进（如 R25-11）而多数细节来自上一完整公开版（R24-11）——**核心模型适用，条目前先做版本指纹**
+- 某 hypervisor 最完整公开手册属于特定代际（如 XM-4）——**不要无条件套到其他代际**
+- 同一系统的**安全认证产品线与基础产品线不是同一份二进制/内核**，可选机制不同
+
+### 五、本轮校验
+
+- `node validate.mjs`：`OK: 122 skills validated`；`npm test`：41 项全过
+- `re-rtos` 分支数 13 → 14，`re-analyze/references/cross-system-models.md` 新增速查表与版本提示节
+
+---
+
+## 补充 19：HIC 入库与"信任边界"通用规则（2026-09-13）
+
+### 一、落地
+
+- **新增分支**：`re-kernel/references/hic.md` —— capability + 物理沙箱 + 多版本驱动系统（`re-kernel` 分支数 22 → 23）
+- **入口级规则**：`re-analyze/references/cross-system-models.md` 新增「**共同规律 E：信任边界不能从指令形态推导**」（四条推论表：直接 call / 直接 MMIO / 同特权级 / 整数句柄各自可能是什么），并写明配套要求（内存取证区分 VA/PA/frame/capability/owner domain/mapped domain；共享内存指针带域语义）
+- **挂载**：`re-kernel` SKILL.md（平台差异表行 + 4 条决策表行 + 分支指针 + description 触发词）、`rerouting.md` A 表 1 行
+
+### 二、触发条件设计（用户明确要求"不能误触"）
+
+`hic.md` 内专设「触发条件（命中 / 不要命中）」一节：
+
+- **命中**要求**组合证据**：同特权级 + MMU 隔离的模型、模块自描述元数据、入口页 IPC 形态、两种 capability 记账模型并存、旧新实例并行的滚动更新
+- **不命中**逐条列出该走哪里的对照表：仅"驱动在用户态"→ 用户态驱动各分支；仅"capability/handle 本地标识"→ seL4/Zircon/Genode 等；仅"共享内存+通知"→ Xen/VMBus；仅"有滚动更新"→ MINIX/NetBSD；**仅"看到直接 MMIO"→ 不足以说明任何事**
+- 判据写明：**本分支的标志是那一组组合，而不是其中任何单独一条**
+
+### 三、命名决策（记录在案）
+
+初版按本库红线 2（禁止具体到某个项目/产品，暗示也不行）做了**机制类脱敏**——起因是检索发现公开 OSDev 线程的作者 handle 与本仓库 git 身份一致，点名会同时构成"项目名 + 作者身份"的双重指向。**用户明确要求点名**（该项目为公开项目），遂按用户决定改为具体系统条目。
+
+**先例**：此类"是否点名"的判断**以用户对自身项目公开性的判断为准**；默认仍按红线 2 脱敏，用户明确要求时点名。
+
+### 四、核验
+
+- HIC 的公开信息（OSDev 线程：物理沙箱、1:1 连续物理映射、同特权级直接调用快路径、capability 管控与未授权记录、Privileged-1 官方模块审计/签名模型、大页与页表层数、KPTI-like 跨边界隔离）与用户提供的设计描述一致，**分支内容以用户提供的设计文档为准**（本库对第一方设计文档无需外部转述）
+- 跨系统对照表的 11 条来源（Fuchsia DFv2 / crash recovery / bind metadata、seL4-CAmkES、Xen 前后端与 grant table、Genode、QNX、Barrelfish、MINIX live update 与协议静止）中，**除 Barrelfish 外均已在本库其他分支有独立记录**；Barrelfish 仅作为对照经验写入，未单独立分支
+- 链接修复：初版 `[[xen]]` / `[[hyperv-vmbus]]` 跨技能裸引用被校验拦下（应为 `[[re-hypervisor/xen]]` 形式），已修正
+
+### 五、本轮校验
+
+- `node validate.mjs`：`OK: 122 skills validated`；`npm test`：41 项全过
+- `re-kernel` 分支 23，全部有 SKILL.md 入链

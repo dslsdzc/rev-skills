@@ -1,6 +1,6 @@
 ---
 name: re-rtos
-description: RTOS 结构分析：FreeRTOS/ThreadX/Zephyr/RT-Thread/VxWorks/QNX/RTEMS/INTEGRITY 运行模型判定、任务表与 TCB 定位、内核对象还原、按任务拆分反编译。触发词：RTOS、FreeRTOS、ThreadX、Zephyr、VxWorks、QNX、RTEMS、INTEGRITY、任务表、TCB、固件调度、MCU 固件、confdefs、devicetree、DKM、resource manager
+description: RTOS 结构分析：FreeRTOS/ThreadX/Zephyr/RT-Thread/VxWorks/QNX/RTEMS/NuttX/eCos/µC-OS/SYS-BIOS/SAFERTOS/CMSIS-RTX5/T-Kernel/TOPPERS/OSE/INTEGRITY/ARINC 653/PikeOS/Deos 运行模型判定、任务表与 TCB 定位、内核对象还原、按任务拆分反编译。触发词：RTOS、FreeRTOS、ThreadX、Zephyr、VxWorks、QNX、RTEMS、NuttX、eCos、µC/OS、Micrium、SYS/BIOS、SAFERTOS、CMSIS-RTX5、T-Kernel、TOPPERS、ITRON、OSE、OSEck、Nucleus、INTEGRITY、ARINC 653、PikeOS、VxWorks 653、Deos、任务表、TCB、固件调度、MCU 固件、confdefs、devicetree、DKM、resource manager、FromISR、DSR、OSIntEnter、Swi、Hwi、module preamble、upper half、分区调度、major frame、Safety Class
 capabilities: [rtos-analysis]
 ---
 
@@ -23,7 +23,16 @@ capabilities: [rtos-analysis]
 | **VxWorks** | **两种**：DKM 内核态 / RTP 用户态 | DKM 动态加载 + **全局符号环境**；RTP 走标准 ELF/`.so` | 先分 DKM 还是 RTP（[[vxworks]]） |
 | **QNX** | **用户态 server**；网络驱动是 io-pkt 内的共享对象 | **pathname 注册** + 消息传递 | 先判形态（[[qnx]]） |
 | **RTEMS** | 与内核/应用同处**单一地址空间** | 构建期配置（`confdefs.h`）+ 设备驱动表 + 运行期链接器 | 配置与驱动表（[[rtems]]） |
-| INTEGRITY | 分区（空间 + 时间隔离） | 全静态配置，运行期无动态创建 | 分区/进程表（见步骤 3） |
+| **INTEGRITY / ARINC 653 / VxWorks 653 / PikeOS** | **分区**（空间 + 时间 + 资源三域） | 静态配置；分区级 **major frame / partition window** + 分区内调度 | **先对齐分区窗口与分区模式**（[[partitioned-rtos]]） |
+| **NuttX** | 与内核同镜像或分离，**取决于构建方式** | 由构建模型决定：FLAT 直接调用 / PROTECTED 走 syscall proxy / KERNEL 走 MMU | **先判 FLAT / PROTECTED / KERNEL**（[[nuttx]]） |
+| **eCos** | 与内核同镜像；中断处理分三层 | ISR → DSR → thread，各层同步机制不同 | 判断工作落在哪一层（[[ecos]]） |
+| **ThreadX Modules** | 常驻内核 + 可动态装载模块 | **module preamble + request ID 经软件 dispatch** | 先认 module ABI（[[threadx-modules]]） |
+| **FreeRTOS（上下文）** | 与内核同镜像；中断上下文特殊 | task API 与 FromISR API 分离 | 先判上下文（[[freertos-context]]） |
+| **µC/OS、SYS/BIOS** | 与内核同镜像；**中断参与调度** | ISR 显式通知内核（进入/退出）；分层线程 Hwi > Swi > Task | 调度时机要把中断进出算进去（[[ucos-sysbios]]） |
+| **SAFERTOS、CMSIS-RTX5** | 与内核同镜像；**带访问控制与安全等级** | per-task 区域/保护域、API 与对象访问策略、ISR 延迟队列 | 先判"谁能访问什么"（[[safertos-rtx5]]） |
+| **T-Kernel、TOPPERS** | 与内核同镜像；**服务调用合法性取决于上下文** | 静态配置生成 task/handler；设备驱动以准任务部分运行 | 先恢复上下文类型与规格家族（[[tkernel-toppers]]） |
+| **OSE / OSEck** | 与内核同镜像但**消息可跨节点** | 消息式 IPC + 分布式透明传输层（共享内存/DMA/互连） | 先判消息对端在不在本地（[[ose-oseck]]） |
+| **Nucleus** | 与内核同镜像；**MMU/MPU 子系统隔离 + 线性内存映射** | 动态 reload/restart/update 应用与内核模块（不必停机） | "模块被替换但系统继续跑"与"隔离存在但 VA 不像每进程独立"都不是异常 |
 
 ## 失败模式决策表（本技能的主入口）
 
@@ -43,6 +52,24 @@ capabilities: [rtos-analysis]
 | `dlopen()` 行为**不像 Unix 动态库** | RTEMS 运行时链接器 | 重定位进当前地址空间；对象名可为 `libfoo.a:bar.o`（[[rtems]]） |
 | 找不到设备回调的 `file_operations` | RTEMS 设备驱动表（major = 表索引） | 恢复 `rtems_driver_address_table` 与 `rtems_io_register_name`（[[rtems]]） |
 | 任务数/调度器**找不到运行期创建点** | RTEMS 构建期配置生成 | 找定义 `CONFIGURE_INIT` 的那个翻译单元（[[rtems]]） |
+| 高优先级线程**不运行**（分区系统） | **分区级调度**：当前没有它所属分区的执行窗口 / 预算，或分区还没进 NORMAL | 先对齐 major frame 与 partition window，再看线程优先级（[[partitioned-rtos]]） |
+| "连写 A B C 只读到 C" | **采样端口**的覆盖语义 | 对队列端口才是异常（[[partitioned-rtos]]） |
+| 固定地址函数表被当成混淆 | APEX 服务表一类的 ABI | 先当服务表核对（[[partitioned-rtos]]） |
+| 同一个 API 反编译结果在不同样本里完全不同 | NuttX 的 **FLAT/PROTECTED/KERNEL** 构建差异 | 先判构建模型；极短 API + 立即 trap 是自动生成的 syscall proxy（[[nuttx]]） |
+| 某地址"用户能访问 / 用户 fault" | 可能分别来自 **malloc 与 kmalloc**（双堆） | 分清 user heap 与 kernel heap（[[nuttx]]） |
+| 找不到真正操作硬件的地方 | NuttX 的 **upper half / lower half** 分层 | 硬件实现常在 `arch/` 或 `boards/`，不在 `drivers/`（[[nuttx]]） |
+| ISR 里调用了 task 版 API | 上下文判定或符号识别有误（FreeRTOS） | 先判任务/ISR 上下文与 API 变体（[[freertos-context]]） |
+| 某地址"有时能访问、有时不能" | **MPU 受限任务**或运行期改了 MPU 区域（FreeRTOS-MPU） | 查区域配置与运行期改区调用（[[freertos-context]]） |
+| ISR 只清状态位就返回 | eCos 的 **DSR** 承担真正工作 | 查 ISR 返回值是否调度 DSR（[[ecos]]） |
+| 大量「填 request ID → 跳公共 dispatcher」 | ThreadX Module 的 ABI | 建 request ID → 服务名映射，别判混淆（[[threadx-modules]]） |
+| 代码地址不在模块内存区内 | **XIP** 模块（指令在 Flash、数据在 RAM） | 别判控制流劫持（[[threadx-modules]]） |
+| ISR 尾部发生切换 / task 已就绪却不切换 | **中断进出参与调度**（µC/OS 的进入退出协议；SYS/BIOS 的 `Swi_disable` **连带禁用 Task 调度**） | 把中断进出算进调度时机（[[ucos-sysbios]]） |
+| 同一地址在不同 task 下可访问性不同 | **per-task MPU 区域 / 保护域**（SAFERTOS、RTX5） | 查区域配置与安全等级，别判内存损坏（[[safertos-rtx5]]） |
+| 句柄不像内存指针 | **间接对象 ID + 交叉引用表**（SAFERTOS ESM） | 别指望从它推出对象布局（[[safertos-rtx5]]） |
+| ISR 里调用的 API 没立即生效 | **ISR FIFO 延迟队列**（RTX5） | 对象状态在 IRQ 退出后才变化，属正常（[[safertos-rtx5]]） |
+| 服务调用"非法"或被拒 | **上下文类型**（T-Kernel 任务/准任务/任务独立；TOPPERS 任务/非任务/ISR/循环/闹钟） | 对照规范的有效上下文表，别按 API 名推测（[[tkernel-toppers]]） |
+| 消息/信号的对端找不到 | **消息可跨 core / CPU / DSP / node**（OSE 的分布式透明传输层） | 别假定对端在本地，也别只查本地 syscall（[[ose-oseck]]） |
+| 模块被替换但系统继续运行 | **Nucleus 的动态 reload/update**（线性内存映射 + MMU/MPU 子系统隔离） | 见运行模型表；别先判劫持 |
 
 ## 何时使用 / 何时不用
 
@@ -135,6 +162,16 @@ capabilities: [rtos-analysis]
 - [[vxworks]] —— **DKM（`.out`，内核态）vs RTP（`.vxe`，用户态）**、DKM 与**全局符号环境**的链接关系、`undefined symbol` 的真实成因（VIP 未含组件）、独立模块 unresolved 属常态、VSB/VIP 与"同版本不同 ABI 环境"
 - [[zephyr]] —— **编译期设备图**：`DEVICE_DEFINE`/`DEVICE_DT_DEFINE` 与 linker section、`SYS_INIT` 的 level/prio 与**返回值后果**、**iterable sections**（规则排列的结构体未必是混淆表）、`/chosen` 与 `/aliases` 不是硬件节点、map 文件裁决归属、**LLEXT**（导出符号表、`llext_unload` 后指针失效、User Mode 下需 `llext_add_domain`）
 - [[rtems]] —— **单地址空间 + 构建期配置**：`confdefs.h` 与 `CONFIGURE_INIT` 唯一性、`rtems_driver_address_table` 六入口与 **major = 表索引**、`rtems_io_register_name`、**运行时链接器不是 Unix 共享库模型**（`libfoo.a:bar.o`、懒/立即绑定等价、未解析不报错、重名即错误、基镜像需 `rtems-syms`）
+- [[partitioned-rtos]] —— **分区系统（INTEGRITY / ARINC 653 / VxWorks 653 / PikeOS）**：**major frame + partition window** 的两层调度（PikeOS 三层）；分区模式 IDLE/COLD_START/WARM_START/NORMAL（进程"不跑"常是还没进 NORMAL）；**采样端口 vs 队列端口**的覆盖语义；INTEGRITY 的固定 CPU/内存预算与静态启动表；PikeOS 的 **APEX 固定地址服务表**与 POSIX guest 的 system thread 映射
+- [[nuttx]] —— **FLAT / PROTECTED / KERNEL 三种构建**：同一 API 产物完全不同；PROTECTED 的**自动生成 syscall proxy**（极短函数 + 立即 trap，不是 hook）；**双堆**（user heap / kernel heap）；驱动的 **upper half / lower half** 分层
+- [[freertos-context]] —— **ISR 与任务上下文**：task 版 vs `...FromISR()` 版 API、`pxHigherPriorityTaskWoken` 与 `portYIELD_FROM_ISR`（真正的切换发生在中断退出后）、`configMAX_SYSCALL_INTERRUPT_PRIORITY`（更紧急的 ISR 一个 API 都不能调，且优先级数值方向相反）；**FreeRTOS-MPU** 的受限任务与运行期改区
+- [[threadx-modules]] —— **module preamble**（必在第一个地址、properties 位决定特权/MPU）+ **request ID 经软件 dispatch 调用常驻 Module Manager**（本质是 syscall table，不是混淆）+ XIP 与拷贝装载
+- [[ecos]] —— **ISR / DSR / thread 三层**：ISR 返回 `CYG_ISR_CALL_DSR` 时调度 DSR；三种同步级别与各自的锁（**ISR 不能用 DSR 级锁；DSR 能 signal 条件变量但不能 wait**）；三种驱动模型
+- [[ucos-sysbios]] —— **中断进出参与调度**：µC/OS 的 `OSIntEnter`/`OSIntExit` 成对协议与"只有最后一个嵌套 ISR 退出才判断切换"；SYS/BIOS 的 **Hwi > Swi > Task** 分层、**`Swi_disable()` 连带禁用 Task 调度**、Hwi/Swi 共用 ISR 栈
+- [[safertos-rtx5]] —— **认证 RTOS 的隔离特性**：SAFERTOS ESM 的 **API 访问策略 / 对象访问策略 / 间接对象 ID / per-task 区域**；RTX5 的 **Safety Class / MPU 保护域 / 线程看门狗 / 对象与 SVC 指针检查**、**ISR FIFO 延迟队列**（溢出时系统状态已不一致）
+- [[tkernel-toppers]] —— **上下文合法性**：T-Kernel 的任务/准任务/任务独立三种上下文与设备驱动（准任务部分、必须可重入、不保证互斥）；**TOPPERS 的四个家族**（ASP3 / HRP3 / FMP3 / HRMP3）与静态配置生成
+- [[ose-oseck]] —— **消息式 IPC 跨节点**：分布式透明传输层（共享内存/DMA/互连）、零拷贝；消息/信号不是 POSIX 信号；支持动态代码更新
+- [[nucleus]] —— **线性内存映射 + 受保护区域 + entitlement**（MMU 在 Cortex-A、MPU 在 Cortex-M；**不是每进程独立 VA**）；**`NU_PARTITION_POOL` 是固定块内存池**（与隔离域同名的术语坑）；`NU_SUSPEND` 下池空则任务本就挂起；**模块可动态 reload/restart/update 而不停机**
 
 ## 跨域联合
 

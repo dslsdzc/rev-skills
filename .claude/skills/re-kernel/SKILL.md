@@ -4,11 +4,17 @@ description: >
   内核逆向（跨平台）：Windows 驱动（.sys/IRP/SSDT）、Linux 内核模块（.ko/ET_REL/LKM/rootkit）、
   macOS KEXT 与 System Extension/DriverKit、Android GKI/vendor module、seL4（capability 系统）、
   Fuchsia/Zircon（handle 模型 + DFv2 用户态驱动框架）、FreeBSD（linker sets/SYSINIT/KLD）、
-  illumos/Solaris（DDI/DKI、dev_ops/cb_ops）。
+  illumos/Solaris（DDI/DKI、dev_ops/cb_ops）、OpenBSD（KARL/autoconf/pledge）、NetBSD（模块按需自动加载）、
+  Genode（组件树/session/quota）、MINIX 3（RS 自愈/grants/live update）、Plan 9（命名空间/9P）、
+  HelenOS（fibril/DDF）、Redox（scheme）、Haiku（device_node/按需发现）、
+  z/OS（TCB·SRB/cross-memory）、IBM i（单一存储层）、OpenVMS（AST）、Unikraft·MirageOS（unikernel）、
+  HIC（同特权级 MMU 隔离的驱动模型 / capability / 物理沙箱 / 自描述模块 / 入口页 IPC）。
   触发词：内核、驱动、.sys、.ko、LKM、kext、dext、rootkit、内核模块、IRP、GKI、内核扩展、
   seL4、capability、CSpace、CNode、capDL、CAmkES、MCS、Fuchsia、Zircon、handle、DFv2、driver host、FIDL、
-  FreeBSD、KLD、SYSINIT、linker set、illumos、Solaris、DDI、dev_ops、cb_ops。
-  English triggers: kernel module, driver reversing, LKM, kext, rootkit, GKI, seL4, capability system, capDL, Fuchsia, Zircon, handle, driver framework, FIDL, FreeBSD, KLD, SYSINIT, linker set, illumos, Solaris, DDI, dev_ops, cb_ops.
+  FreeBSD、KLD、SYSINIT、linker set、illumos、Solaris、DDI、dev_ops、cb_ops、
+  OpenBSD、KARL、autoconf、pledge、unveil、NetBSD、kmod、GENODE、session、quota、MINIX、RS、grant、9P、Plan 9、namespace、
+  HelenOS、fibril、DDF、Redox、scheme、Haiku、device_node、z/OS、TCB、SRB、cross-memory、IBM i、single-level storage、OpenVMS、AST、$QIO、unikernel、Unikraft、MirageOS。
+  English triggers: kernel module, driver reversing, LKM, kext, rootkit, GKI, seL4, capability system, capDL, Fuchsia, Zircon, handle, driver framework, FIDL, FreeBSD, KLD, SYSINIT, linker set, illumos, Solaris, DDI, dev_ops, cb_ops, OpenBSD, KARL, autoconf, pledge, NetBSD, kmod, Genode, session, quota, MINIX, reincarnation server, grant, 9P, Plan 9, namespace, HelenOS, fibril, DDF, Redox, scheme, Haiku, device node, z/OS, TCB, SRB, cross-memory, IBM i, single-level storage, OpenVMS, AST, QIO, unikernel, Unikraft, MirageOS.
 capabilities: [kernel-analysis]
 ---
 
@@ -32,6 +38,19 @@ capabilities: [kernel-analysis]
 | **Fuchsia/Zircon** | **handle 引用内核对象**（数值**进程本地**）+ **用户态驱动 component**（DFv2） | driver manager 维护 node 拓扑、driver index 按 **bind rules** 匹配、driver host 承载实例 | FIDL、组件清单、bind rules | driver manager/driver index 的匹配与拓扑、driver host 进程划分、handle+rights 关系图 |
 | **FreeBSD** | `.ko`（KLD，ELF 可重定位） | **linker sets + `SYSINIT`**（`SI_SUB_*` + `SI_ORDER_*` 排序）+ 运行期 kernel linker | 符号、`set_*` 集合、源码 | `__start_set_*`/`__stop_set_*` 边界、加载路径（内建/预加载/`kldload`） |
 | **illumos/Solaris** | `.so` 内核模块（DDI/DKI 驱动） | `_init` → `mod_install(&modlinkage)`；`_fini` → `mod_remove` | `modlinkage`→`modldrv`→`dev_ops`→`cb_ops` 静态链 | 逐字段读 `dev_ops`/`cb_ops`（含 `nulldev`/`nodev` 占位语义） |
+| **OpenBSD** | 与一般 Unix 同形，但内核**每次 boot 重新随机链接**（KARL）+ autoconf 运行时匹配 | link kit + rc 后台重链接；detach 可等待使用者退出 | 符号（**KARL 后必须按符号而非字节比较**） | link kit/rc 重链接痕迹、autoconf 表、pledge/unveil 状态 |
+| **NetBSD** | `.kmod`（ELF，由内核 linker 解析） | **按需自动加载**（含依赖递归）+ 自动卸载；模块与内核版本强约束 | 模块版本报告与内核版本 | 实际模块路径（布局随 `KERNEL_DIR` 变化）、`.plist` 属性 |
+| **Genode** | **组件树**：session + capability + quota | parent 中介的路由，名字**逐层重映射** | 组件的 XML 配置与路由表 | capability 的 PD 局部命名、quota 捐赠链、ROM 更新 |
+| **MINIX 3** | **用户态服务 + RS 自愈重启** | RS 监控/重启；label 稳定、**endpoint 会变** | 定长消息（56 字节）定义与 grants | 服务 label↔endpoint、grant 校验、live update 阶段 |
+| **Plan 9 / 9front** | **每进程命名空间 + 用户态 file server** | bind/mount/union；服务经 `/srv` 发布后挂载 | 9P 的 fid/qid/walk 与消息类型 | 命名空间绑定历史、9P 会话对齐 |
+| **HelenOS** | 用户态 server + **fibril**（内核不知道） | 用户态 DDF；devman 按 match id 评分启动驱动 | DDF 结构（`driver_ops_t`） | kernel thread 与 user fibril 的区分 |
+| **Redox** | **scheme + 用户态 daemon** | 内核把文件操作转成 SQE/CQE 消息 | SQE/CQE 字段、句柄映射 | scheme 名 → provider；客户端 fd 与 provider 描述符的映射 |
+| **Haiku** | kernel module，但分 **driver module / device module** 两层 | Device Manager 的 device_node 树 + **按需发现** | 节点属性与总线类型规则 | `/dev` 路径 ↔ 节点 ↔ 驱动 |
+| **IBM z/OS** | **TCB 与 SRB** 两类可调度单位 | cross-memory / PC / AR 模式 | 地址空间三元组（home/primary/secondary） | 当前 primary/secondary/home 与工作单位类型 |
+| **IBM i** | 对象式（库即容器对象） | **单一存储层**：内存与磁盘同一 64 位地址空间 | 对象限定名与全局指针 | 对象引用 vs 主存地址 |
+| **OpenVMS** | 进程/线程 + **AST 异步控制流** | `$QIO` + 事件标志 + AST | IOSB、AST 参数 | 完成流（IOSB → 标志 → AST） |
+| **Unikraft / MirageOS** | **库操作系统 / unikernel**：应用与 OS 库整链 | 构建目标决定一切（native vs binary；unix/hvt/xen…） | 构建配置与 shim | 调用进入"内核"的方式、设备接线来源 |
+| **HIC** | **同特权级进程 + MMU 隔离**（Privileged-1 与 Core-0 同物理特权级）；驱动只映射被授权的 MMIO/共享内存 | 自描述模块（UUID/版本/端点/资源/依赖/签名）+ capability 记账；动态加载与滚动更新 | 模块元数据、capability 表 | domain / capability / mapping / device ownership / version / lifecycle 拓扑 |
 
 ## 失败模式决策表（本技能的主入口）
 
@@ -64,6 +83,24 @@ capabilities: [kernel-analysis]
 | 某个 init / 注册函数**没有任何调用者** | **linker set 注册**（FreeBSD `SYSINIT`；Zephyr 见 [[re-rtos/zephyr]]） | 由函数地址回溯到注册结构体与所属 `set_*` 集合，**别标 dead code**（[[freebsd-kernel]]） |
 | 一大段连续指针/对象、section 名 `set_*` | 内核自己的**linker set** 集合 | 按注册集合解释，而不是 jump table / 混淆表 |
 | 驱动的"支持什么"判断不一致 | `nulldev`（合法 no-op）与 `nodev`（不支持，返回 `ENXIO`）被混同 | 逐字段读 `dev_ops`/`cb_ops` 的占位符语义（[[illumos-kernel]]） |
+| 同版本内核**每次启动布局都不同** / 两份二进制逐字节不一致 | **KARL 重链接**（OpenBSD）——不是被 patch、也不是版本不同 | 按符号/语义比较，别做字节比较（[[openbsd-kernel]]） |
+| 模块**自己出现/自己消失**，找不到加载者 | 内核**按需自动加载**与自动卸载（NetBSD） | 对齐到触发它的事件与 `.plist` 设置，看时间线而非进程（[[netbsd-kernel]]） |
+| 模块加载失败但文件看着正常 | 模块与内核**版本兼容性**（NetBSD） | 先核对 exact kernel version/build，别随手强制加载（[[netbsd-kernel]]） |
+| 服务名相同却像连到了不同对象 / capability 数值被当作全局 ID | 名字只在**局部层级**成立、capability 是 **PD 局部命名**（Genode） | 按路由表 + label 链 / 按 session 对齐（[[genode]]） |
+| 驱动进程**消失又出现** | **RS 自愈重启**（MINIX 3）——不是持久化 | 对齐 label（稳定）与 endpoint（会变）（[[minix3]]） |
+| IPC 里的整数被当作 buffer 指针 | 可能是 **grant ID**（MINIX 3，消息定长 56 字节） | 按 `(endpoint, grant ID, offset, rights)` 还原；`EPERM` 是 grant 无效而非权限不足 |
+| 路径相同却访问到不同对象 | **每进程命名空间**（Plan 9） | 恢复 bind/mount 历史与 9P 会话，别按路径断言同一资源（[[plan9]]） |
+| 一个 OS thread 内出现大量"线程切换" | **fibril**：用户态协作调度，**内核不知道它**（HelenOS） | 别在内核调度里找证据（[[helenos]]） |
+| `read`/`write` 落到的东西不是文件系统 | **scheme 决定含义**（Redox） | 按 scheme 名找 provider；客户端 fd 与 provider 描述符不相等（[[redox]]） |
+| boot 时驱动不在、后来才出现 | **按需发现**（Haiku） | 查总线类型规则与按需标志，别判加载失败（[[haiku]]） |
+| 执行地址属于另一个地址空间 | **cross-memory / PC 指令**（z/OS） | 区分 home/primary/secondary 与 TCB/SRB，别判劫持（[[zos]]） |
+| 例程没有调用者却有行为 | **AST 异步控制流**（OpenVMS） | 补 AST 边；等待"返回后又等待"属正常（[[openvms]]） |
+| 对象地址不像 DRAM 指针 | **单一存储层**（IBM i） | 内存与磁盘同一 64 位地址空间，别套 POSIX 文件模型（[[ibmi]]） |
+| 找不到 user → syscall → kernel 边界 | **库操作系统 / unikernel** | 先判构建目标；"系统调用"可能只是函数调用（[[unikraft-mirageos]]） |
+| 模块自带 UUID/版本/端点/资源/依赖/签名 的自描述元数据 | **先做元数据 triage，再反汇编** | 元数据是第一层证据（[[hic]]） |
+| 快路径 IPC 呈"入口页 → 位图测试 → 失败分支 → 跳业务页"、跳转可触发 fault | **正常 IPC 边界**（隔离模式下的换页/验证路径） | 别判混淆 / CFI stub / 坏 CFG（[[hic]]） |
+| 同一 capability 结构在不同版本或文档里布局不同 | **先做代际指纹**（per-core 无全局锁 ↔ 受保护全局表） | 别按最新文档直接套结构（[[hic]]） |
+| 初始化里大量"看似多余"的 reset / 状态探测 | **sandbox restart / recovery 路径**（驱动重建 ≠ 硬件回到 clean boot） | 别当 boilerplate 删掉（[[hic]]） |
 
 ## 通用主线
 
@@ -83,6 +120,19 @@ capabilities: [kernel-analysis]
 - [[zircon-kernel]] —— **handle 本地性**（数值仅进程内有效、关闭后可重用、跨进程比对无意义）、**in-transit 与 transfer**（写入即从发送方移除、失败也会被消费、`ZX_RIGHT_TRANSFER`、rights 只能收窄；关系图记 object + handle + rights）、**DFv2**（driver manager / driver host / driver index / driver runtime；bind rules 匹配而非 `bus probe()`）、**同驻驱动的本地通道**（有 IPC 但无 syscall）、`/dev/foo` 是 FIDL channel 而非 Unix 设备文件
 - [[freebsd-kernel]] —— **linker sets 与 `SYSINIT`**：注册项放进启动/关闭集合、按 `SI_SUB_*` + `SI_ORDER_*` 排序（同 sub 同 order 顺序未定义）、**现代 ELF 用 `__start_set_*`/`__stop_set_*` 定界且不再以 NULL 结尾**（按老结构扫描会越界）、`set_*` 集合的通用判据、KLD 的 `SI_SUB_KLD` 合并时机与反向拆除
 - [[illumos-kernel]] —— **DDI/DKI 驱动骨架**：`_init`/`_fini`/`_info` → `modlinkage` → `modldrv` → `dev_ops` → `cb_ops`；**`nulldev`（合法 no-op）vs `nodev`（不支持，返回 `ENXIO`）**；`attach` 的 `DDI_ATTACH`/`DDI_RESUME`（`DDI_PM_RESUME` 已废弃）；每实例初始化属 `attach()`；`_fini` 在 `mod_remove` 失败时不得释放资源
+- [[openbsd-kernel]] —— **KARL 重链接**（每次 boot 重新随机链接 `.o`，**变的是内部布局不是加载基址**，与 KASLR 不同；逐字节差异不能判 patch）；**autoconf** 运行时匹配/attach（`foo_attach` 无 caller 正常，detach 可等待使用者）；**pledge/unveil** 的单向棘轮与不可捕获 SIGABRT（"启动能访问、之后突然不能"是设计模式，别归因外部拦截）
+- [[netbsd-kernel]] —— **按需自动加载模块**（无 modload 也会出现，含依赖递归）与**自动卸载**；**模块与内核版本强兼容约束**（不匹配失败，强制加载有官方警告）；模块路径随 `KERNEL_DIR` 新布局变化（硬编码 `/stand/...` 会漏样本）
+- [[genode]] —— **组件树 + session + capability + quota**：服务名只在局部 parent 层级成立（每层可重映射，label 可被重写）；capability 是 PD 局部命名；**quota 捐赠沿路径被逐级扣减**（"系统还有内存"与"该 child OOM"不矛盾）；ROM session 支持更新
+- [[minix3]] —— **RS 自愈重启**（驱动消失又出现是正常）；**label 稳定、endpoint 会变**；消息定长 56 字节、大数据走 **grants**（`EPERM` = grant 无效、`EFAULT` = 未映射）；**live update 期间旧/新实例共存**（不是注入）
+- [[plan9]] —— **每进程命名空间**（同名路径可能是不同对象）；**union 只有单层叠加**；`/srv` 是服务注册表而非 socket；**9P 的 fid 是 session 内句柄**；`open/read/write` 常常是用户态 RPC
+- [[helenos]] —— **fibril**（用户态协作调度实体，**内核不知道它存在**）；**用户态 DDF 驱动框架**（`driver_ops_t` 回调、devman 按 match id 评分匹配与启动）；业务不在内核 dispatch table 里
+- [[redox]] —— **scheme 模型**：`read/write` 被内核转成 SQE/CQE 消息交给用户态 provider，**`read()` 不必然是文件系统**；**客户端 fd 与 provider 描述符由内核映射，不相等是常态**；provider 常主动进入 null namespace（安全设计）
+- [[haiku]] —— **device_node 树 + 按需发现**（boot 时驱动没出现属正常）；**driver module 与 device module 两层**（前者绑定节点，后者暴露 `/dev` 接口），模块名有 `driver_v1`/`device_v1` 约束
+- [[zos]] —— **TCB 与 SRB** 两类可调度单位（SRB 常被忽略：不能调 SVC、不能 WAIT）；**home/primary/secondary 三个地址空间**（PC 之后 primary ≠ home 属正常，home 永不改变）；AR 模式的 ALET 0/1/2
+- [[ibmi]] —— **单一存储层**：内存与磁盘构成单一 64 位地址空间，对象**按名字而非硬件地址**访问，库本身也是对象
+- [[openvms]] —— **AST 异步控制流**（例程可以没有调用者）；完成顺序 **写 IOSB → 置事件标志 → 触发 AST**；**AST 不会中止进行中的系统调用**，等待被打断后会重新执行
+- [[unikraft-mirageos]] —— **库操作系统/unikernel**：单地址空间、单保护域；native（syscall 变函数调用）vs binary-compatible（捕获 Linux ELF 的 syscall）；**设备接线来自构建期配置**，同一源码不同目标行为全变
+- [[hic]] —— **capability + 物理沙箱 + 多版本驱动系统**：**同物理特权级的进程之间靠 MMU 隔离**（`Ring 0 → 全内核可寻址` 在此为 invalid assumption）；**模块元数据先于反汇编**；**入口页 IPC 形态**不是混淆；共享内存指针带域语义 `{domain, cap, mapping, offset, length, rights}`；**驱动生命周期与硬件生命周期分开建模**（实例/域/设备所有权/DMA/IRQ 路由/绑定/版本/迁移状态）。含跨系统对照（Fuchsia / seL4-CAmkES / Xen / Genode / QNX / 多内核 / MINIX）与**命中-不命中清单**（避免在其他 capability 系统上误触）
 
 ## 何时使用 / 何时不用
 

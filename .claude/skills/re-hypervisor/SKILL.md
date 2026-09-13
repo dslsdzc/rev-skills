@@ -1,18 +1,38 @@
 ---
 name: re-hypervisor
 description: >
-  虚拟化逆向：VT-x/SVM、hypervisor 检测、VMCS/EPT 分析。
-  触发词：hypervisor、VT-x、SVM、虚拟化检测、EPT
+  虚拟化逆向：VT-x/SVM、hypervisor 检测、VMCS/EPT 分析，
+  以及 Xen / QNX Hypervisor / Jailhouse / ACRN / Bao / Hyper-V·VMBus / XtratuM / LynxSecure / Quest-V 的分区与 vdev 语义。
+  触发词：hypervisor、VT-x、SVM、虚拟化检测、EPT、Xen、grant table、event channel、
+  Jailhouse、cell、ACRN、ivshmem、Bao、shmem_id、vdev、GPA/HPA、
+  Hyper-V、VMBus、VSC、VSP、GPADL、SR-IOV、XtratuM、XM_CF、LynxSecure、Quest-V、sandbox kernel
 capabilities: [hypervisor-analysis]
 ---
 
-# 虚拟化逆向（VT-x / SVM / hypervisor 检测）
+# 虚拟化逆向（VT-x / SVM / 分区 hypervisor）
+
+<CORE RULE>
+本域有两条互不相同的分析轴，先分清在哪一条上：
+
+- **轴 A：分析 hypervisor 本身**（VT-x/SVM 指令、VMCS/VMCB、EPT/NPT）→ 本主文档
+- **轴 B：目标处在某种虚拟化之下**，判断"看到的地址/设备/中断是不是虚拟化层造出来的"→ 见 [[xen]] / [[qnx-hypervisor]] / [[jailhouse]] / [[acrn]] / [[bao]]
+
+轴 B 的共同坑是**把本地句柄当全局标识、把虚拟地址当物理地址**：
+
+```
+grant ref 是 grant table 的条目索引      ≠ 物理地址
+event-channel port 是通知端口           ≠ IRQ 号
+guest BAR / GPA                         ≠ 物理 BAR / HPA
+shmem_id 才是共享对象 identity          ≠ 两个 VM 里的映射地址
+```
+</CORE RULE>
 
 ## 何时使用 / 何时不用
 
 - 用：目标是 hypervisor / VMM 二进制或驱动（恶意 hypervisor、rootkit 虚拟化、VM-based 保护）
 - 用：样本/程序检测自己是否运行在虚拟机或嵌套虚拟化中（CPUID 指纹、时序检测）
 - 用：分析 VT-x（VMX）或 SVM 相关的启动代码、VMCS/VMCB 布局、EPT 相关操作
+- 用：**目标跑在分区/嵌入式 hypervisor 之下**——PV 设备、静态分区、vdev、跨 VM 共享内存与虚拟中断（见下方分支）
 - 不用：普通 Windows 驱动/rootkit（走 [[re-kernel]]）；只要识别"我在不在 VM 里"（快速判断走 [[re-triage]] 思路或 `virt-what`）
 - 不用：无 CPU 虚拟化支持 / 无嵌套虚拟化环境时的动态验证（静态分析先行，见坑 1）
 - 注意：动态实验（QEMU/KVM 嵌套）按 [[re-analyze/platform-tips]] 最高原则在沙箱内进行；hypervisor 样本具有高特权，只在与宿主隔离的实验环境运行
@@ -102,6 +122,19 @@ capabilities: [hypervisor-analysis]
    - 恶意样本"检测到 VM 就改变行为"（不执行恶意逻辑）也是常见对抗——记录检测点与分支
    - 产物：检测点清单 + 绕过方案（授权研究场景）
 
+## 平台分支（references）
+
+**轴 B**：目标是"跑在某种虚拟化之下的系统"，要判断哪些现象是虚拟化层造出来的正常机制。
+
+- [[xen]] —— **PV 前后端四件套**（XenStore / grant table / shared ring / event channel）；**grant ref 是条目索引**（条目含 flags/domid/frame，且**映射期间不支持撤销**）；**event-channel port 不是 IRQ 号**（绑定到 `shared_info` 位掩码）；**迁移后本地端口会变、稳定的是 remote port**；shared ring 上"有数据流动却无 IPC 调用"属正常
+- [[qnx-hypervisor]] —— **三层地址**（guest virtual → guest physical/IPA → host physical）；**vdev** 使 guest DT ≠ 板级 DT；**shmem vdev** 的工厂页（`name`/`size`/`shmem`/`vector`/`status`，写 `size` 触发创建，故 guest 启动顺序无关）与控制页（`status`/`idx`/`notify`/`detach`）；`intr pass` vs `intr vdev`；直通设备同一时刻只允许一个 resident
+- [[jailhouse]] —— **配置比 inmate ELF 更重要**（CPU/内存/IRQ/PCI 归属）；越权访问 → **CPU 被 park**（不是 guest 崩溃）；**`JAILHOUSE_MEM_LOADABLE` 映射在 cell 启动时被撤销**（重装走 Cell Set Loadable）；**ivshmem 不维护 pending 语义**（MSI-X PBA 恒 0，事件状态从共享内存协议读）；hypervisor VA 里扫不到全部 VM 内存
+- [[acrn]] —— **Service VM / pre-launched / post-launched** 三态与三种 I/O 服务路径；**guest BAR ≠ 物理 BAR**（EPT 映射，MSI-X 表页必须 trap）；posted interrupt 使 VM-exit 减少；**ivshmem 的 dm-land 与 hv-land 永不互通**（前缀 `dm:/` vs `hv:/`，且 dm-land 无 doorbell）
+- [[bao]] —— **静态分区**（CPU/内存/中断独占，vCPU 与 pCPU 1:1，无调度器）；**共享对象 identity 是 `shmem_id` 而非地址**；IPC 的 `size ≤ 对应 shmem 大小`；**cache coloring** 抑制干扰但有代价（牺牲大页、增加 TLB 压力）且随平台颜色数截断
+- [[hyperv-vmbus]] —— **VSC / VSP 经 VMBus**（双向通道 = 两个 ring buffer；高速设备可用多通道）；**GPADL 是缓冲区描述句柄不是地址**（共享总量有上限）；**SR-IOV 让数据面中途换路**（VF 直通绕开 VMBus 与 hypervisor，控制面仍在 VMBus）
+- [[xtratum]] —— **XM_CF 配置驱动**（分区/内存/中断/端口/通道/调度全在配置里，运行期无动态对象）；**循环计划（MAF + 时间槽）与固定优先级计划**；**Plan 0 = 初始化、Plan 1 = 维护**，切换要等当前计划剩余槽跑完；**IPVI 每分区最多 8 个**
+- [[lynxsecure-questv]] —— **没有中央调度器的分离**：LynxSecure 静态配置 + 无中央管理内核 + 无共享内存；Quest-V **多内核 sandbox + 每 sandbox 一个 monitor**（monitor 只在引导/故障/建通道/影子页表时介入）、设备中断直接投递、**无全局时钟**（跨 sandbox 时间戳不可直接比较）
+
 ## 跨域联合
 
 - [[re-evasion]]：反虚拟化检测/绕过框架（CPUID hook、时序对抗）；恶意样本 VM 检测行为分析
@@ -121,3 +154,12 @@ capabilities: [hypervisor-analysis]
 - **AMD NPT 不能照搬 EPT 方案**：现象——Intel 上可用的"只执行页"技巧（影子页 X-only）在 AMD 平台失效；原因——NPT 与 EPT 是两套独立实现，**NPT 不能单独设置只执行属性**（读与执行位绑定）；对策——跨平台实现 hook/隐藏前先确认目标是 Intel（EPT）还是 AMD（NPT），AMD 需换用其他手段（如结合 NX + 数据视图）
 - **"VT 无痕读写"是伪命题**：现象——以为 EPT 能无痕读写任意数据段；原因——影子页表只能无痕改写"代码段"（取指视图切换），数据段无法同时满足两侧视图（读原始 vs 写影子）；对策——无痕写仅限代码段场景（hook 场景）；数据段读取仍靠遍历四级页表（GVA→GPA→HPA 二阶段翻译）直读物理页，与普通驱动思路无本质区别
 - **RDTSC 检测 VM-exit 开销可被补偿**：现象——样本用 `__rdtsc/__rdtscp` 测指令耗时差值识别 hypervisor；原因——VM-exit 有固定开销可测量；对策——VM-exit 汇编入口最早记录 `exit_tsc`，`ReadVirtualTsc` 用有界平滑估计补偿（不能把中断/调度长尾全当 exit 成本），并保证每 vCPU 单调（`max(value, last_guest_tsc+1)`）；原则：样本检测哪里，就在 VM-exit 里处理哪里
+- **把跨 VM 的本地句柄当全局标识**：现象——trace 里同一个整数在两个域/VM 里出现，被当成同一个对象；原因——grant ref 是条目索引、event-channel port 是通知端口、shmem_id 才是共享对象 identity，本地端口在重连后还会变且可被重用；对策——按各自的表/配置对齐（grant table 条目、shared_info 位掩码、shmem_id），见 [[xen]] / [[bao]]
+- **把虚拟地址当物理地址**：现象——guest 里的 MMIO 地址在真实硬件上找不到对应，就判驱动写错或抓错设备；原因——PV 设备没有寄存器窗口；分区 hypervisor 下 guest 的 BAR/GPA 与物理 BAR/HPA 之间隔着 EPT/NPT 或直通映射；vdev 的地址由配置制造；对策——先判"直通还是 vdev/模拟"，再谈地址是否一致，见 [[qnx-hypervisor]] / [[acrn]] / [[jailhouse]]
+- **把 hypervisor 的保护动作当 guest 崩溃**：现象——程序在访问某地址后"突然停住"，却找不到常规缺页/总线错误证据；原因——静态分区 hypervisor 会把越权访问的 CPU/cell **park 掉**（Jailhouse）；对策——查 hypervisor 侧日志（Unhandled trap / Parking CPU），并对照 cell/VM 配置的资源归属（[[jailhouse]]）
+- **跨 VM 共享内存通不了就往设备模型里找**：现象——两侧 ivshmem 都"正常"但完全无法通信；原因——ACRN 的 dm-land 与 hv-land 是两套实现，前缀（`dm:/` 与 `hv:/`）不同则永不互通，且 dm-land 没有 doorbell 通知；对策——先核对实现与前缀是否一致，再看数据面（[[acrn]]）
+- **把 GPADL 之类的描述符当内存地址**：现象——trace 里的小整数被当地址或偏移参与推算；原因——GPADL 是"描述并映射一片客户机缓冲区"的句柄，且宿主对其共享总量有限制；对策——按句柄语义还原它指向的缓冲区（[[hyperv-vmbus]]）
+- **网络流量中途"消失"却功能正常**：现象——一段时间 VMBus 很忙，之后抓不到包但网络仍通；原因——SR-IOV 下数据面可从合成路径切到 **VF 直通**（数据面绕开 VMBus 与 hypervisor，控制面仍在 VMBus）；对策——先判当前数据面走哪条路径（[[hyperv-vmbus]]）
+- **没拿到配置文件就分析资源归属**：现象——找不到"为什么这个分区访问不到"的答案；原因——配置驱动的分离系统（XtratuM、LynxSecure、Jailhouse、Bao 等）把资源归属全放在配置里；对策——先取配置，再谈代码（[[xtratum]] / [[lynxsecure-questv]]）
+- **把"缺少集中管理代码/VM-exit 很少"当没有隔离**：现象——反汇编里找不到中央调度或重配置逻辑；原因——静态配置模型与多内核 sandbox 本来就不这么做；对策——按该系统的模型解释（[[lynxsecure-questv]]）
+- **跨 sandbox 比较时间戳**：现象——同一次事件在两侧的时间对不上；原因——某些多内核设计**没有全局时钟**，各核用本地定时器与 TSC；对策——把时钟偏差算进去，别按单一时间线断言（[[lynxsecure-questv]]）

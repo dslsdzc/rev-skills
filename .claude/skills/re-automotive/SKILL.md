@@ -1,12 +1,13 @@
 ---
 name: re-automotive
 description: >
-  汽车逆向：CAN 总线、ECU 固件。
-  触发词：汽车、CAN、ECU、车载、OBD、UDS
+  汽车逆向：CAN 总线、ECU 固件、AUTOSAR Classic（RTE/runnable/BSW）与 Adaptive（执行管理/清单）。
+  触发词：汽车、CAN、ECU、车载、OBD、UDS、AUTOSAR、RTE、runnable、SWC、BSW、E_OS_ACCESS、
+  Adaptive、ARA、Execution Management、Function Group、Machine State、Execution Manifest
 capabilities: [automotive-analysis]
 ---
 
-# 汽车逆向（CAN 总线 / ECU）
+# 汽车逆向（CAN 总线 / ECU / AUTOSAR Classic）
 
 ## 何时使用 / 何时不用
 
@@ -14,6 +15,7 @@ capabilities: [automotive-analysis]
 - 用：车载设备（车机、T-Box、IVI、ECU 升级包）逆向
 - 用：OBD-II / UDS 诊断会话分析（读 DTC、安全访问、标定读写）
 - 用：ECU 固件提取与后续解包（配合 [[re-firmware]]）
+- 用：**AUTOSAR Classic 软件**（SWC/runnable/RTE/BSW）——执行图由配置与代码生成决定，不能用普通调用图理解（[[autosar-classic]]）
 - 不用：只有 ECU 固件文件、没有总线访问（直接 [[re-fw-extract]]）
 - 不用：需要跑固件观察行为（[[re-fw-emulate]]）
 - 不用：需要 JTAG/SWD 读 flash（[[re-hardware-io]]）
@@ -136,6 +138,11 @@ capabilities: [automotive-analysis]
 - **V2X（车联网通信）**：DSRC / C-V2X 帧结构 → [[re-protocol]] / [[re-ics]] 路径（协议状态机重建、PC5/Uu 接口区分）；物理层信号采集走 [[re-sdr]]
 - 判定规则：应用层 → 移动/系统路径（[[re-apk]] / [[re-firmware]]）；通信层 → 协议路径（[[re-protocol]] / [[re-ics]]）；固件层 → 固件路径（[[re-fw-extract]] / [[re-fw-rootfs]]）
 
+## 分支（references）
+
+- [[autosar-classic]] —— **配置驱动 + 代码生成**的执行图：RunnableEntity 由 **RTEEvent** 激活、经 RTE 胶水映射到 **OS Task 或 ISR2**（**RTE 没有独立调度能力**），**无 caller 的 runnable 不是死代码**；**隐式访问**（`Rte_IRead_*`/`Rte_IWrite_*`）在 runnable 边界做快照与写回（"消费者看到旧值"可能是语义）；`E_OS_ACCESS` 来自 **OS-Application 所有权/保护**（默认拒绝，授权来自配置），不是参数错误；并发异常先查 OS 配置（Task 映射、优先级、抢占）
+- [[autosar-adaptive]] —— **清单驱动的生命周期**：POSIX 进程 + ARA 功能簇；**Modelled Process ≠ OS 进程**（不要 1:1 比较）；**"bin 存在但进程不存在"先查 Function Group State / Machine State**（EM 把状态翻译成进程集合）；Execution Manifest 可按状态给同一可执行文件不同配置；EM 切换时先终止再按依赖启动
+
 ## 跨域联合
 
 - [[re-firmware]]：本技能是其汽车分支（ECU 固件提取后 → 解包 → rootfs → 仿真）
@@ -153,3 +160,6 @@ capabilities: [automotive-analysis]
 - **波特率不符与总线负载**：现象——`candump` 错误帧刷屏（error frame），或高负载下周期抖动、抓到的周期不可信；原因——波特率与总线不一致；负载高（>60-70%）时仲裁延迟与丢帧；对策——接入前确认波特率（500 kbit/s 最常见，canbusload 看负载率），周期性分析排除高负载时段，需要精确时序用硬件时间戳
 - **seed-key 安全访问被拒**：现象——UDS 读内存/写标定回 0x7F 27 33（SecurityAccessDenied）；原因——0x27 需先解锁：服务端发 seed（0x27 01/03），客户端回 key（0x27 02/04），算法厂商私有（XOR/CRC/AES 常见）；对策——有合法诊断仪/工具时先抓一次正常解锁流程，算法还原走 [[re-crypto-id]] / [[re-crypto-decrypt]]；只在自有测试设备上做，不盲目爆破
 - **固件校验/加密层**：现象——提取的固件在 [[re-fw-extract]] 解出垃圾，或烧回不工作；原因——ECU 固件带签名/CRC 校验、bootloader 验签或整体加密；对策——提取时按 0x34/0x36 会话完整传输并校验；分析时先区分加密/签名层再解包，解不开转 [[re-crypto-id]] / [[re-crypto-decrypt]]；仅在授权测试床/设备上操作
+- **把 AUTOSAR runnable 当死代码**：现象——某业务函数没有任何调用者，判为残留/无用代码；原因——runnable 由 RTEEvent 经生成的 RTE 胶水在某 OS Task 内被调用，**调用关系在配置里而不是在源码里**；对策——找 `Rte_*` 包装与 RTEEvent 映射、确认它被映射到哪个 OS Task（[[autosar-classic]]）
+- **把隐式访问的"旧值"当一致性问题**：现象——生产者在运行中改了数据，消费者 runnable 执行期间一直读到旧值，怀疑 cache 或内存损坏；原因——隐式访问在 runnable 边界做快照与写回；对策——区分 `Rte_Read_*`（显式）与 `Rte_IRead_*`（隐式），按配置判定通信形式（[[autosar-classic]]）
+- **把 `E_OS_ACCESS` 当参数错误**：现象——`ActivateTask` 一类服务返回访问错误，怀疑 task ID 写错或 OS 损坏；原因——OS-Application 的所有权/保护状态：未在配置时授予访问权，或对象属于另一个不可访问的应用；对策——查对象所属 OS-Application、应用状态、信任级别与当前调用上下文（[[autosar-classic]]）
