@@ -40,7 +40,7 @@ s.fs.insert('/tmp/in', angr.SimFile('in', content=claripy.BVS('in', 32*8)))  # �
 
 ```python
 simgr = p.factory.simgr(s, veritesting=True)         # veritesting 合并路径（长循环题常用）
-simgr.explore(find=0x4011xx, avoid=[0x4012xx, 0x4013xx], num_find=1)  # 找到即停
+simgr.explore(find=0x401100, avoid=[0x401200, 0x401300], num_find=1)  # 示意地址：按目标实际入口/分支替换；找到即停
 simgr.found / simgr.deadended / simgr.active         # 各 stash
 simgr.move('deadended', 'active')                    # stash 操作
 simgr.run(n=100)                                     # 手动步数上限
@@ -90,7 +90,7 @@ p = angr.Project("./target", auto_load_libs=False)
 arg = claripy.BVS("arg1", 64*8)
 s = p.factory.full_init_state(args=["./target", arg])
 simgr = p.factory.simgr(s, veritesting=True)
-simgr.explore(find=0x4011xx, avoid=[0x4012xx, 0x4013xx])
+simgr.explore(find=0x401100, avoid=[0x401200, 0x401300])   # 示意地址：按目标实际入口/分支替换
 if simgr.found:
     print(simgr.found[0].solver.eval(arg, cast_to=bytes))
 ```

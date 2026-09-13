@@ -26,6 +26,10 @@ node bin/toollife.mjs candidates                # 技能里出现但未登记的
 node bin/toollife.mjs stale                     # 按超期排序的待核验项
 node bin/toollife.mjs smoke                     # 本机探测（仅报告，CI 机器不必装）
 
+node bin/examplecheck.mjs                       # 技能示例代码块语法检查（npm run examples；需 python3/bash，缺失时跳过）
+node bin/auditstate.mjs status                  # 增量审查：哪些技能内容在复核之后又变了（= 下一轮审查波的工作集）
+node bin/auditstate.mjs update <技能...>         # 复核后回填（写当前 hash + 日期）
+
 npx rev-skills install --target <claude|gemini|cline|codex|cursor|copilot|windsurf|all> \
   [--global|--project] [--dry-run] [--link] [--force]
 node bin/convert.mjs --target <cursor|copilot|windsurf> --out <dir>   # 技能 → 规则文件转换（调试用）

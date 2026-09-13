@@ -6,7 +6,7 @@
 //   node bin/toollife.mjs smoke        本机探测（仅报告，CI 机器未必装这些工具）
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { checkRegister, REGISTER_REL, smokeProbe, daysSince } from '../lib/tool-register.mjs';
+import { checkRegister, REGISTER_REL, smokeProbe, daysSince, deriveRisk } from '../lib/tool-register.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SKILLS = join(ROOT, '.claude', 'skills');
@@ -23,8 +23,14 @@ if (mode === 'check') {
     if (stale.length > 20) console.log(`  …另有 ${stale.length - 20} 项`);
   }
   if (pending.length) {
-    console.log(`\n待核验积压（已登记、尚未核验当前 CLI/API 形态，${pending.length} 项）：`);
-    console.log(`  ${pending.slice(0, 30).join(' ')}${pending.length > 30 ? ` …另有 ${pending.length - 30} 项` : ''}`);
+    // 风险分层：技能里写死了层级路径/版本号的更容易随上游漂移（volatility 的教训）
+    const risk = deriveRisk(SKILLS, register.tools.map((t) => t.name));
+    const high = pending.filter((n) => risk[n]?.level === 'high')
+      .sort((a, b) => risk[b].spread - risk[a].spread);
+    console.log(`\n待核验积压 ${pending.length} 项｜高风险 ${high.length}｜低风险 ${pending.length - high.length}`);
+    console.log('高风险项（按影响面排序，= 下一轮审查波的建议顺序）：');
+    for (const n of high.slice(0, 15)) console.log(`  面=${String(risk[n].spread).padStart(3)}  ${n}`);
+    if (high.length > 15) console.log(`  …另有 ${high.length - 15} 项（node bin/toollife.mjs stale 看全量）`);
   }
   if (candidates.length) {
     console.log(`\n未登记候选（${candidates.length} 项，确认后加入 ${REGISTER_REL} 或加入 ignore）：`);

@@ -63,7 +63,7 @@ capabilities: [symbolic-execution]
 
 2. **到达目标地址 / 避开地址建模（find / avoid）**：
    - 反编译确认**成功路径地址**（校验通过后打印 flag 的地址）与**失败路径地址**（打印 "wrong" 等处，有多个失败点要列全）
-   - 建模：`simgr.explore(find=0x4011xx, avoid=[0x4012xx, 0x4013xx])`（find 可多地址或 lambda `lambda s: b"flag{" in s.posix.dumps(0)`）
+   - 建模：`simgr.explore(find=<入口地址>, avoid=[<失败分支地址>])`（find 可多地址或 lambda `lambda s: b"flag{" in s.posix.dumps(0)`）
    - find 选地址的技巧：选**校验循环出口**而非程序 exit——找到"经过校验通过分支"的状态即可，不必等打印（见坑 5）
    - 校验是通过调用函数返回判定（`if (check(input))`）→ find 设在 check 返回后的成功分支地址，avoid 设在失败分支
 
@@ -93,7 +93,7 @@ capabilities: [symbolic-execution]
    inp = claripy.BVS("inp", 32 * 8)                      # 32 字节符号化输入
    state = p.factory.full_init_state(stdin=inp)
    simgr = p.factory.simgr(state, veritesting=True)
-   simgr.explore(find=0x4011xx, avoid=[0x4012xx, 0x4013xx])
+   simgr.explore(find=0x401100, avoid=[0x401200, 0x401300])   # 示意地址：按目标实际入口/分支替换
    if simgr.found:
        sol = simgr.found[0].solver.eval(inp, cast_to=bytes)
        print(sol)                                        # 直接保存进证据目录

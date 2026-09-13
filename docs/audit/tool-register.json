@@ -133,8 +133,8 @@
       "where": [
         "re-automotive"
       ],
-      "last_verified": null,
-      "source": ""
+      "last_verified": "2026-09-13",
+      "source": "批 3 审查：candump 输出列与过滤参数核对"
     },
     {
       "name": "cansniffer",
@@ -338,8 +338,8 @@
         "re-frida",
         "re-frida-script-author"
       ],
-      "last_verified": null,
-      "source": ""
+      "last_verified": "2026-09-13",
+      "source": "批 1+2 审查：Frida 17 静态 Module API 移除（横向迁移 9 个文件）"
     },
     {
       "name": "frida-dexdump",
@@ -681,8 +681,8 @@
       "where": [
         "re-disk-forensics"
       ],
-      "last_verified": null,
-      "source": ""
+      "last_verified": "2026-09-13",
+      "source": "批 3 审查：mmls 间隙/未分配项语义核对"
     },
     {
       "name": "modprobe",
@@ -1005,8 +1005,8 @@
         "re-triage",
         "re-zig"
       ],
-      "last_verified": null,
-      "source": ""
+      "last_verified": "2026-09-13",
+      "source": "批 3 审查：ELF 扩展编号三条规则核对"
     },
     {
       "name": "rg",
@@ -1186,8 +1186,8 @@
       "where": [
         "re-disk-forensics"
       ],
-      "last_verified": null,
-      "source": ""
+      "last_verified": "2026-09-13",
+      "source": "批 3 审查：tsk_recover 恢复语义核对"
     },
     {
       "name": "uefiextract",

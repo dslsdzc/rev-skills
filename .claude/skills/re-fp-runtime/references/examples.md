@@ -4,15 +4,20 @@
 
 ## 0. 标本构建
 
-```sh
-# hello.hs
+```haskell
+-- hello.hs
 main :: IO ()
 main = putStrLn "hi from ghc"
-ghc -O1 hello.hs -o hello_ghc
+```
 
-# hello.ml
+```ocaml
+(* hello.ml *)
 let add x y = x + y
 let () = print_endline (string_of_int (add 40 2))
+```
+
+```sh
+ghc -O1 hello.hs -o hello_ghc
 ocamlopt -o hello_ocaml hello.ml     # 原生
 ocamlc   -o hello_bc   hello.ml      # 字节码
 ```

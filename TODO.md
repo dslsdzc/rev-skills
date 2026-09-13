@@ -37,9 +37,11 @@
   - [x] **第三方命令/API 清单**（2026-09-13）：`docs/audit/tool-register.json`（140 项，含工具名 / kind / 引用它的技能 / 上次核验日期 / 核验来源 / ignore 名单）+ `lib/tool-register.mjs`（抽取与比对）+ `bin/toollife.mjs`（check / candidates / stale / smoke）
   - [x] **版本漂移检查**（2026-09-13）：`check` 报"已核验 / 超期 / 待核验积压"三档 + **死条目即失败**（登记为在用但技能里已找不到）；`stale` 按超期排序供下一轮审查波取用；`smoke` 做本机存在性探测（仅报告，不进 CI——CI 机器不必装这些工具）
   - [x] **候选发现**（2026-09-13）：技能里出现但未登记且不在 ignore 名单的命令会被列为候选，仓库自身的那条已作为测试常驻（`tests/toollife.test.mjs`）——**新增第三方工具而不登记会直接让 `npm test` 失败**
-  - [ ] **示例可执行性**（未做）：把技能里的 Python/shell 示例抽成最小可跑片段（有 fixture 的优先），至少验证"语法与 API 名仍然存在"——需要 fixture 与网络/工具依赖的取舍，单独评估
-  - [ ] 逐项填充 `last_verified`：当前 140 项里只有 1 项已核验（vol），其余是**明确的待核验积压**——按 `stale` 的输出分批核验并回填
-  - [ ] 与「增量审查机制」合并设计：两者共用"变更检测 + 记录状态"的骨架（登记表的 `last_verified` + 状态即该骨架的首个落地）
+  - [x] **示例可执行性**（2026-09-13）：`lib/skill-examples.mjs` + `bin/examplecheck.mjs`（`npm run examples`）——对 python / shell 块做语法检查（**不是执行**：不跑网络、不装依赖），含去缩进、占位符中和、调试器会话识别、sh 块内嵌 python heredoc 的单独检查。首轮抓出 3 处真错（angr 的 `0x4011xx` 不是合法 Python）+ 2 处语言标错（Haskell/Nim 源码写在 ```sh 块里）。有解释器时随 `npm test` 跑，否则跳过
+  - [x] **风险分层**（2026-09-13）：`deriveRisk` 按**断言类型**（写死层级路径/版本号 vs 只点名工具）分高/低风险，出现面作严重度——现 134 项积压中**高风险 40、低风险 94**，`npm run toollife` 按影响面给出建议顺序
+  - [x] 首批回填（2026-09-13）：6 项（vol / frida / candump / mmls / tsk_recover / readelf）——均为本会话审查波中确实核验过 CLI/API 形态的
+  - [ ] **核验剩余 134 项积压**：按 `npm run toollife` 的高风险顺序分批做，每批完成后回填 `last_verified` 与 `source`
+  - [ ] 与「增量审查机制」合并设计：两者共用"变更检测 + 记录状态"的骨架——**已合并**：登记表用 `last_verified`，审查状态用 `hash + last_reviewed`，同一套状态模型
 
 - [ ] **增量审查机制**（2026-08-29 记录，来源：aiskillstore skill-report.json 机制调研）
 
@@ -50,8 +52,9 @@
   目标：审查成本从 O(技能总数) 降到 O(变更数)。
 
   方案要点（参考 skillstore 的 skill-report.json 设计）：
-  - [ ] 每技能一份审计记录（简化版：内容 hash + 结论 + finding 状态），随技能进仓库
-  - [ ] 审查波改增量：`git diff` 定位变更技能 + hash 比对跳过未变技能
-  - [ ] finding 状态机 open → fixed → verified，后续波次只处理 open 项
-  - [ ] validate.mjs 扩展：变更检测 + 报告生成 + 增量审计入口
+  - [x] 每技能一份审计记录（简化版：内容 hash + 结论 + finding 状态），随技能进仓库（2026-09-13）：`docs/audit/review-state.json` —— 122 技能，每项 `{ hash, last_reviewed, note }`（用**单一文件**而非 122 个文件：同一份状态要整体比对，分散反而增加维护面）
+  - [x] 审查波改增量（2026-09-13）：`node bin/auditstate.mjs status` 直接列出「**内容在复核之后又变了**」的技能——这就是下一轮审查波的工作集；复核完 `update <技能>` 回填。成本从 O(技能总数) 降到 O(变更数)
+  - [x] finding 状态机 open → fixed → verified（2026-09-13）：已在 `docs/audit/2026-09-13-factual-audit.md` 落地（open → fixed；verified 为待补的下一步）
+  - [x] 报告生成 + 增量审计入口（2026-09-13）：`npm run audit:status` / `npm run audit:update`；另有一条测试断言**状态文件覆盖全部技能**（无缺失、无多余、已删技能会自动清理并告警）
+  - [ ] validate.mjs 内联扩展（**未做，改设计**）：不把审查状态塞进结构校验——它需要写盘与日期，与 validate 的纯读校验性质不同；改为独立脚本 + 一条测试断言，保持 validate.mjs 的单一职责
   - [ ] （可选）审计履历沉淀后可作发布质量背书

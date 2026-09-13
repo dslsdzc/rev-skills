@@ -1,0 +1,615 @@
+{
+  "$comment": "审查状态：每技能内容 hash + 最近复核日期。changed（内容在复核后又变了）即下一轮审查波的工作集——把审查成本从 O(技能总数) 降到 O(变更数)。last_reviewed=null 表示存量技能尚未按本机制复核。",
+  "skills": {
+    "re-address-space": {
+      "hash": "08b638e606a2c56e",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-ai-attack": {
+      "hash": "7cd9dd26b3c854f2",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-ai-model": {
+      "hash": "3a4ff408b93e3903",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-ai-triage": {
+      "hash": "37a32e9608ecf191",
+      "last_reviewed": null,
+      "note": ""
+    },
+    "re-analyze": {
+      "hash": "2a280df2aa059628",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-android-crypto": {
+      "hash": "4f303b66b031d232",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-android-native": {
+      "hash": "87335455d4ab4ed4",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-angr": {
+      "hash": "ce6d9b8a397b3ca7",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-anti-analysis": {
+      "hash": "981287cdd1897a5c",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-anti-cheat": {
+      "hash": "1e4e8bb8bf9a07f7",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-apk": {
+      "hash": "e90362b9491da5ce",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-arm": {
+      "hash": "ba3e5dd857412f32",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-attribution": {
+      "hash": "fe4b53de849bf1cc",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-automotive": {
+      "hash": "d3a62f41bc443128",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-behavior": {
+      "hash": "f74039b063441199",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-binary-core": {
+      "hash": "b2ee0da81a4881bc",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-binaryninja": {
+      "hash": "228898c389fe45dc",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-blockchain": {
+      "hash": "9b350340d9c7788a",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-browser-ext": {
+      "hash": "301b09455a5f6573",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-console": {
+      "hash": "bef6ddceced3b43f",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-cpp-abi": {
+      "hash": "53903d58413f24f0",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-cracking": {
+      "hash": "6d9e51e5309ee167",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-crash-triage": {
+      "hash": "cac530901db56d80",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-crypto-decrypt": {
+      "hash": "8bc4b0d54d026804",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-crypto-id": {
+      "hash": "20dd1fe574e67b1c",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-crypto-keys": {
+      "hash": "67cafe17b577c59e",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-ctf": {
+      "hash": "881cc6cbe015a88d",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-deobfuscate": {
+      "hash": "dcc6c8f0aaa24917",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-disk-forensics": {
+      "hash": "2b4b8b91a1798633",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-doc-malware": {
+      "hash": "8f21eaf5fb591100",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-dotnet": {
+      "hash": "3806464a987d7c87",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-drm": {
+      "hash": "ec0eb12f8cda964f",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-ebpf": {
+      "hash": "8dd64745e4a4686e",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-electron": {
+      "hash": "3a8c36e2c94ed3ee",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-emulation": {
+      "hash": "b8e80483d3ef23b6",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-evasion": {
+      "hash": "3c2f97986fdda928",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-exploit": {
+      "hash": "6581b28932011ac5",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-feedback": {
+      "hash": "ead151725e3574ae",
+      "last_reviewed": null,
+      "note": ""
+    },
+    "re-fileless": {
+      "hash": "f6eea40a113cb136",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-firmware": {
+      "hash": "c0fff1b55a6d8784",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-flutter": {
+      "hash": "7cdcfcc5fb4e5e4f",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-forensics": {
+      "hash": "216ea289c53e19dd",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-format-elf": {
+      "hash": "ba24413e1cc3d31a",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-format-macho": {
+      "hash": "b45c36c59d9b3120",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-format-pe": {
+      "hash": "9eef3678eea9b463",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-fp-runtime": {
+      "hash": "74a6f67b10a02d8f",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-frida": {
+      "hash": "ed3613be97d53ad8",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-frida-script-author": {
+      "hash": "e8c61ce30c513b45",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-fuzzing": {
+      "hash": "826575d3fb7e5006",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-fw-emulate": {
+      "hash": "50c5f6e6142ab798",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-fw-extract": {
+      "hash": "fb69cb85be7c868b",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-fw-rootfs": {
+      "hash": "e63837476b26f2cd",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-game": {
+      "hash": "b00cece3b2329f84",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-gdb": {
+      "hash": "54559a54c7441ce2",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-ghidra": {
+      "hash": "c7845c1749aeb639",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-go": {
+      "hash": "ae9bcfe58c173c79",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-hardware-io": {
+      "hash": "04d119585fd30f7f",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-harmonyos": {
+      "hash": "2eff39e09b9cffe0",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-hunting": {
+      "hash": "b2fb3969dc21fea1",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-hw-chip": {
+      "hash": "6990f5b3aee52f3f",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-hybrid-app": {
+      "hash": "3a0562fea5f5969e",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-hypervisor": {
+      "hash": "8e58b865aac7f480",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-ics": {
+      "hash": "3dc341f13b93bb7c",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-ida": {
+      "hash": "3b3a591f658f621a",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-imports": {
+      "hash": "747a7fafa71d429d",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-ioc": {
+      "hash": "d555efb545a66994",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-ios": {
+      "hash": "98ee680c54a7355f",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-ios-jb": {
+      "hash": "f66ff32f4662ecfb",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-iot-proto": {
+      "hash": "6e4b0ffc7d557899",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-java": {
+      "hash": "f9a089e8d8d81880",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-javacard": {
+      "hash": "85b9e316badfb655",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-kernel": {
+      "hash": "dcc6fd67cd3b5cc7",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-keygen": {
+      "hash": "47ea1cca699a9ff1",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-license": {
+      "hash": "36c1f0be5c234617",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-lldb": {
+      "hash": "18dcb57e88c39720",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-loader": {
+      "hash": "c6790016da427432",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-macos": {
+      "hash": "44f3185ef083f2e4",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-malware": {
+      "hash": "619eb6352a0bb3a0",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-managed": {
+      "hash": "6c6a63c7db208bdc",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-mem-forensics": {
+      "hash": "cf24cde010ed9adc",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-memdump": {
+      "hash": "6349535bfef32f70",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-mips": {
+      "hash": "2e23d8765ce3cdfc",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-mobile": {
+      "hash": "65a6c9b969d9adad",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-mobile-forensics": {
+      "hash": "6f0c739eb124e19e",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-mobile-pack": {
+      "hash": "0d32367ecbf221d4",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-netcap": {
+      "hash": "2937840c7e64622b",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-nim": {
+      "hash": "4a22856da69df7cc",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-packer-id": {
+      "hash": "56ca95d1970b358f",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-patching": {
+      "hash": "135bce8ca1ed9ccf",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-plugin-dev": {
+      "hash": "b5002e0a85aa533f",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-proto-rev": {
+      "hash": "1e86f79c621a7d63",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-protocol": {
+      "hash": "6e112a19835c0de9",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-pwn": {
+      "hash": "9d3de04ed45c5a23",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-python": {
+      "hash": "ac0c62132da8576d",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-radare2": {
+      "hash": "624608dac2878a73",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-ransomware": {
+      "hash": "4b4e095dff266c64",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-riscv": {
+      "hash": "72b9a2f09cfd1dbe",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-rtos": {
+      "hash": "8caec80e414ab2b8",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-rust": {
+      "hash": "03a3d43f324b885a",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-sample-acquire": {
+      "hash": "a5540ad3634eb2b3",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-sandbox": {
+      "hash": "31caa58528abbc92",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-script-deob": {
+      "hash": "1e1acbc7c20f4b64",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-sdr": {
+      "hash": "dd93276df7f8e856",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-shellcode": {
+      "hash": "6ed48842fe7197f6",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-stego": {
+      "hash": "fc79277ff6b75f04",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-swift": {
+      "hash": "603c1a6d605c462a",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-tee": {
+      "hash": "4c071a497864b36b",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-ti": {
+      "hash": "38078e941afbbe0b",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-tls": {
+      "hash": "2541df89fba1ac7b",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-tracing": {
+      "hash": "ee4d6f679729cdd3",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-triage": {
+      "hash": "14ff1ba6ac10684b",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-uefi": {
+      "hash": "a01adf2fd1451b9b",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-unpack-advanced": {
+      "hash": "27d324c869ba033e",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-unpack-simple": {
+      "hash": "5e7dadd38040db58",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-variant": {
+      "hash": "45012c624a599b0b",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-vuln": {
+      "hash": "60e88badd531f42f",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-wasm": {
+      "hash": "7f73fc8f2abe781d",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-whitebox": {
+      "hash": "d77efb51d00e5934",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-windbg": {
+      "hash": "2cc41bae71e3a172",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-x64dbg": {
+      "hash": "9ab669f77e16476e",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-z3": {
+      "hash": "4cc0719c9f8bdb12",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    },
+    "re-zig": {
+      "hash": "54eaa9d638f14823",
+      "last_reviewed": "2026-09-13",
+      "note": "本轮审查波覆盖"
+    }
+  }
+}

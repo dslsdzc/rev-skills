@@ -4,7 +4,7 @@
 
 ## 0. 标本构建
 
-```sh
+```nim
 # hello.nim（含字符串比较、对象、字符串拼接）
 import std/strutils
 type Pet = object
@@ -18,7 +18,9 @@ proc main() =
   if check(p.name): echo "match: ", p.age
   else: echo "no: ", p.name & "!"
 main()
+```
 
+```sh
 nim c -d:release --gc:orc -o:hello_orc hello.nim     # orc（2.x 默认）
 nim c --gc:refc -o:hello_refc hello.nim              # refc（对照）
 ```

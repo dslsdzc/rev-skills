@@ -8,7 +8,10 @@
   },
   "scripts": {
     "test": "node validate.mjs && node --test tests/*.test.mjs",
-    "toollife": "node bin/toollife.mjs check"
+    "toollife": "node bin/toollife.mjs check",
+    "examples": "node bin/examplecheck.mjs",
+    "audit:status": "node bin/auditstate.mjs status",
+    "audit:update": "node bin/auditstate.mjs update"
   },
   "engines": {
     "node": ">=18"
