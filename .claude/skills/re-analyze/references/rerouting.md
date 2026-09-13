@@ -78,7 +78,8 @@
 | 消息/信号的对端找不到（疑似跨节点） | `rtos-analysis` | [[re-rtos/ose-oseck]] |
 | 小整数句柄被当地址、网络流量中途消失但功能正常 | `hypervisor-analysis` | [[re-hypervisor/hyperv-vmbus]] |
 | 找不到资源分配的重配置代码、计划切换不立即生效 | `hypervisor-analysis` | [[re-hypervisor/xtratum]] |
-| VM-exit 很少却没有隔离缺失、跨域时间戳对不上 | `hypervisor-analysis` | [[re-hypervisor/lynxsecure-questv]] |
+| VM-exit 很少却没有隔离缺失、跨域时间戳对不上 | `hypervisor-analysis` | [[re-hypervisor/questv]] |
+| 找不到动态重配置/管理入口、内核里没有驱动与 I/O 栈 | `hypervisor-analysis` | [[re-hypervisor/lynxsecure]] |
 | 二进制在但进程不存在、服务发现空结果、无 crash 却重启、更新后数据保留或消失 | `automotive-analysis` | [[re-automotive/autosar-adaptive]] |
 | 线性地址下仍有隔离、同一地址权限随任务变、"partition" 一词含义不明 | `rtos-analysis` | [[re-rtos/nucleus]] |
 | 软件定时器回调里出现阻塞等待、任务被唤醒却没有资源 | `rtos-analysis` | [[re-rtos/ucos-sysbios]] |
@@ -86,6 +87,11 @@
 | ring 前进却没有通知、event unmask 行为异常、迁移后端口与 domid 变化 | `hypervisor-analysis` | [[re-hypervisor/xen]] |
 | 同一源码在不同构建下 I/O 完全不同、全部任务一起卡死 | `kernel-analysis` | [[re-kernel/unikraft-mirageos]] |
 | 模块带自描述元数据（UUID/端点/资源/依赖/签名）、IPC 呈入口页+位图+失败分支形态 | `kernel-analysis` | [[re-kernel/hic]] |
+| 程序属性导致栈行为相反（栈方向/栈指针偏置）、AMODE/RMODE 不匹配、dump 里控制块对不上 | `kernel-analysis` | [[re-kernel/zos]] |
+| 对象/指针分两套（系统指针 vs 空间指针）、静态数据归属不清、产物压缩态 | `kernel-analysis` | [[re-kernel/ibmi]] |
+| 异常走"处理器链"而非抛出-捕获、共享镜像与预期不符 | `kernel-analysis` | [[re-kernel/openvms]] |
+| 信号号不唯一需次级 id、缓冲区落在别的池、跨 DSP 行为不一致 | `rtos-analysis` | [[re-rtos/ose-oseck]] |
+| 同一源码不同配置产物差异极大、异常去向不固定、构造函数被覆盖 | `rtos-analysis` | [[re-rtos/ecos]] |
 | .NSO/.NPDM 容器结构（Switch 加密分区） | `console-analysis` | [[re-console]] |
 | asar 结构（resources/app.asar + 内部 files 树） | `electron-analysis` | [[re-electron]] |
 | CAP 内 Header 组件魔数（DE CA FF ED，文件整体为 ZIP，Java Card 12 组件） | `bytecode-parser` | [[re-javacard]] |

@@ -164,7 +164,8 @@ Task 没运行
 ## 同族系统
 
 - XtratuM（配置驱动的分离 hypervisor）：同样是"静态配置 + major frame + 时间槽"，另有固定优先级计划与多计划切换，见 [[re-hypervisor/xtratum]]
-- LynxSecure / Quest-V（无中央调度器的分离）：见 [[re-hypervisor/lynxsecure-questv]]
+- LynxSecure（静态分离内核）：见 [[re-hypervisor/lynxsecure]]
+- Quest-V（多内核 sandbox + 每 sandbox 一个 monitor）：见 [[re-hypervisor/questv]]
 - Jailhouse / Bao（静态分区 hypervisor）：见 [[re-hypervisor/jailhouse]]、[[re-hypervisor/bao]]
 
 ## 决策树

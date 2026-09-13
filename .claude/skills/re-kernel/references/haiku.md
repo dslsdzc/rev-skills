@@ -1,93 +1,133 @@
-# Haiku：device_node 树 / driver module 与 device module / 按需发现
+# Haiku：device_node 树 / 内核对象模型 / KDL / BeOS 兼容边界
 
 <CORE RULE>
-Haiku 同时保留 legacy BeOS 驱动架构与较新的 **Device Manager** 模型。新模型有两条容易看错的地方：
-
-① **驱动是按需发现的**——初始设备树只探索最少的驱动：
+Haiku 有**两套容易看错的东西**，而且**逆驱动与逆系统组件的入口完全不同**：
 
 ```
-boot 时某个驱动没出现
-  → 后来访问 /dev/disk 时才出现
+驱动侧：device_node 树 + on-demand exploration + driver module / device module 两层
+系统侧：team / thread / area / port / semaphore 这套内核对象模型 + 用户态服务
+```
+
+**如果目标不是驱动**，别继续在 Device Manager 里找——换到内核对象模型与用户态服务那一层。
+</CORE RULE>
+
+## 一、驱动侧：device_node 树与按需发现
+
+- 设备管理器围绕 **device_node** 构建：每个驱动发布一个或多个节点，构成一棵动态表示硬件的树
+- 一个 device_node = **module + attributes + resources** + 父/子指针；**module 是唯一必需的部分**
+- 启动时只有根节点；主要总线注册上去；**智能总线为自己发现的每个设备创建子节点**
+- **按需探索**：需要某功能时系统扫描设备文件系统，按内建规则把设备路径翻译成 device node（智能总线上的节点带 PCI 式类型信息），**只查询匹配的模块目录**
+
+```
+boot 时驱动没出现、后来访问某设备时才出现
   → 可能只是 on-demand exploration
 ```
 
-② **driver module 与 device module 是两层**：前者绑定设备节点，后者暴露 `/dev` 接口。
-</CORE RULE>
+- 有"只在系统要求时才被搜索"的按需标志
 
-## 一、device_node 树
+## 二、驱动侧：两层模块（driver module / device module）
 
-- 设备管理器围绕 **device_node** 构建：每个驱动发布一个或多个节点，构成一棵**动态表示系统硬件的树**
-- 一个 device_node 由 **module + attributes + resources** 加父/子指针组成；**module 是唯一必需的部分**
-- 启动时只有**根节点**；主要总线（x86 上的 PCI、ISA）向它注册；**智能总线（如 PCI）会为自己发现的每个设备创建子节点**
-- 驱动可以把设备发布到 `/dev` 供用户态使用；**所有驱动与设备都是内核模块**
+**driver module**（名字必须以 `driver_v1` 结尾）实现：`supports_device`、`register_device`、`init_driver`/`uninit_driver`、`register_child_devices`、`rescan_child_devices`、`device_removed`、`suspend`/`resume`（**后两个从不被调用**）
 
-## 二、按需探索：这是"驱动消失/出现"的正解
+- `register_device` 注册节点并可**认领 I/O 资源**（端口或内存范围）——**同一资源只能被一个节点认领**
 
-- 需要某功能时（例如磁盘访问），系统扫描 devfs（如 `/dev/disk/`），设备管理器**按内建规则把设备路径翻译成 device node**：智能总线上的节点带 PCI 式类型信息，于是 `disk` 映射到海量存储类型，管理器只完整探索该类型的节点
-- 它**只查询匹配的模块目录**（如 `busses/scsi`、`busses/ide`、`drivers/disk`），从而减少需要加载的驱动数量
-- 对无类型的普通总线，搜索限于上下文子目录（`disk`、`ports`、`bus` 例外，还会搜 `busses`）
-- **`B_FIND_CHILD_ON_DEMAND`** 标志让某驱动**只在系统要求时才被搜索**
+**device module**（名字必须以 `device_v1` 结尾，经 publish 一类调用发布到 `/dev`）导出：`init_device`/`uninit_device`/`device_removed`、`open`/`close`/`free`/`read`/`write`/`io`/`control`/`select`/`deselect`
 
-**所以"boot 时没有该驱动"不是缺失**——按需发现是设计。
+**在 driver module 里找不到 `read`/`write` 很正常**——那是 device module 的接口。
 
-## 三、两层模块：谁绑定节点，谁暴露 /dev
+- 节点属性含显示名、唯一 ID、**固定子节点**、厂商/设备/类型/子类型/接口、标志
+- **固定子节点与动态子节点不能混用**，注册时机也不同（固定在前）
+- 较新版本给节点加了"路径/驱动名"属性，用于显示某设备由哪个驱动、走哪条 `/dev` 路径
 
-**driver module**（名字必须以 `driver_v1` 结尾）需实现：
+## 三、系统侧：内核对象模型
+
+逆一个**非驱动**的目标时，入口在这里：
+
+| 对象 | 说明 |
+|---|---|
+| **team** | 进程等价物：地址空间与资源容器 |
+| **thread** | 执行单位，隶属 team |
+| **area** | 内存区域（可共享/映射），是"内存从哪来"的答案 |
+| **port** | **内核消息队列**——线程间、team 间通信的基本手段 |
+| **semaphore** | 同步原语 |
+
+- **信号量的行为有若干标志位影响**：可中断（即使调用方没要求，也可能被终止信号打断）、**释放全部等待者**、**只在有等待者时才递减**——后两者正是实现条件变量语义所需要的
+- **调试 API 与这些对象一一对应**：调试器侧有表示 area / semaphore / image / team / thread / syscall 信息的模型类
+
+**逆向含义**：定位"这块内存在哪、谁在等谁、谁给谁发消息"，答案在 area / port / semaphore，而不是驱动框架。
+
+## 四、KDL 与内核调试接口
+
+**KDL** 是内建在内核里的交互式命令调试器，进入方式包括内核 panic、显式的调试器调用、**紧急组合键**、以及硬件异常（缺页、保护违规）。
+
+常用命令：帮助、**栈回溯**、继续执行、**线程列表**、**切换 CPU**、dump 系统日志、**查内存**、重启。
+
+- **命令系统可扩展**：各内核子系统可以注册自己的命令
+- 相关输出机制各有适用上下文（在内核调试器上下文里用的打印与常规内核打印不同）
+- **调试 API 的细节对分析很关键**：
+  - 发给调试器的消息**以一个含线程与 team ID 的头结构开头**，后来又加了**调试端点端口**字段，使同步调试消息能带上调试通道
+  - 存在一组 **team 调试标志**：team 创建事件、线程事件、**image 事件**、停止新线程、以及**系统调用前追踪**
+  - **系统调用参数缓冲区在 64 位平台上被扩大过**——此前在追踪时有内核内存破坏风险；调试器侧相应按目标架构区分
+
+**注意**：**这个调试接口与 BeOS"概念相似，但源码与二进制都不兼容"**——拿 BeOS 时代的调试器接口假设去套会直接落空。
+
+## 五、BeOS 兼容边界（别把它当"就是 BeOS"）
+
+- 目标是**对 BeOS R5（x86）大范围二进制与源码兼容，但反过来不成立**；某些情况下**刻意破坏源码兼容以保住二进制兼容**
+- 已知差异举例：头文件路径从 `be` 变为 `os`；部分头文件名不同；类的私有字段改名；一些未文档化的 API 未实现；**私有的设备映射 API 被磁盘设备 API 取代**
+- **调试接口不兼容**；**文件系统 API 也变过**（BeOS 时代的文件系统驱动不能用）
+- 对更早版本的兼容支持已被放弃
+- **内核内部的改动也可能显式破坏兼容**——例如某次为做锁竞争测量把自旋锁改成结构体，就明确标注会破坏二进制兼容
+
+## 六、用户态服务边界
+
+不是所有"Haiku 组件"都在内核里：图形服务器、应用注册服务一类是**用户态服务**，它们有自己的协议与生命周期。逆这类目标时：
 
 ```
-supports_device()        register_device()      init_driver() / uninit_driver()
-register_child_devices() rescan_child_devices() device_removed()
-suspend() / resume()      ← 从不被调用（Haiku 无电源管理）
+不要找内核驱动接口
+要看用户态服务的通信端点与协议
 ```
-
-- `register_device()` 注册节点，并可**认领 I/O 资源**（I/O 端口或内存范围）——**同一资源只能被一个节点认领**
-
-**device module**（经 `publish_device(node, path, deviceModuleName)` 发布，名字必须以 `device_v1` 结尾）导出面向用户态的接口：
-
-```
-init_device() / uninit_device() / device_removed()
-open() / close() / free() / read() / write() / io() / control() / select() / deselect()
-```
-
-**RE 判定**：在 driver module 里找不到 `read`/`write` **很正常**——那是 device module 的接口。
-
-## 四、资源与属性
-
-- 节点属性可携带：显示名、唯一 ID（会出现在已发布设备的文件系统属性中）、**固定子节点**、厂商 ID、设备 ID、类型、子类型、接口、标志
-- **固定子节点与动态子节点不能混用**：固定子节点在 `register_child_devices()` **之前**注册，动态的在之后
-- 较新的版本还给节点加了"路径/驱动名"属性，用于在设备管理界面里显示某设备由哪个驱动、走哪条 `/dev` 路径
 
 ## 决策树
 
 ```
 拿到 Haiku 目标
+├─ 先判：驱动 / 内核子系统 / 用户态服务
+│    ├─ 驱动 → device_node 树 + 两层模块
+│    ├─ 内核子系统 → team/thread/area/port/semaphore + KDL
+│    └─ 用户态服务 → 服务端点与协议（不在内核）
 ├─ 驱动"不存在"
 │    ├─ 按需发现：只有被请求时才会搜索/加载
-│    └─ 查 B_FIND_CHILD_ON_DEMAND 与总线类型规则（disk → 海量存储类型）
+│    └─ 查总线类型规则与按需标志
 ├─ 在 driver module 里找不到 read/write
-│    └─ 那是 device module 的接口（device_v1），两层分工不同
-├─ 设备路径 → 驱动
-│    └─ 经 device_node 树与总线类型规则翻译，不是查注册表
-├─ 资源冲突
-│    └─ 同一 I/O 资源只能被一个节点认领
-└─ 子节点数量异常
-     └─ 固定子节点与动态子节点不可混用，注册时机也不同
+│    └─ 那是 device module（device_v1）的接口
+├─ 内存/同步/消息相关异常
+│    └─ 落到 area / semaphore（注意其扩展标志位）/ port
+├─ 现场调试
+│    ├─ KDL 可查栈回溯、线程、内存、系统日志、切换 CPU
+│    └─ 调试接口与 BeOS 不兼容，别套旧接口
+└─ 兼容性相关判断
+     ├─ R5 二进制/源码兼容是单向的
+     └─ 调试接口与文件系统 API 属于不兼容的部分
 ```
 
 ## 工具与验证
 
-- 拓扑：device_node 树（module / attributes / resources / 父子关系）与总线类型规则
-- 驱动：driver module 的必需接口集合与 `driver_v1`/`device_v1` 命名约束
-- 资源：资源认领的唯一性；属性中的类型/厂商/设备信息
-- 验证：能同时说清「这个设备节点由哪个 driver module 绑定、由哪个 device module 暴露 /dev 接口、它是被按需发现还是启动时就有」
+- 驱动：device_node 树（module/attributes/resources）、两层模块的接口集合与命名约束、资源认领唯一性
+- 系统：team/thread/area/port/semaphore 的归属与关系；信号量标志位
+- 调试：KDL 命令与调试 API 消息结构（头部字段、team 调试标志、syscall 追踪）
+- 兼容：目标是否来自 BeOS 时代（调试接口/文件系统 API 会直接落空）
+- 验证：能同时说清「这个目标是驱动还是系统组件 + 它在哪一层、由谁加载 + 它用的对象属于哪套模型」
 
 ## 该平台的坑（汇总）
 
-- **把按需发现当驱动缺失或加载失败**：初始树只探索最小集合
-- **以为所有驱动都在启动时加载**：`B_FIND_CHILD_ON_DEMAND` 明确是延迟搜索
+- **把按需发现当驱动缺失**：初始只探索最小集合
 - **在 driver module 里找 `read`/`write`**：那是 device module 的接口
-- **忽略 `driver_v1` / `device_v1` 命名约束**：它们是模块分类的依据
-- **期待 `suspend`/`resume` 被调用**：当前实现不调用它们
-- **把设备路径直接当驱动标识**：路径要先经类型规则翻译成 device node
-- **以为多个节点可以共享同一 I/O 资源**：每个资源只能被一个节点认领
-- **混用固定子节点与动态子节点**：不允许，且注册时机不同
+- **忽略 `driver_v1` / `device_v1` 命名约束**
+- **期待 `suspend`/`resume` 被调用**：当前实现不调用
+- **混用固定子节点与动态子节点**
+- **逆非驱动目标时仍钻进 Device Manager**：入口应是内核对象模型或用户态服务
+- **忽略信号量的扩展标志**：可中断、释放全部、仅在等待时递减会改变行为
+- **拿 BeOS 的调试接口或文件系统 API 假设去套**：两者都不兼容
+- **以为兼容是双向的**：只保证"旧程序能跑"，不保证新接口回退
+- **忽略 64 位下调试 API 缓冲区结构的变化**：按旧布局解析会错

@@ -126,11 +126,11 @@ capabilities: [kernel-analysis]
 - [[minix3]] —— **RS 自愈重启**（驱动消失又出现是正常）；**label 稳定、endpoint 会变**；消息定长 56 字节、大数据走 **grants**（`EPERM` = grant 无效、`EFAULT` = 未映射）；**live update 期间旧/新实例共存**（不是注入）
 - [[plan9]] —— **每进程命名空间**（同名路径可能是不同对象）；**union 只有单层叠加**；`/srv` 是服务注册表而非 socket；**9P 的 fid 是 session 内句柄**；`open/read/write` 常常是用户态 RPC
 - [[helenos]] —— **fibril**（用户态协作调度实体，**内核不知道它存在**）；**用户态 DDF 驱动框架**（`driver_ops_t` 回调、devman 按 match id 评分匹配与启动）；业务不在内核 dispatch table 里
-- [[redox]] —— **scheme 模型**：`read/write` 被内核转成 SQE/CQE 消息交给用户态 provider，**`read()` 不必然是文件系统**；**客户端 fd 与 provider 描述符由内核映射，不相等是常态**；provider 常主动进入 null namespace（安全设计）
-- [[haiku]] —— **device_node 树 + 按需发现**（boot 时驱动没出现属正常）；**driver module 与 device module 两层**（前者绑定节点，后者暴露 `/dev` 接口），模块名有 `driver_v1`/`device_v1` 约束
-- [[zos]] —— **TCB 与 SRB** 两类可调度单位（SRB 常被忽略：不能调 SVC、不能 WAIT）；**home/primary/secondary 三个地址空间**（PC 之后 primary ≠ home 属正常，home 永不改变）；AR 模式的 ALET 0/1/2
-- [[ibmi]] —— **单一存储层**：内存与磁盘构成单一 64 位地址空间，对象**按名字而非硬件地址**访问，库本身也是对象
-- [[openvms]] —— **AST 异步控制流**（例程可以没有调用者）；完成顺序 **写 IOSB → 置事件标志 → 触发 AST**；**AST 不会中止进行中的系统调用**，等待被打断后会重新执行
+- [[redox]] —— **scheme 模型**（`read()` 不必然是文件系统；客户端 fd 与 provider 描述符不相等；provider 常进入 null namespace）+ **启动链**（引导器 → 极小 ELF 加载器 bootstrap → initfs 两级启动）+ **relibc/辅助向量**（稳定 ABI 在用户态，**syscall ABI 刻意不稳定**）+ 驱动即用户态 daemon（initfs 与主系统**两遍构建**）
+- [[haiku]] —— **驱动侧**：device_node 树 + 按需发现 + driver module/device module 两层；**系统侧**：team/thread/area/port/semaphore 内核对象模型、**KDL**（栈回溯/线程/内存/切换 CPU）与调试 API（与 BeOS **不兼容**）、BeOS R5 单向兼容边界、用户态服务边界
+- [[zos]] —— **TCB 与 SRB**、**home/primary/secondary**、AR 模式 ALET；加 **load module / program object（PDS vs PDSE）**、**AMODE/RMODE**、**XPLINK 与非 XPLINK 的栈行为相反**（方向、0x800 偏置、展开机制）、SVC/PC 表、dump 类型与 IPCS（XPLINK 下控制块更少，看 LEDATA）、EBCDIC 与记录模型
+- [[ibmi]] —— **层次**（MI / TIMI / SLIC / PASE 的交界）、**程序模型**（OPM/EPM/ILE；`*MOD`/`*PGM`/`*SRVPGM`；bind-by-copy vs by-reference）、**activation group**（PSSA/PASA/堆与覆盖作用域）、**两套指针**（系统指针/空间指针）与**两种存储模型**（single-level vs teraspace，含 job 边界与 tagged 指针限制）、**可执行材料识别**（DMPOBJ/编译清单/压缩态/时间戳必然不同）
+- [[openvms]] —— **两条控制流**：AST（完成顺序 **写 IOSB → 置事件标志 → 触发 AST**；不中止进行中的系统调用；等待被打断后重新执行）与**条件处理**（处理器链的继续/重投递/展开、第二次异常跳过已搜索帧、镜像启动时的默认三件套、语言间差异）；另含**镜像激活与共享镜像**（逻辑名重定向、特权/仅执行镜像的限制）与调用标准
 - [[unikraft-mirageos]] —— **库操作系统/unikernel**：单地址空间、单保护域；native（syscall 变函数调用）vs binary-compatible（捕获 Linux ELF 的 syscall）；**设备接线来自构建期配置**，同一源码不同目标行为全变
 - [[hic]] —— **capability + 物理沙箱 + 多版本驱动系统**：**同物理特权级的进程之间靠 MMU 隔离**（`Ring 0 → 全内核可寻址` 在此为 invalid assumption）；**模块元数据先于反汇编**；**入口页 IPC 形态**不是混淆；共享内存指针带域语义 `{domain, cap, mapping, offset, length, rights}`；**驱动生命周期与硬件生命周期分开建模**（实例/域/设备所有权/DMA/IRQ 路由/绑定/版本/迁移状态）。含跨系统对照（Fuchsia / seL4-CAmkES / Xen / Genode / QNX / 多内核 / MINIX）与**命中-不命中清单**（避免在其他 capability 系统上误触）
 
