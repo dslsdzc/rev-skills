@@ -67,7 +67,7 @@ This repo ships its own `.claude-plugin/marketplace.json` and can be added as a 
 Entry → 12 category gateways → 109 atomic skills. See `.claude/skills/` and `docs/skill-template.md` for details. Quick index:
 
 - **re-analyze**: entry point (probe → preference → identification → orchestration)
-- **re-binary-core**: re-address-space (address translation), re-triage, re-format-pe/elf/macho, re-imports, re-ghidra, re-ida, re-radare2, re-gdb, re-x64dbg, re-lldb, re-tracing, re-memdump, re-windbg, re-binaryninja, re-emulation, re-shellcode, re-kernel, re-ebpf, re-game, re-console, re-go, re-rust, re-plugin-dev, re-hypervisor, re-anti-cheat, re-cpp-abi, re-swift, re-zig, re-nim, re-fp-runtime, re-variant, re-mips, re-arm, re-riscv
+- **re-binary-core**: re-address-space (address translation), re-triage, re-format-pe, re-format-elf, re-format-macho, re-imports, re-ghidra, re-ida, re-radare2, re-gdb, re-x64dbg, re-lldb, re-tracing, re-memdump, re-windbg, re-binaryninja, re-emulation, re-shellcode, re-kernel, re-ebpf, re-game, re-console, re-go, re-rust, re-plugin-dev, re-hypervisor, re-anti-cheat, re-cpp-abi, re-swift, re-zig, re-nim, re-fp-runtime, re-variant, re-mips, re-arm, re-riscv
 - **re-malware**: re-sandbox, re-behavior, re-ioc, re-ransomware, re-loader, re-fileless, re-doc-malware, re-sample-acquire
 - **re-firmware**: re-fw-extract, re-fw-rootfs, re-fw-emulate, re-hardware-io, re-automotive, re-uefi, re-rtos, re-tee
 - **re-protocol**: re-netcap, re-proto-rev, re-crypto-id, re-crypto-keys, re-crypto-decrypt, re-ics, re-iot-proto, re-whitebox, re-tls

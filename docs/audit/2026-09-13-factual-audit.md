@@ -809,3 +809,54 @@ node bin/auditstate.mjs update <技能...> → 回填当前 hash + 日期
 - `npm run examples`：`代码块 913 个｜已检查 391 个`，通过
 - `npm run audit:status`：`已复核未变 120｜待复核 0｜从未复核 2`
 - `npm run toollife`：`登记 140 项｜已核验 6｜超期 0｜待核验 134（高风险 40）`
+
+---
+
+## 补充 26：把"约定"变成检查——四类收尾（2026-09-14）
+
+前面几轮反复出现同一个模式：**多副本信息 + 无单一事实源**（frontmatter 解析两套、能力声明无消费端、计数散落六处、references 同名、审查历史泄漏）。这一轮把当时还是"人工约定"的四类也收成检查。
+
+### 一、probe.sh 工具清单（登记表 → 生成）
+
+`probe.sh` 硬编码 **19** 个工具，而登记表已有 **137**——`RE_TOOLS` 是 agent 判断"环境里装了什么、优先用什么"的依据，硬编码清单会让**已装的工具不被使用**。
+
+做法与能力索引同构：**登记表是源，probe.sh 里的清单是生成物**（`lib/probe-tools.mjs` + `bin/probelist.mjs`，`--check` 校验新鲜度并入 `npm test`）。
+
+顺带修掉两处真问题：
+
+- **`MEM_GB` 恒为空**：`free` 的输出被本地化（`内存：` 而非 `Mem:`），`awk '/^Mem:/'` 匹配不到——固定 `LC_ALL=C`。**与 readelf 同一类坑**（本轮 fixture 也踩到）
+- **`dd` / `hexdump` 混进登记表**：属基础工具，已归入 `BASE_UTILS` 并从登记表移除（否则会被死条目检查打回）
+
+### 二、计数同步（人工清单 → 检查）
+
+`CLAUDE.md` 里的"按清单逐处核对"一直是人工的（历史上漏过 5 处）。`tests/counts.test.mjs` 把 13 处计数点变成断言，另加两条：README 引用的技能必须存在、**每个技能都必须在 README 出现一次**。
+
+后者当场抓到一个真缺口：README 用简写 `re-format-pe/elf/macho`，导致 **`re-format-elf` / `re-format-macho` 从未以全名出现**（简写既不可 grep 也不利于检索）——已改为全名。
+
+### 三、指纹表覆盖（文档约定 → 检查）
+
+`system-fingerprints.md` 写着"新增系统分支须同步加行"，但无检查。`tests/fingerprints.test.mjs` 用 MAPPED / EXEMPT 两张表断言：**新增分支若两处都没登记即失败**，并要求豁免项写明理由、映射表不得残留已删文件。
+
+### 四、复核 = 回归断言（`tests/audit-regressions.test.mjs`）
+
+"fixed → verified"原计划是人工复核一遍。改为**把已修事实写成永久断言**——22 条，覆盖 #1–#21 与补充 22/23。一次完成复核与防回归：日后有人重写技能时，错的说法写回去会直接红。
+
+**复核中发现的新问题**：三条断言失败，查下去全是技能里**刻意保留的迁移对照说明**（"旧写法 `Module.findExportByName(null, n)` 已移除"、"KeyStore 无 getKeyAlias"、"`this` 上没有 returnValue"）——即文档写对了，是断言太粗。据此给 `absent` 加了**否定语境识别**（`已移除/已废弃/弃用/无此/没有/不再/不是/勿用/不携带/不支持/不存在/旧写法/过时`）。这条规则本身值得记：**断言与文档的区别在于，"提到错误"不等于"主张错误"**。
+
+### 五、行为 fixture（四层验证体系的最上层，首次落地）
+
+`tests/format-fixtures.test.mjs`：对**字节布局类断言**用纯代码构造最小样本验证，不依赖网络与外部样本。首个 fixture 覆盖 `re-format-elf/references/layout.md` 的**扩展编号三套规则**——该处原文即注明"建议配 parser fixture 验证这三条路径"。
+
+**这一层立刻证明了价值**：fixture 抓出**当天早些时候由"修复"引入的新错误**——补充 22 里把 ELF 魔数写成"`\x7fELF`（小端读作 0x7f454c46）"，而 `7f 45 4c 46` 按小端读是 **`0x464c457f`**，`0x7f454c46` 是**大端**读法。已改为给出字节序列 + 两种读法（同一文件里另有 `free`/`readelf` 的本地化坑，说明这类"看起来对"的细节最需要 fixture）。
+
+### 六、SKILL.md 预算（re-kernel 拆分问题的结论）
+
+**结论：不拆。** 实测口径错了——技能是**按需加载**的库，常驻成本只有 SKILL.md（re-kernel 177 行，与 re-rtos 197 / re-hypervisor 169 / re-analyze 117 同量级），分支用到才读。拆分反而要新增 5+ 技能（计数同步六处）并割裂最有价值的**失败模式决策表**。
+
+真正要防的是 SKILL.md 膨胀，已加 `tests/skill-budget.test.mjs`（SKILL.md ≤240、单分支 ≤600、**必备章节仍在**——最后一条防的是"为了满足预算而削壳"）。顺带发现 `re-kernel` 用「## 通用主线」代替模板规定的「## 操作步骤」，已对齐。
+
+### 七、本轮校验
+
+- `npm test`：`OK: 122 skills validated` + **103 项测试全过**（上轮 67 + 新增 36）
+- 新增测试文件 5 个：`counts` / `fingerprints` / `format-fixtures` / `audit-regressions` / `skill-budget`
+- 新增脚本：`bin/probelist.mjs`（`npm test` 已含 `--check`）

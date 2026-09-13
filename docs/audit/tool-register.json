@@ -193,18 +193,6 @@
       "source": ""
     },
     {
-      "name": "dd",
-      "kind": "cli",
-      "where": [
-        "re-disk-forensics",
-        "re-fw-extract",
-        "re-memdump",
-        "re-shellcode"
-      ],
-      "last_verified": null,
-      "source": ""
-    },
-    {
       "name": "defaults",
       "kind": "cli",
       "where": [
@@ -454,16 +442,6 @@
       "source": ""
     },
     {
-      "name": "hexdump",
-      "kind": "cli",
-      "where": [
-        "re-fw-extract",
-        "re-stego"
-      ],
-      "last_verified": null,
-      "source": ""
-    },
-    {
       "name": "icat",
       "kind": "cli",
       "where": [
@@ -542,16 +520,6 @@
       "kind": "cli",
       "where": [
         "re-java"
-      ],
-      "last_verified": null,
-      "source": ""
-    },
-    {
-      "name": "jq",
-      "kind": "cli",
-      "where": [
-        "re-browser-ext",
-        "re-ti"
       ],
       "last_verified": null,
       "source": ""

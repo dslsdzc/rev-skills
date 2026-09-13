@@ -25,7 +25,7 @@
   - [x] references 同名歧义治理（#47，用户决策「限定技能前缀」）：471 处跨技能裸引用加 `[[re-xxx/文件名]]` 前缀；validate 扩到 references 文件内校验；占位符改用尖括号形式（2026-09-13）
   - [x] 新增 re-sample-acquire（#44，用户要求）：补现场采集环节（只有现象、没有样本）——SKILL.md + 四平台分支（Windows VAD/线程、Linux VMA/BPF LSM、macOS Mach VM/Endpoint Security、seL4 capability provenance）；能力标签 `sample-acquisition`；计数 121→122（2026-09-13）
   - [x] 数据契约去文件域化（#41，用户报告）：analysis-contract 改为「核心字段 + 10 个域扩展字段」两层（SDR/CAN/AI 模型/TEE/取证等域各有字段组），上下文清单按域展开，消费侧 2 处同步（2026-09-13）
-  - [ ] 复核后回填状态（fixed → verified），本批结果作为「增量审查机制」首批记录
+  - [x] 复核后回填状态（fixed → verified）（2026-09-14）：复核方式改为**回归断言**——`tests/audit-regressions.test.mjs` 把 #1–#21 与补充 22/23 的已修事实写成 22 条永久检查（错的说法不得再作为正确写法出现）。一次完成复核与防回归；复核中发现三处"失败"实为技能里刻意保留的**迁移对照说明**（"旧写法 X 已移除"），据此给断言加了否定语境识别
   - [ ] 待定：是否给全部 27 个历史文档统一加头部横幅（当前只标注了含已知错误的 2 个）
 
 - [ ] **工具 CLI/API 生命周期审查**（2026-09-13 记录，来源：外部抽样审查的结论）
@@ -40,8 +40,17 @@
   - [x] **示例可执行性**（2026-09-13）：`lib/skill-examples.mjs` + `bin/examplecheck.mjs`（`npm run examples`）——对 python / shell 块做语法检查（**不是执行**：不跑网络、不装依赖），含去缩进、占位符中和、调试器会话识别、sh 块内嵌 python heredoc 的单独检查。首轮抓出 3 处真错（angr 的 `0x4011xx` 不是合法 Python）+ 2 处语言标错（Haskell/Nim 源码写在 ```sh 块里）。有解释器时随 `npm test` 跑，否则跳过
   - [x] **风险分层**（2026-09-13）：`deriveRisk` 按**断言类型**（写死层级路径/版本号 vs 只点名工具）分高/低风险，出现面作严重度——现 134 项积压中**高风险 40、低风险 94**，`npm run toollife` 按影响面给出建议顺序
   - [x] 首批回填（2026-09-13）：6 项（vol / frida / candump / mmls / tsk_recover / readelf）——均为本会话审查波中确实核验过 CLI/API 形态的
-  - [ ] **核验剩余 134 项积压**：按 `npm run toollife` 的高风险顺序分批做，每批完成后回填 `last_verified` 与 `source`
+  - [x] **probe.sh 工具清单由登记表生成**（2026-09-14）：`lib/probe-tools.mjs` + `bin/probelist.mjs`——此前 probe.sh 硬编码 19 个工具而登记表已有 137，`RE_TOOLS` 反映不出环境实况（装了的可能不被用）。现为生成物 + `--check` 校验，`npm test` 已含。顺带修两处：`free` 输出本地化导致 **MEM_GB 恒为空**（固定 `LC_ALL=C`）；`dd`/`hexdump` 属基础工具，移出登记表
+  - [ ] **核验剩余 131 项积压**：按 `npm run toollife` 的高风险顺序分批做（高风险 39 / 低风险 92），每批完成后回填 `last_verified` 与 `source`
   - [ ] 与「增量审查机制」合并设计：两者共用"变更检测 + 记录状态"的骨架——**已合并**：登记表用 `last_verified`，审查状态用 `hash + last_reviewed`，同一套状态模型
+
+- [x] **re-kernel 是否拆分（已决：不拆）**（2026-09-14 评估）
+
+  曾担心 `re-kernel` 合计 3745 行 / 23 分支过大。实测**口径错了**：技能是"按需加载"的库而非单体文档——**每次都会加载的只有 SKILL.md（177 行）**，分支各 200–500 行、用到才读。与同类网关对比：`re-rtos` 197 行、`re-hypervisor` 169 行、`re-analyze` 117 行——**re-kernel 的常驻成本并不突出**。
+
+  拆分反而有代价：新增 5+ 个技能（计数要同步六处）、把**失败模式决策表**（跨平台"症状 → 先怀疑什么"）割裂——那正是该技能最有价值的部分——且不降低常驻成本（每个新技能自己也要前言与工具准备）。
+
+  **真正要防的是 SKILL.md 膨胀成单体**，已加 `tests/skill-budget.test.mjs`（SKILL.md ≤240 行、单分支 ≤600 行、必备章节仍在）。顺带修一处：re-kernel 用「## 通用主线」代替模板规定的「## 操作步骤」，已改为「## 操作步骤（跨平台通用主线）」。
 
 - [ ] **增量审查机制**（2026-08-29 记录，来源：aiskillstore skill-report.json 机制调研）
 

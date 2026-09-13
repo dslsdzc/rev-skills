@@ -29,6 +29,7 @@ node bin/toollife.mjs smoke                     # 本机探测（仅报告，CI 
 node bin/examplecheck.mjs                       # 技能示例代码块语法检查（npm run examples；需 python3/bash，缺失时跳过）
 node bin/auditstate.mjs status                  # 增量审查：哪些技能内容在复核之后又变了（= 下一轮审查波的工作集）
 node bin/auditstate.mjs update <技能...>         # 复核后回填（写当前 hash + 日期）
+node bin/probelist.mjs                          # 由登记表生成 probe.sh 的工具清单（--check 校验新鲜度，npm test 已含）
 
 npx rev-skills install --target <claude|gemini|cline|codex|cursor|copilot|windsurf|all> \
   [--global|--project] [--dry-run] [--link] [--force]
@@ -39,7 +40,17 @@ node bin/wxsource.mjs kanxue thread <帖子ID> [--md]
 node bin/wxsource.mjs wechat <文章URL> [--md]
 ```
 
-`node validate.mjs` 输出的技能数必须等于 `.claude/skills/` 下 `re-` 目录数——计数变了说明有技能目录增删，需同步文档（见下）。
+`node validate.mjs` 输出的技能数必须等于 `.claude/skills/` 下 `re-` 目录数——**这条已有自动检查**（`tests/counts.test.mjs` 比对 README / README_EN / AGENTS / CLAUDE / package.json / marketplace.json 六处的计数），不必再靠人工 grep。
+
+**检查分层**（`npm test` = validate + 103 项测试）：
+
+| 层 | 查什么 | 落点 |
+|---|---|---|
+| 结构 | frontmatter / 命名 / 能力标签 / 链接 / guard / 章节 | `validate.mjs` |
+| 一致性 | 计数同步、指纹表覆盖、登记表与路由、审查状态覆盖 | `tests/counts` `tests/fingerprints` `tests/toollife` `tests/review-state` |
+| 语法 | 技能里 python / shell 示例块（含 sh 内嵌 python heredoc） | `tests/examples`（无解释器则跳过） |
+| 事实 | 已修缺陷的**回归断言**（错的说法不得写回）、格式断言 fixture | `tests/audit-regressions` `tests/format-fixtures` |
+| 预算 | SKILL.md ≤240 行、单分支 ≤600 行、必备章节仍在 | `tests/skill-budget` |
 
 ## 架构：三层技能图，按状态机运转
 

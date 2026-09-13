@@ -102,7 +102,7 @@ capabilities: [kernel-analysis]
 | 同一 capability 结构在不同版本或文档里布局不同 | **先做代际指纹**（per-core 无全局锁 ↔ 受保护全局表） | 别按最新文档直接套结构（[[hic]]） |
 | 初始化里大量"看似多余"的 reset / 状态探测 | **sandbox restart / recovery 路径**（驱动重建 ≠ 硬件回到 clean boot） | 别当 boilerplate 删掉（[[hic]]） |
 
-## 通用主线
+## 操作步骤（跨平台通用主线）
 
 1. **确认身份**：这是哪一份（磁盘 / 运行 / 加载集合中的版本）、什么构建（vermagic / CRC / KMI / 签名）、什么形态（PE / ET_REL / Mach-O / 用户态 dext）
 2. **类型与符号**：优先官方类型来源（PDB / BTF / 符号表 / KMI list），其次精确构建信息，最后才是推断
