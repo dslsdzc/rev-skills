@@ -38,7 +38,7 @@ capabilities: [network-capture]
 
 ### mitmproxy —— HTTPS/TLS 中间人解密
 
-- 全平台: `pip install mitmproxy`（Python 3.10+）
+- 全平台: `pip install mitmproxy`（**当前 12.x 要求 Python >=3.12**；旧 Python 环境需 pin 对应的旧版本）
 - macOS: `brew install mitmproxy`
 - Windows: pip 版即可（或官方安装包）；WSL 内 pip 版
 - 验证: `mitmproxy --version`；`mitmdump --version`

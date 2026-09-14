@@ -167,6 +167,38 @@ test('补充 22：ET_REL 不单独断定 Linux 内核模块', () => {
     'ET_REL 只说明"可重定位 ELF"，需组合判据才升 Linux kmod');
 });
 
+test('补充 27：re-flutter 的 Dart 格式 magic 是数值不是 ASCII 串', () => {
+  const f = 're-flutter/SKILL.md';
+  absent(null, f, ['"KERNEL" magic'], 'KERNEL 不是 magic（正确写法是数值 0x90abcdef）');
+  present(null, f, ['0x90abcdef'], 'kernel magic 实为该数值');
+  present(null, f, ['0xdcdcf5f5'], 'snapshot magic 实为该数值');
+  absent(null, f, ["b'SNAPSHOT'"], '快照头里没有 ASCII SNAPSHOT');
+  absent(null, f, ['版本串 12B'], '不存在固定 12 字节版本串');
+});
+
+test('补充 27：re-flutter 的 Profile 属 AOT 一侧', () => {
+  const f = 're-flutter/SKILL.md';
+  absent(null, f, ['kernel_blob 只在 debug/Profile 构建存在'], 'Profile 用的是 AOT');
+  present(null, f, ['Profile 与 Release 都是 AOT'], '执行模型划分');
+});
+
+test('补充 27：不写死 IDA Free 的版本代际', () => {
+  const f = 're-analyze/references/preferences.md';
+  absent(null, f, ['当前 8.x'], '版本代际会漂移');
+});
+
+test('补充 27：mitmproxy 的 Python 下限为 3.12', () => {
+  const f = 're-netcap/SKILL.md';
+  present(null, f, ['Python >=3.12'], '当前 12.x 的要求');
+  absent(null, f, ['（Python 3.10+）'], '旧的 Python 下限');
+});
+
+test('补充 27：angr 的 Python 版本矩阵只维护一处（re-angr）', () => {
+  const f = 're-exploit/SKILL.md';
+  absent(null, f, ['9.x 支持 Python 3.9–3.11'], '与 re-angr 冲突的旧矩阵');
+  present(null, f, ['[[re-angr]]'], '指向唯一事实源');
+});
+
 test('补充 23：re-angr 的 recv hook 返回值是长度不是指针', () => {
   const f = 're-angr/SKILL.md';
   present(null, f, ['ssize_t'], '返回值语义');

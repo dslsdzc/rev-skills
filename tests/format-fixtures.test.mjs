@@ -108,6 +108,31 @@ test('readelf 对同一 fixture 的解读与三条规则一致（有 readelf 时
   rmSync(dir, { recursive: true, force: true });
 });
 
+// 对应 re-flutter/SKILL.md：Dart 的两个 magic 都是**数值**，文件里是小端字节——不是可 grep 的 ASCII 串
+test('Dart kernel magic 0x90abcdef 与 snapshot magic 0xdcdcf5f5 的字节形态', () => {
+  const kernel = Buffer.alloc(4);
+  kernel.writeUInt32LE(0x90abcdef);
+  assert.equal(kernel.toString('hex'), 'efcdab90');
+  assert.notEqual(kernel.toString('latin1'), 'KERNEL');
+
+  const snap = Buffer.alloc(4);
+  snap.writeUInt32LE(0xdcdcf5f5);
+  assert.equal(snap.toString('hex'), 'f5f5dcdc');
+  assert.ok(!snap.toString('latin1').includes('SNAPSHOT'));
+});
+
+test('Dart snapshot 基础头为 20 字节：magic(4) + length(8) + kind(8)', () => {
+  const head = Buffer.alloc(20);
+  head.writeUInt32LE(0xdcdcf5f5, 0);
+  head.writeBigInt64LE(0x1000n, 4);    // length
+  head.writeBigInt64LE(2n, 12);        // kind = full-aot
+  assert.equal(head.readUInt32LE(0), 0xdcdcf5f5);
+  assert.equal(Number(head.readBigInt64LE(4)), 0x1000);
+  assert.equal(Number(head.readBigInt64LE(12)), 2);
+  assert.equal(head.length, 20);
+  // 头部之后才是（版本相关的）子 blob 布局——本 fixture 只锁定基础头，不对其后的内部布局作承诺
+});
+
 // 对应 re-ai-model/SKILL.md：Safetensors 前 8 字节 = 小端 u64 头长度
 test('Safetensors：前 8 字节是小端 u64 的 JSON 头长度', () => {
   const header = Buffer.from(JSON.stringify({ __metadata__: { format: 'pt' } }), 'utf8');

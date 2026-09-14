@@ -640,8 +640,8 @@
       "where": [
         "re-netcap"
       ],
-      "last_verified": null,
-      "source": ""
+      "last_verified": "2026-09-15",
+      "source": "PyPI pyproject（v12.0.0 起）：requires-python >=3.12；官方支持 3.12/3.13/3.14"
     },
     {
       "name": "mmls",

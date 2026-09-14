@@ -860,3 +860,37 @@ node bin/auditstate.mjs update <技能...> → 回填当前 hash + 日期
 - `npm test`：`OK: 122 skills validated` + **103 项测试全过**（上轮 67 + 新增 36）
 - 新增测试文件 5 个：`counts` / `fingerprints` / `format-fixtures` / `audit-regressions` / `skill-budget`
 - 新增脚本：`bin/probelist.mjs`（`npm test` 已含 `--check`）
+
+---
+
+## 补充 27：Dart/Flutter 格式错误 + 三处版本漂移（2026-09-15）
+
+来源为外部监控的第三批。6 条全部处理（3 条格式错误 + 3 条版本漂移）。
+
+### 一、明确错误：re-flutter 的 Dart 格式（两条高影响 + 一条中影响）
+
+| # | 原文 | 核验 | 修正 |
+|---|---|---|---|
+| 1 | `kernel_blob.bin` 头部是 **ASCII `"KERNEL"` magic** | **错**。`runtime/vm/kernel_binary.h` 定义 `kMagicProgramFile = 0x90abcdefu`——是**数值**，文件里为小端字节 `ef cd ab 90` | 识别改为按 4 字节魔数；并补上同源事实：**header 共 8 字节 = magic + formatVersion**（格式版本可作版本判别）。明确写"不要用字符串 grep 判断 kernel 格式" |
+| 2 | 快照头 = magic `"SNAPSHOT"` 8B + **版本串 12B** + 长度 8B LE；用 `data.find(b'SNAPSHOT')` 搜索 | **错**。真实头部是 **magic `0xdcdcf5f5`(4B) + length(8B) + kind(8B) = 20 字节基础头**；**不存在 ASCII `SNAPSHOT`，也没有固定 12 字节版本串** | 解析代码改为按 `0xdcdcf5f5` 定位 + `struct.unpack('<qq', data[off+4:off+20])`；**删去写死的子 blob 分区表**，改为"版本相关的内部序列化布局，要精确解析就对着目标 SDK 的 `runtime/vm/snapshot.h` 与序列化器实现"；顺带修掉依赖该错误 magic 的 `strings \| grep SNAPSHOT` 判据（改用 ELF 段符号 `_kDartIsolateSnapshot*`） |
+| 3 | `kernel_blob` 只在 **debug/Profile** 构建存在 | **错**。Profile 与 Release **都是 AOT**（构建系统对 profile/release 都走 AOT 编译） | 执行模型改为 **Debug → JIT/Kernel；Profile 与 Release → AOT**；两者差别是 profiling/service/优化配置，不是执行模型 |
+
+**两条已固化为回归断言 + 格式 fixture**（`tests/format-fixtures.test.mjs`）：断言 `0x90abcdef` 的 LE 字节是 `ef cd ab 90`、`0xdcdcf5f5` 的是 `f5 f5 dc dc`、20 字节基础头的三段布局——**同时锁定"这两个 magic 不是可 grep 的 ASCII 串"**，日后写回去会直接红。
+
+### 二、版本漂移（三条）
+
+| # | 位置 | 原文 | 修正 |
+|---|---|---|---|
+| 4 | `re-analyze/references/preferences.md` | IDA Free"**当前 8.x**" | 已过时（2025 年已发布 9.x 线）→ **删掉版本代际的写死**，只留能力矩阵（x86/x86-64 限定、无 SDK/IDAPython、非商用），需要时以官方发布为准 |
+| 5 | `re-netcap/SKILL.md` | mitmproxy"（Python 3.10+）" | 核验后比审查意见更早：**v12.0.0 的 pyproject 就已 `requires-python >=3.12`**（不限于 12.1.0）→ 改为"当前 12.x 要求 Python >=3.12；旧环境需 pin 对应旧版"。因 re-tls / re-drm 把安装委托给本技能，只改一处 |
+| 6 | `re-exploit/SKILL.md` | "9.x 支持 Python 3.9–3.11 系" | 与 re-angr 已修正的表述**直接冲突**（angr 9.3.0 起要求 3.12+）→ **删掉 re-exploit 自维护的版本矩阵**，改为"兼容性以 [[re-angr]] 工具准备为准"——同一事实只维护一份 |
+
+### 三、一条"尚未过时但即将过时"的记录
+
+监控同时核验了 Ghidra 的 JDK 21 描述并**判定暂不报**：当前最新正式 release 仍是 12.1.3（2026-08-18），master 已进入 12.2 文档并改为 JDK 25，但 12.2 尚未正式发布。**12.2 发布后该条会立刻成为高优先级过时项**——这类"预告式"结论值得保留，它说明版本监控不只在事后抓。
+
+### 四、本轮校验
+
+- `npm test`：`OK: 122 skills validated` + **110 项测试全过**（上轮 103 + 新增 7）
+- 登记表回填 `mitmproxy`（现 7 项已核验）；审查状态：已复核 120 / 待复核 0
+- 初版新断言有一条误报（把"kernel magic 0x90abcdef"这种**带正确数值的用法**也拦下）——已收紧为只禁 `"KERNEL" magic` 这一旧表述

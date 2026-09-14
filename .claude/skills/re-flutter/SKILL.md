@@ -59,10 +59,10 @@ capabilities: [hybrid-app-analysis]
    unzip -l app.apk | grep -E 'kernel_blob|libapp|libflutter'    # Android 容器内定位
    file lib/arm64-v8a/libapp.so
    readelf -sW lib/arm64-v8a/libapp.so | grep _kDart             # release: AOT 快照符号
-   xxd -l 32 assets/flutter_assets/kernel_blob.bin               # debug: "KERNEL" magic
-   strings -n 6 libapp.so | grep -c SNAPSHOT                     # AOT 数据段 magic 命中
+   xxd -l 32 assets/flutter_assets/kernel_blob.bin               # debug: 前 4 字节应为 ef cd ab 90（kernel magic 0x90abcdef 的小端）
+   readelf -sW libapp.so | grep -c _kDartIsolateSnapshot         # AOT 段符号（data/instructions），比按 ASCII 串搜可靠
    ```
-   - debug: `assets/flutter_assets/kernel_blob.bin` 存在（头部 "KERNEL" magic，Dart kernel 二进制，类/函数名与 AST 保留，还原成本低）→ 直接步骤 3
+   - debug: `assets/flutter_assets/kernel_blob.bin` 存在（**header 共 8 字节 = magic `0x90abcdef` + formatVersion**，Dart kernel 二进制，类/函数名与 AST 保留，还原成本低）→ 直接步骤 3
    - release: 无 kernel_blob，业务代码在 libapp.so 的 `_kDartIsolateSnapshotData`（数据）/ `_kDartIsolateSnapshotInstructions`（指令）→ 步骤 2
    - iOS: `Payload/<App>.app/Frameworks/App.framework/App`（业务）与 `Flutter.framework/Flutter`（引擎），Mach-O 内同段名，`otool -l` / strings 定位
 
@@ -73,23 +73,26 @@ capabilities: [hybrid-app-analysis]
    python3 - <<'PY'
    import struct
    data = open('snap.rodata', 'rb').read()
+   MAGIC = 0xDCDCF5F5                          # Dart VM snapshot magic（int32；文件里是小端 f5 f5 dc dc）
+   KINDS = {0: 'full', 1: 'full-jit', 2: 'full-aot'}
    off = 0
    while True:
-       off = data.find(b'SNAPSHOT', off)
+       off = data.find(struct.pack('<I', MAGIC), off)
        if off < 0: break
-       print('magic @', hex(off),
-             'version:', data[off+8:off+20].rstrip(b'\x00'),
-             'blob_len:', struct.unpack('<Q', data[off+20:off+28])[0])
-       off += 1
+       length, kind = struct.unpack('<qq', data[off+4:off+20])   # 基础头共 20 字节
+       print('snapshot @', hex(off), 'kind:', KINDS.get(kind, kind), 'length:', length)
+       off += 4
    PY
    ```
-   - 快照数据段结构：头部（magic "SNAPSHOT" 8B + 版本串 12B + 长度 8B LE）之后是子 blob 序列，每个子 blob 为「头（长度/类型）+ 内容」，分区依次为：**strings**（Dart 字符串表）、对象 blob（库/类结构）、**ObjCode**（代码对象表，含指令地址）、**rodata**（只读数据）；机器码本体在独立指令段 **instructions**（`_kDartIsolateSnapshotInstructions`）
+   - **头部格式**：`magic(4, 0xdcdcf5f5)` + `length(8)` + `kind(8)` = **20 字节基础头**（其后是哈希等字段）。**没有 ASCII `"SNAPSHOT"`，也没有固定 12 字节版本串**——按字符串搜 `SNAPSHOT` 在真实 AOT 样本上找不到任何东西
+   - **头之后是版本相关的内部序列化布局**（子 blob 的顺序与结构随 Dart 版本变化），**不要当稳定格式承诺**：要精确解析就对着目标 SDK 版本的 `runtime/vm/snapshot.h`、序列化器与 image snapshot 实现来读，而不是套一份写死的分区表
+   - 机器码本体在**独立的指令段**（`_kDartIsolateSnapshotInstructions`），与数据段分开；`kind` 为 `full-aot` 时即 AOT 快照
    - `_kDartVmSnapshot*` 是 VM 快照（dart:core/io 等标准库，所有 Flutter App 共用），业务只在 `_kDartIsolateSnapshot*`
    - strings blob 提取业务字符串:
      ```sh
      strings -n 6 -t x snap.rodata | grep -E 'https?://|token|secret|api/|MethodChannel'
      ```
-   - 指令段导入 Ghidra：以 ObjCode 表的代码对象地址为函数边界创建函数（自动分析常认不出 AOT 代码对象），反编译后按字符串交叉引用定位业务函数
+   - 指令段导入 Ghidra：自动分析常认不出 AOT 代码对象，需按目标版本的代码对象元数据（子 blob 布局随版本变化，见上条）划分函数边界；反编译后按字符串交叉引用定位业务函数
    - 自动替代：blutter（工具准备）还原 asm/对象池/类名；手动解析用于核对与版本兜底（坑 5）
 
 3. **符号还原**：
@@ -141,7 +144,7 @@ capabilities: [hybrid-app-analysis]
 
 ## 常见坑与陷阱
 
-- **release 没有 kernel_blob.bin**：现象——按 debug 教程找 `assets/flutter_assets/kernel_blob.bin` 找不到；原因——kernel_blob 只在 debug/Profile 构建存在，release 业务代码在 libapp.so 的 AOT 快照段；对策——先按步骤 1 判模式：无 kernel_blob → 走步骤 2 快照分区解析，别在 assets 里死找
+- **release 没有 kernel_blob.bin**：现象——按 debug 教程找 `assets/flutter_assets/kernel_blob.bin` 找不到；原因——构建模式决定产物：**Debug → JIT（kernel 二进制，业务代码在 kernel_blob）**，**Profile 与 Release 都是 AOT**（业务代码在 libapp.so 的快照段）——**Profile 不靠 kernel_blob 执行业务代码**，它与 Release 的差别是 profiling/service/优化配置而非执行模型；对策——先按步骤 1 判模式：无 kernel_blob → 走步骤 2 快照分区解析，别在 assets 里死找
 - **obfuscate/tree-shaking 后短名**：现象——快照里函数/类名全是 `a`/`b` 等短名或直接缺失；原因——`--obfuscate` 混淆名称 + tree-shaking 删除未引用代码；对策——构建侧有 `--split-debug-info` 映射文件就直接查表（步骤 3 JSON）；没有映射则以 strings blob 的文案/URL 为锚交叉引用反推调用链；动态侧 hook 关键函数观察行为互补
 - **引擎与业务代码混淆**：现象——分析深陷 libflutter.so 的 `dart::` 内部函数或 `_kDartVmSnapshot*` 段（dart:core/io 标准库），时间空耗；原因——引擎层与 VM 快照是所有 Flutter App 共用代码，不是业务；对策——业务只分析 libapp.so 的 `_kDartIsolateSnapshot*`；libflutter.so 只取 VM 导出（步骤 4/5）
 - **frida 版本不匹配**：现象——`frida-ps -U` 报协议错误 / unable to communicate；原因——主机 frida-tools 与设备 frida-server 版本号不一致，或架构不符；对策——严格按 [[re-frida]] 工具准备：`frida --version` 对照下载同版本 frida-server，选对架构（arm64/arm/x86_64）
@@ -154,4 +157,6 @@ capabilities: [hybrid-app-analysis]
 - **Dart bool 当 0/1 处理**：现象——反编译 AOT 代码时把 bool 当普通 0/1 整数读，逻辑翻来覆去对不上；原因——Dart AOT 固定寄存器约定：X15=shadow-stack、X26=Thread、X27=Pool、X22=null 哨兵、X28=堆基（压缩指针）、X21=分派表基；**Dart bool 是 canonical 对象的 tagged pointer，不是 0/1**——True 在 null 低位偏移、False 在更高偏移（非压缩指针下 True = null+0x20（低 16 位常形如 …8061）、False = null+0x30（…8071）；**压缩指针（Flutter release 默认）为 True = null+0x10（…8051）、False = null+0x18（…8059）**；消费端 `tbz w0,#4`（压缩指针为 `#3`）**bit=0 进 true 分支**——判定位为 0 的是 True；对策——按固定寄存器语义读反汇编（`mov x0,x22` 返回 Dart null；标准 prologue `stp x29,x30,[x15,#-16]!; mov x29,x15`，字节 `fd 79 bf a9 fd 03 0f aa`）；bool 编码可用指令频度破解：`add xR,x22,#0x20`（压缩指针 `#0x10`）出现数千次（True）、`add xR,x22,#0x30`（压缩 `#0x18`）同理（False）；偏移/判定位随指针压缩与版本浮动，以实测或 `--print-object-layout-to` 为准；Thread 全局 `G = Thread[x26+0x80]`，字段按偏移读；分配 thunk 模式 `mov x2,#imm; movk x2,#cid,lsl16; ldr x4,[x26,#0x228]; br x4`（来源：reverse-skills（inliver233），MIT）
 - **patch 物化 false 用 movz w0,#0 崩溃（SIGILL）**：现象——静态 patch 或 Frida 运行时内存写用 `movz w0,#0`（字节 52800000）物化「假」，运行时崩溃信号 4（SIGILL）；原因——Dart bool 是 tagged pointer，0 是非法的 immediate tag；对策——物化 True 用 `add x0,x22,#0x20`（字节 c0820091）、False 用 `+0x30`（**压缩指针下为 True `+0x10`、False `+0x18`**）；该规则同时适用于静态 patch 与 Frida 运行时内存写，写 Dart bool 一律写 canonical 地址，编码随指针压缩模式与版本浮动，以实测为准（来源：reverse-skills（inliver233），MIT）
 - **弹窗 patch 无效（三源分诊）**：现象——NOP 掉所有 showDialog 调用后弹窗照旧，或弹窗约 60 秒定时出现，反复重试成时间黑洞；原因——Flutter 弹窗只有三个来源，误分诊是最大浪费：(a) 显式 showDialog BL；(b) 未捕获异常——MissingPluginException → FlutterError.onError/zone onError → **异步弹窗，不经任何 showDialog BL**；(c) 完整性聚合门——一个聚合函数 OR 约 7 个检查，任一为真就弹窗；对策——logcat + Dart 栈帧见 MissingPluginException/Unhandled Exception 且定时出现 → 源 (b)，正解是截断 fault-body 构造器（把 body 构建的条件分支改为无条件跳过），全局 handler 无内容可显示，**停止 NOP 弹窗**；弹窗文案 → 池 ref → body builder → 调用者追踪，callers=0（cid 分派）且无 showDialog BL → 也是源 (b)；源 (c) 找聚合函数（引用大量 check*/get* 通道方法字符串 + 条件 → 弹窗构建），NOP 其聚合失败分支（`CMP W0,W22; B.EQ fail`）或 entry-null 弹窗构造 helper；patch 在某设备生效另一设备不生效时，用文案内容定位新触发的检查类别（如校验提示文案对应环境/模拟器检查）（来源：reverse-skills（inliver233），MIT）
+- **把 kernel 格式的 magic 当 ASCII `KERNEL`**：现象——按"文件头是 KERNEL"去 grep/xxd 判断 `kernel_blob.bin`，或按该串在容器里搜 kernel 文件，命中不了或命中的是别的东西；原因——Dart kernel 二进制的 magic 是**数值 `0x90abcdef`**（源码 `runtime/vm/kernel_binary.h` 的 `kMagicProgramFile`），文件里显示为小端字节 `ef cd ab 90`，**根本不是 ASCII 串**；header 共 8 字节（magic + formatVersion），其后还有格式版本号，可作为版本判别；对策——按 4 字节魔数判断，不要用字符串搜索
+- **按 ASCII `SNAPSHOT` 找 AOT 快照**：现象——`grep SNAPSHOT`/`data.find(b'SNAPSHOT')` 在真实 libapp.so 上零命中，于是判"没有快照"或改用字符串猜偏移；原因——Dart VM snapshot 的头部是**数值 magic `0xdcdcf5f5`**（4B）+ length(8B) + kind(8B) 的 **20 字节基础头**，**不存在 ASCII `SNAPSHOT`，也没有固定的 12 字节版本串**；头之后的子 blob 布局是**版本相关的内部序列化实现**，不能当稳定格式套；对策——按 `0xdcdcf5f5`（小端 `f5 f5 dc dc`）定位并读 length/kind（`kind` 为 `full-aot` 即 AOT 快照），要精确解析就对着目标 SDK 版本的 `runtime/vm/snapshot.h` 与序列化器实现；机器码本体在独立指令段
 - **无符号万级函数不知从哪下手**：现象——libapp.so 无符号、约两万函数，直接翻反汇编大海捞针；原因——无符号时函数边界、字符串归属、调用关系全靠静态重建，缺乏优先级信号；对策——用 prologue 特征字节（`fd 79 bf a9 fd 03 0f aa`）在 .text 内反向扫描（窗口约 0x6000–0x8000 字节）先恢复函数边界；每函数建特征向量：访问的字符串集（主导信号）、BL 目标/调用者 fan-in（`(word>>26)==0b100101` 解码 imm26）、gate 后分支点（TBZ/TBNZ/B.EQ）、null 比较（`CMP W0,W22`/`MOV X0,X22`）、bool 返回标志；四排序器把 2 万 → 短名单：关键字串短名单 → 共访问数（关键字类字符串 ≥2 个 → orchestrator）→ 双锚点集合交集（标题串+正文串的访问函数集相交 → 精确 builder，0 或 1 个函数）→ BL 调用 fan-in 向上迭代；**caller 计数 = 风险度量**——高计数（共享状态函数）避免作 patch 点，计数 1 的专用 handler 是安全目标；高 cmp + 条件分支数聚合得分用于浮现完整性门/聚合谓词（来源：reverse-skills（inliver233），MIT）
