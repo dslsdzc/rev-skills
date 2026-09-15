@@ -52,8 +52,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-apk": {
-      "hash": "e90362b9491da5ce",
-      "last_reviewed": "2026-09-13",
+      "hash": "064a45ca65f19dd4",
+      "last_reviewed": "2026-09-15",
       "note": "本轮审查波覆盖"
     },
     "re-arm": {
@@ -67,8 +67,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-automotive": {
-      "hash": "d3a62f41bc443128",
-      "last_reviewed": "2026-09-13",
+      "hash": "2f9962cc9828f8e1",
+      "last_reviewed": "2026-09-14",
       "note": "本轮审查波覆盖"
     },
     "re-behavior": {
@@ -217,8 +217,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-format-macho": {
-      "hash": "b45c36c59d9b3120",
-      "last_reviewed": "2026-09-13",
+      "hash": "6008e14f5edc491a",
+      "last_reviewed": "2026-09-14",
       "note": "本轮审查波覆盖"
     },
     "re-format-pe": {

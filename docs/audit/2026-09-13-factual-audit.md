@@ -894,3 +894,103 @@ node bin/auditstate.mjs update <技能...> → 回填当前 hash + 日期
 - `npm test`：`OK: 122 skills validated` + **110 项测试全过**（上轮 103 + 新增 7）
 - 登记表回填 `mitmproxy`（现 7 项已核验）；审查状态：已复核 120 / 待复核 0
 - 初版新断言有一条误报（把"kernel magic 0x90abcdef"这种**带正确数值的用法**也拦下）——已收紧为只禁 `"KERNEL" magic` 这一旧表述
+
+---
+
+## 补充 28：Mach-O 基础常量层（2026-09-15）
+
+### 一、性质：不是措辞问题，是**解析层常量错误**
+
+`re-format-macho/references/layout.md` 在 **CPU subtype、header flags、symbol type、fat header 四个基础解析层**都有确定性常量错误——依赖该 reference 的 Mach-O / iOS / Swift 分析会被系统性带偏。
+
+**核验来源**：本机 **LLVM `BinaryFormat/MachO.h`**（Apple `loader.h`/`machine.h` 的忠实移植，含数值）+ Apple `fat.h` 文档。**未使用搜索摘要中的二手描述**（那几轮搜索只给了名字没给数值）。
+
+| # | 原文 | 核验后 | 修正 |
+|---|---|---|---|
+| 1 | `0x0100000C=arm64`、`0x0100000B=arm64e` | **arm64 与 arm64e 的 cputype 相同**（都是 `CPU_TYPE_ARM(12) \| CPU_ARCH_ABI64(0x01000000)` = **0x0100000C**）；区别在 **cpusubtype = `CPU_SUBTYPE_ARM64E`(2)** | 表格改为"**arm64e 靠 cpusubtype 区分，不要用 cputype 判**" |
+| 2 | `3=x86_64`、`0x80000003=x86_64h` | `CPU_SUBTYPE_X86_64_ALL=3`、**`CPU_SUBTYPE_X86_64_H=8`**；`0x80000000` 是 **capability 位**（`CPU_SUBTYPE_LIB64`），**不把 3 变成 x86_64h** | 补全 arm64 侧 subtype（0/1/2）与 x86_64 侧（3/8），并把 capability 位单独解释；arm64e 另有 `0x80000000` 作 versioned-ptrauth-ABI 掩码 |
+| 3 | `1=NOUNDEFS 2=DYLDLINK 4=TWOLEVEL … 0x800000=LAZY_INIT` | 实际是位值：`0x1` NOUNDEFS、`0x2` **INCRLINK**、`0x4` **DYLDLINK**、`0x8` BINDATLOAD、`0x10` PREBOUND、`0x20` SPLIT_SEGS、**`0x40` LAZY_INIT（已废弃）**、**`0x80` TWOLEVEL**、`0x100` FORCE_FLAT、`0x200` NOMULTIDEFS、**`0x200000` PIE**、**`0x800000` HAS_TLV_DESCRIPTORS** | 按 Apple 位值列出，明确"不要手工精简成连续编号"——原表**整体错位**，还把现代 TLS 描述符标志标成了已废弃的 lazy init |
+| 4 | `0x0E=N_SECT 0x0F=N_UNDF` | `N_TYPE=0x0e` 是**掩码**：`N_UNDF=0x0`、`N_ABS=0x2`、`N_SECT=0xE`、`N_INDR=0xA`；`N_EXT=0x01`/`N_PEXT=0x10` 是可 OR 的**属性位**。`0x0f` = `N_SECT\|N_EXT`（外部节定义符号） | 改为**分层读**（`n_type & N_TYPE` + 属性位单独判），明确"不要把组合值当基础类型" |
+| 5 | `FAT_MAGIC 0xCAFEBABE（LE 文件字节 be ba fe ca）`；`offset 为 4 字节对齐` | **fat 结构在磁盘上恒为大端**（Apple fat.h 明述，与宿主无关）→ 正常 FAT 文件**开头就是 `CA FE BA BE`**；小端读得 `0xbebafeca`（=`FAT_CIGAM`）是**同一份字节被小端解释**；**`fat_arch.align` 是"对齐的 2 的幂"**（slice 需 `2^align` 对齐） | 两者都改写，并加"别用宿主端序猜文件端序" |
+
+### 二、udsoncan：示例缺少 DID codec 配置
+
+`re-automotive` 的 VIN 示例直接 `Client(conn, request_timeout=2)` 后 `read_data_by_identifier(DataIdentifier.VIN)`，**缺 `config`**——而 `read_data_by_identifier` 依赖 `config['data_identifiers']`（DID → codec 映射）来解码响应载荷，**没有 codec 就无从解码**。
+
+**修正**：示例补上 `config['data_identifiers'] = {0xF190: …}`（VIN 的标准 DID，17 字节 ASCII codec）并传入 `Client(..., config=config)`；同时在步骤里加了"**读/写 DID 必须先配 codec**"的说明与"只想看原始载荷就走不做解码的低层接口"的出路。
+
+**一处刻意的克制**：`data_identifiers` 机制与 `DidCodec` 概念已核验，但**具体的 codec 辅助类名未获证实**，因此示例里用 `...` 占位并注明"用库自带的类型，或自定义 `DidCodec` 子类"——**不能用另一个未经核验的 API 去替换一个错的 API**。
+
+### 三、固化
+
+- **格式 fixture**（`tests/format-fixtures.test.mjs`）新增 4 条：cputype/cpusubtype 的推导与 arm64e 判别、header flags 的位值（含"按连续编号抄会全错位"的反证）、`n_type` 的分层读法、fat 的大端与 `2^align`
+- **回归断言**（`tests/audit-regressions.test.mjs`）新增 2 条：常量表不得复现旧值 + udsoncan 示例必须带 config
+- 写 fixture 时踩到一个**跨语言坑并顺手记进断言**：JS 的位运算是**有符号 32 位**，`0x80000000 | 3` 得 `-2147483645`，要 `>>> 0` 才是 `0x80000003`——与 C 里 `uint32_t`/有符号的区分同源
+
+### 四、重复报告说明
+
+本轮报告的 **IDA Free "当前 8.x"** 已在补充 27 修复（并已有回归断言）；**Ghidra JDK 21** 的"暂不过时、12.2 发布后即过时"也已记录在补充 27。两条不重复处理。
+
+### 五、本轮校验
+
+- `npm test`：`OK: 122 skills validated` + **116 项测试全过**（上轮 110 + 新增 6）
+- 初版两条断言失败均为**测试自身的 bug**（把修正行里的"而不是固定 4 字节对齐"当成旧表述；JS 有符号位运算），已修正
+
+---
+
+## 补充 29：Apktool 版本模型落后一个大版本（2026-09-16）
+
+### 一、性质：不是措辞过时，是**整代 CLI 不兼容**
+
+`re-apk` 仍把 apktool 描述为「2.x 系列」，并围绕 2.x 的 `--use-aapt2`（aapt1/aapt2 二选一）组织回编译流程。但 3.x 已是当前主线、2.x 退为维护线，而 3.x 有一批**会让 2.x 命令直接报错**的 breaking changes——照仓内现有写法执行会被工具拒绝。
+
+### 二、核验来源（四路交叉，全部一手）
+
+| 来源 | 拿到什么 |
+|---|---|
+| GitHub Releases（`gh release view v3.0.1`） | 3.0.1/3.0.2/3.0.3 的发布说明与 PR 列表；「v3.0.0 因缺 .jar 被撤回，3.0.1 与之等同」 |
+| `apktool-cli/src/main/java/brut/apktool/Main.java` @ v3.0.1（源码） | **选项定义全集**——短参数、长参数、移除项的唯一事实源 |
+| 官方安装页 `apktool.org/docs/install`（标 "Version: 3.x"） | 「A minimum of Java 8 is required to run Apktool」；文档分 3.x / 2.x 两轨 |
+| **`prebuilt/` 目录里的实际二进制**（取回后 `file`） | 32 位支持的存在与否——见下 |
+
+### 三、逐条核验结果
+
+| # | 原表述 | 核验后 | 依据 |
+|---|---|---|---|
+| 1 | 「apktool：2.x 系列」 | **3.x 为当前主线、2.x 为维护线**，两线命令不完全兼容 | Releases 页 3.0.1/3.0.2/3.0.3；官网首页显示 3.0.3 且文档分两轨 |
+| 2 | `--use-aapt2` 可强制 aapt2 回编译 | **aapt1 整体移除，`--use-aapt2` 这个"二选一开关"随之不存在**；换 aapt2 二进制改用 `--aapt <file>`，且传入 aapt1 会被显式拒绝 | 发布说明 `[v3] Remove aapt1 testing`（PR #3883）；`Main.java:571` — `if (getBinaryVersion(...) == 1) throw new AndrolibException("Legacy aapt is no longer supported.")` |
+| 3 | （原文未涉及） | **不再提供 32 位构建** | 见下「最有分量的一条」 |
+| 4 | （原文未涉及） | `--api-level` 移除（`Main.java` 中 `api.level`/`apiLevel` **命中 0 处**） | 源码全文检索 |
+| 5 | （原文未涉及） | **`--only-main-classes` 由 `-a`/`--all-src` 取代，且语义相反**：前者只解主 dex，后者「Decode all sources in the apk (includes unknown dex files)」 | 发布说明 `replace --only-main-classes with -a/--all-src`（PR #4069）+ `Main.java` 的 `decodeAllSrcOption` 描述串 |
+| 6 | （原文未涉及） | **高级选项只认长参数**：v3.0.1 的短参数**全集**为 `-a -f -j -l -o -p -q -r -s -t -v`，`-m`/`-k` 一类旧短参报 `Unrecognized option` | 源码里 `Option.builder("<短参>")` 穷举；佐证：Debian #1140015 — diffoscope 因 `Unrecognized option: -k`/`-m` 改用 `--keep-broken-res`/`--match-original` 才修好 |
+
+**仓内旧调用扫描**（按报告的清单全查）：只有 `--use-aapt2` 命中 4 处（`gotchas.md` ×2、`commands.md` ×2）；`--api-level`、`--only-main-classes`、`-api`、`-m`、`-k`、`-resm`、`-b` **均为 0 处**。其余 apktool 调用（`d -r`、`d -s`、`b -o`）在 3.x 下仍然有效，**未做无谓改动**。
+
+### 四、最有分量的一条：32 位支持是拿二进制本身证的
+
+官方文档页**没有**任何架构说明，发布说明也只提了 aapt1。所以这条不能靠转述。改用直接证据——把两个 tag 的 `prebuilt/linux/` 二进制取回来自查：
+
+| 文件 | `file` 结果 |
+|---|---|
+| 2.12.1 `prebuilt/linux/aapt2`（无后缀） | **ELF 32-bit LSB executable, Intel i386** |
+| 2.12.1 `prebuilt/linux/aapt2_64` | ELF 64-bit LSB executable, x86-64 |
+| 3.0.1 `prebuilt/linux/aapt2`（唯一一个） | **ELF 64-bit LSB executable, x86-64** |
+
+2.x 的命名规则由此坐实：**无后缀 = 32 位，`_64` 后缀 = 64 位**。3.x 每个平台只剩一个二进制、`_64` 后缀消失、且实测为 64 位——32 位支持确实没了。这同时解释了命名变化的原因：32 位一去，`_64` 后缀就没有存在意义。目录结构也同步印证 aapt1 的消失：2.12.1 的 `prebuilt/` 带 `aapt`/`aapt_64`/`aapt2`/`aapt2_64`，3.0.1 只剩 `aapt2`。
+
+### 五、刻意没写的两处
+
+- **Java 要求不动**：官方安装页明写「minimum of Java 8」，构建脚本也是 `--release 8`——原文「依赖 Java 8+」**成立**，不加戏
+- **`--debug` → `--debuggable` 未写入**：源码里确见 `buildDebuggableOption`/`longOpt("debuggable")`，但 2.x 侧的对应用法是第三方 changelog 转述，**未证实的旧名不写**
+- **`-a` 归入 decode 步骤**：发布说明另有「promote -a/--all-src to a common option」表明它已是通用选项，仓内按主用途（解包）举例，未对 build 侧下断言
+
+### 六、Ghidra 12.2 / JDK 25 临界项：本轮复核仍**不**转为过时
+
+官方 master 的 12.2 文档要求最低 JDK 25，但正式 release 仍为 12.1.3（2026-08-18），12.2 未发布。且仓内现有表述**已经把两套要求分开写**——`re-ghidra/SKILL.md` 与 `gotchas.md` 均为「运行官方 release 需 JDK 21，从源码构建 Ghidra 自身需 JDK 25 + Gradle 9.1+，别混」。这正是不提前报错的原因：**JDK 25 要求属于"从源码构建"，不属于"运行正式版"**。维持现状，待 12.2 正式发布再转为过时项。
+
+### 七、固化
+
+- `tests/audit-regressions.test.mjs` 新增 4 条：版本模型存在、「apktool 调用行」不得残留 2.x 专有选项、`--api-level` 不得写成可用选项、32 位表述与 `_64` 命名一致
+- **断言只查"像命令一样写出来"的行**——迁移说明会刻意引用旧写法（「`--use-aapt2` 已随 aapt1 一并移除」），按"提到错误 ≠ 主张错误"给迁移语境豁免
+- **变异测试验证非空转**：注入 `apktool b out/ --use-aapt2 -o x.apk` 与 `apktool d --api-level 34 ...` 后，两条断言精准失败；还原后全过。（第一次注入失败是因为样本里带了「旧写法」三个字、正好落进豁免词表——**是样本没造好，不是断言失效**，重造后确认有效）
+- `npm test`：`OK: 122 skills validated` + **120 项测试全过**（上轮 116 + 新增 4）

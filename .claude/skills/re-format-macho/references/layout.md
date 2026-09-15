@@ -9,12 +9,12 @@ Mach-O 文件 = mach_header + load commands 区 + 段数据（__TEXT/__DATA/__LI
 | 偏移 | 字段 | 大小 | 含义 |
 |---|---|---|---|
 | 0x00 | magic | u32 | 0xFEEDFACF=MH_MAGIC_64（LE 文件中字节为 cffaedfe）；0xFEEDFACE=32 位；0xCAFEBABE=fat |
-| 0x04 | cputype | u32 | 0x01000007=x86_64（7|CPU_ARCH_ABI64）0x0100000C=arm64 0x0100000B=arm64e 7=i386 12=arm |
-| 0x08 | cpusubtype | u32 | 3=x86_64 0x80000003=x86_64h（|CAPABILITY_64BIT）；0=arm64 全系 |
+| 0x04 | cputype | u32 | 0x01000007=x86_64（7\|CPU_ARCH_ABI64）**0x0100000C=arm64**（12\|CPU_ARCH_ABI64）7=i386 12=arm；**arm64e 的 cputype 与 arm64 相同（都是 0x0100000C），靠 cpusubtype 区分**——不要用 cputype 判 arm64e |
+| 0x08 | cpusubtype | u32 | **x86_64：3=`X86_64_ALL`、8=`X86_64_H`（x86_64h，Haswell 特性子集）**；**arm64：0=`ARM64_ALL`、1=`ARM64_V8`、2=`ARM64E`**（arm64e 由这里区分，不是 cputype）；高位是 **capability bit**：`CPU_SUBTYPE_LIB64=0x80000000`，它**改变不了基础 subtype 的含义**（`0x80000003` 仍是 X86_64_ALL 带 64 位库标记，不是 x86_64h）；arm64e 另有 `0x80000000` 作 versioned-ptrauth-ABI 掩码 |
 | 0x0C | filetype | u32 | 1=MH_OBJECT 2=MH_EXECUTE 4=MH_CORE 6=MH_DYLIB 8=MH_BUNDLE 9=MH_DYLIB_STUB |
 | 0x10 | ncmds | u32 | load commands 条数 |
 | 0x14 | sizeofcmds | u32 | load commands 区总字节数（每条 cmdsize 之和） |
-| 0x18 | flags | u32 | 1=NOUNDEFS 2=DYLDLINK 4=TWOLEVEL 0x200000=PIE 0x800000=LAZY_INIT |
+| 0x18 | flags | u32 | 按 Apple `loader.h` 的**位值**读，不要手工排成连续编号：`0x1`=NOUNDEFS、`0x2`=INCRLINK、`0x4`=DYLDLINK、`0x8`=BINDATLOAD、`0x10`=PREBOUND、`0x20`=SPLIT_SEGS、**`0x40`=LAZY_INIT（已废弃）**、**`0x80`=TWOLEVEL**、`0x100`=FORCE_FLAT、`0x200`=NOMULTIDEFS、**`0x200000`=PIE**、**`0x800000`=HAS_TLV_DESCRIPTORS（TLS 描述符，现代产物常见）** |
 | 0x1C | reserved | u32 | 仅 64 位，恒 0 |
 
 ## load commands（LC）通用头
@@ -121,7 +121,7 @@ LC_DYLD_INFO_ONLY → rebase/bind/lazy_bind/export 四表
 | 偏移 | 字段 | 大小 | 含义 |
 |---|---|---|---|
 | 0x00 | n_strx | u32 | 符号名在字符串表内的偏移 |
-| 0x04 | n_type | u8 | 0x0E=N_SECT 0x0F=N_UNDF；0x01=N_EXT（外部）0x10=N_PEXT |
+| 0x04 | n_type | u8 | **拆两层读**：基础类型 = `n_type & N_TYPE(0x0e)`，取值 `0x0=N_UNDF`、`0x2=N_ABS`、**`0xE=N_SECT`**、`0xA=N_INDR`；属性位单独判——`N_EXT(0x01)` 外部、`N_PEXT(0x10)` 私有外部。**不要把组合值当基础类型**：`0x0f` = `N_SECT\|N_EXT`（外部的节定义符号），不是 undefined |
 | 0x05 | n_sect | u8 | 所在节序号（1 起） |
 | 0x06 | n_desc | u16 | 引用计数/库序号（two-level namespace） |
 | 0x08 | n_value | u64 | 地址或值 |
@@ -130,9 +130,9 @@ LC_DYLD_INFO_ONLY → rebase/bind/lazy_bind/export 四表
 
 | 字段 | 大小 | 含义 |
 |---|---|---|
-| magic | u32 | 0xCAFEBABE（LE 文件字节 be ba fe ca；0xCAFEBABF 为 64 位版） |
+| magic | u32 | **fat 结构在磁盘上恒为大端**（与宿主字节序无关）：正常 FAT 文件开头**就是字节 `CA FE BA BE`**（大端读得 `FAT_MAGIC=0xcafebabe`）；小端读这 4 字节得 `0xbebafeca`，即 `FAT_CIGAM`——**那是同一份字节被小端解释的结果，不是"小端文件"**。64 位 fat：`FAT_MAGIC_64=0xcafebabf`。**别用宿主的端序去猜文件端序** |
 | nfat_arch | u32 | 架构片数 |
-| 每条 fat_arch：cputype/cpusubtype/offset/size/align | 各 u32 | offset 为 4 字节对齐的绝对文件偏移 |
+| 每条 fat_arch：cputype/cpusubtype/offset/size/align | 各 u32（**同样大端**） | offset 是指向该 slice 的绝对文件偏移；**`align` 是"对齐的 2 的幂"**——slice 必须满足 `2^align` 对齐，而不是固定 4 字节对齐（尤其 64 位 fat 用 `fat_arch_64`，另有 reserved 字段） |
 
 ## 版本差异要点
 

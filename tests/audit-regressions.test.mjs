@@ -167,6 +167,31 @@ test('补充 22：ET_REL 不单独断定 Linux 内核模块', () => {
     'ET_REL 只说明"可重定位 ELF"，需组合判据才升 Linux kmod');
 });
 
+test('补充 28：Mach-O 基础常量表与 Apple 头文件一致', () => {
+  const f = 're-format-macho/references/layout.md';
+  const text = read(f);
+  // 旧的错误表述不得复现
+  assert.ok(!text.includes('0x0100000B=arm64e'), 'arm64e 的 cputype 不是 0x0100000B');
+  assert.ok(!text.includes('0x80000003=x86_64h'), '0x80000003 是 ALL+LIB64 位，不是 x86_64h');
+  assert.ok(!/4=TWOLEVEL/.test(text), 'TWOLEVEL 是 0x80 不是 4');
+  assert.ok(!/0x800000=LAZY_INIT/.test(text), '0x800000 是 HAS_TLV_DESCRIPTORS');
+  assert.ok(!/0x0F=N_UNDF/.test(text), '0x0f = N_SECT|N_EXT');
+  assert.ok(!/LE 文件字节 be ba fe ca/.test(text), 'fat 恒为大端，文件开头是 CA FE BA BE');
+  assert.ok(!/offset 为 4 字节对齐的绝对文件偏移/.test(text), 'align 是 2 的幂，不是固定 4 字节对齐');
+  // 修正后的取值应在文中
+  for (const s of ['0x0100000C', 'ARM64E', '0x40', 'TWOLEVEL', '0x800000', 'N_SECT', 'CA FE BA BE', '2 的幂']) {
+    assert.ok(text.includes(s), `缺少修正后的表述：${s}`);
+  }
+});
+
+test('补充 28：udsoncan 示例带 config 的 data_identifiers', () => {
+  const f = 're-automotive/SKILL.md';
+  const text = read(f);
+  assert.ok(text.includes('data_identifiers'), 'DID 解码依赖配置里的 codec 映射');
+  assert.ok(text.includes('config=config'), '示例必须把 config 传给 Client');
+  assert.ok(!/with Client\(conn, request_timeout=2\) as client/.test(text), '不带 config 的旧示例会解码失败');
+});
+
 test('补充 27：re-flutter 的 Dart 格式 magic 是数值不是 ASCII 串', () => {
   const f = 're-flutter/SKILL.md';
   absent(null, f, ['"KERNEL" magic'], 'KERNEL 不是 magic（正确写法是数值 0x90abcdef）');
@@ -197,6 +222,50 @@ test('补充 27：angr 的 Python 版本矩阵只维护一处（re-angr）', () 
   const f = 're-exploit/SKILL.md';
   absent(null, f, ['9.x 支持 Python 3.9–3.11'], '与 re-angr 冲突的旧矩阵');
   present(null, f, ['[[re-angr]]'], '指向唯一事实源');
+});
+
+test('补充 29：re-apk 的 apktool 版本模型是 3.x 主线 / 2.x 维护线', () => {
+  const g = 're-apk/references/gotchas.md';
+  present(null, g, ['3.x 为当前主线', '2.x 为维护线'], '版本模型');
+  present(null, g, ['--all-src'], '取代 --only-main-classes 的选项');
+  present(null, g, ['--aapt'], '3.x 的 aapt2 二进制入口');
+  present(null, g, ['Unrecognized option'], '旧短参在 3.x 的失败表现');
+  present(null, 're-apk/SKILL.md', ['3.x 为当前主线'], '工具准备段须先定 major version');
+});
+
+test('补充 29：apktool 调用行里不得残留 2.x 专有选项', () => {
+  // 迁移说明会**刻意引用**旧写法（"--use-aapt2 已移除"），因此只查"像命令一样写出来"的行；
+  // 判据是行内出现 apktool d/b 调用，且整行不在迁移语境里。
+  const MIGR = /移除|消失|取代|不再|没有|无此|旧写法|过时|改用|2\.x|须写/;
+  const BANNED = ['--use-aapt2', '--use-aapt1', '--api-level', '--only-main-classes'];
+  const files = ['re-apk/SKILL.md', 're-apk/references/gotchas.md', 're-apk/references/commands.md'];
+  const bad = [];
+  for (const f of files) {
+    for (const l of read(f).split('\n')) {
+      if (!/\bapktool\s+[bd]\b/.test(l) || MIGR.test(l)) continue;
+      for (const opt of BANNED) if (l.includes(opt)) bad.push(`${f}: ${l.trim().slice(0, 90)}`);
+    }
+  }
+  assert.deepEqual(bad, [], `apktool 调用行里仍有 2.x 专有选项：\n${bad.join('\n')}`);
+});
+
+test('补充 29：apktool 的 --api-level 不得写成可用选项', () => {
+  const files = ['re-apk/SKILL.md', 're-apk/references/gotchas.md', 're-apk/references/commands.md'];
+  const offenders = [];
+  for (const f of files) {
+    for (const l of read(f).split('\n')) {
+      if (l.includes('--api-level') && !/移除|不再|消失|没有|无此|旧写法|过时/.test(l)) {
+        offenders.push(`${f}: ${l.trim().slice(0, 90)}`);
+      }
+    }
+  }
+  assert.deepEqual(offenders, [], '--api-level 在 apktool 3.x 已移除（API 等级不再由命令行指定）');
+});
+
+test('补充 29：不再支持 32 位的表述与 2.x 的 _64 后缀命名一致', () => {
+  const g = 're-apk/references/gotchas.md';
+  present(null, g, ['32 位'], '3.x 无 32 位产物');
+  assert.ok(!/老环境用 `aapt`（34 前默认）.*apktool/.test(read(g)), 'aapt 与 apktool 的版本线不得混写');
 });
 
 test('补充 23：re-angr 的 recv hook 返回值是长度不是指针', () => {

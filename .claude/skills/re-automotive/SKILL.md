@@ -116,13 +116,22 @@ capabilities: [automotive-analysis]
      ```python
      import udsoncan, isotp
      from udsoncan.connections import IsoTPSocketConnection
-     from udsoncan.client import Client
+     from udsoncan.client import Client, ClientConfig
      from udsoncan.services import DiagnosticSessionControl, DataIdentifier
+
+     # 关键：DID 的 payload 怎么编解码，由 config['data_identifiers'] 决定——
+     # 不配 codec 的话，收到响应也不知道怎么解（udsoncan 会直接以配置错误终止）。
+     config = ClientConfig()
+     config['data_identifiers'] = {
+         0xF190: ...,      # VIN 的标准 DID；codec = 17 字节 ASCII（用库自带的类型，或自定义 DidCodec 子类）
+     }
+
      conn = IsoTPSocketConnection('can0', isotp.Address(isotp.AddressingMode.Normal_11bits, rxid=0x7E8, txid=0x7E0))
-     with Client(conn, request_timeout=2) as client:
+     with Client(conn, request_timeout=2, config=config) as client:
          client.change_session(DiagnosticSessionControl.Session.extendedDiagnosticSession)
-         client.read_data_by_identifier(DataIdentifier.VIN)
+         vin = client.read_data_by_identifier(DataIdentifier.VIN)
      ```
+   - **读/写 DID 必须先配 codec**：`read_data_by_identifier` / `write_data_by_identifier` 依赖 client 配置里的 `data_identifiers`（DID → codec 映射）——**响应只是字节串，缺了 codec 就无从解码**，udsoncan 会以配置错误终止而不是"返回原始字节"。官方示例一律写成 `Client(..., config=MyCar.config)` 并注明 VIN 的 codec 配在 client 配置里。只想看原始载荷就别走 DID 解码路径，用不做解码的低层接口
    - 服务速查：0x10 会话控制 / 0x22 读数据标识符 / 0x27 安全访问（seed-key）/ 0x2E 写数据 / 0x31 例程控制 / 0x3E 保持活动 / 0x11 ECU 复位 / 0x34-0x36-0x37 固件下载流程
    - Wireshark 打开 candump 日志 → ISO-TP/UDS dissector 自动解码诊断会话
 

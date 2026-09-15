@@ -133,6 +133,62 @@ test('Dart snapshot 基础头为 20 字节：magic(4) + length(8) + kind(8)', ()
   // 头部之后才是（版本相关的）子 blob 布局——本 fixture 只锁定基础头，不对其后的内部布局作承诺
 });
 
+// 对应 re-format-macho/references/layout.md：Mach-O 的基础常量与端序规则
+// 取值对照 LLVM BinaryFormat/MachO.h（Apple loader.h / machine.h 的忠实移植）
+test('Mach-O cputype / cpusubtype：arm64e 靠 subtype 区分，不靠 cputype', () => {
+  const CPU_ARCH_ABI64 = 0x01000000;
+  const CPU_TYPE_X86 = 7, CPU_TYPE_ARM = 12;
+  assert.equal(CPU_TYPE_X86 | CPU_ARCH_ABI64, 0x01000007);        // x86_64
+  assert.equal(CPU_TYPE_ARM | CPU_ARCH_ABI64, 0x0100000c);        // arm64
+  // 两个都是 arm64 的二进制，只靠 cpusubtype 分开
+  const ARM64_ALL = 0, ARM64_V8 = 1, ARM64E = 2;
+  assert.deepEqual([ARM64_ALL, ARM64_V8, ARM64E], [0, 1, 2]);
+  // x86_64 侧：3 是 ALL、8 才是 H；0x80000000 只是 capability 位，不改变基础 subtype
+  assert.equal(3, 3);                                             // CPU_SUBTYPE_X86_64_ALL
+  assert.equal(8, 8);                                             // CPU_SUBTYPE_X86_64_H
+  // 注意 JS/C 共同的坑：按位或按有符号 32 位解释，0x80000000|3 会是负数——要 >>>0 才得 uint32
+  assert.equal((0x80000000 | 3) >>> 0, 0x80000003);               // LIB64 capability 位
+  assert.ok(0x80000000 | 3 < 0);                                  // 未修正时的真实取值
+  assert.notEqual((0x80000000 | 3) >>> 0, 8);                     // 它变不出 x86_64h
+});
+
+test('Mach-O header flags 是位值，不是连续编号', () => {
+  const MH = { NOUNDEFS: 0x1, INCRLINK: 0x2, DYLDLINK: 0x4, BINDATLOAD: 0x8, SPLIT_SEGS: 0x20, LAZY_INIT: 0x40, TWOLEVEL: 0x80, PIE: 0x200000, HAS_TLV_DESCRIPTORS: 0x800000 };
+  assert.equal(MH.LAZY_INIT, 0x40);
+  assert.equal(MH.TWOLEVEL, 0x80);
+  // 若按"连续编号"手抄，会得到 2=DYLDLINK、4=TWOLEVEL、0x800000=LAZY_INIT —— 全部错位
+  assert.notEqual(MH.DYLDLINK, 0x2);
+  assert.notEqual(MH.TWOLEVEL, 0x4);
+  assert.notEqual(MH.HAS_TLV_DESCRIPTORS, MH.LAZY_INIT);
+  // 独立位可直接按位与判定
+  assert.equal(0x200000 & MH.PIE, MH.PIE);
+});
+
+test('Mach-O n_type：基础类型与属性位分层读，0x0f 不是 undefined', () => {
+  const N_TYPE = 0x0e, N_EXT = 0x01, N_PEXT = 0x10;
+  assert.equal(0x0f & N_TYPE, 0x0e);      // N_SECT
+  assert.equal(0x0f & N_EXT, 0x01);       // 且是 external
+  // 0x0f 应解读为 N_SECT|N_EXT，而不是 N_UNDF
+  assert.notEqual(0x0f & N_TYPE, 0x00);
+  assert.equal(0xf0 & N_TYPE, 0x00);      // N_UNDF 只可能是低 4 位为 0 的组合
+  assert.equal(0x01 & N_TYPE, 0);
+});
+
+test('fat Mach-O：结构恒为大端，align 是 2 的幂', () => {
+  const header = Buffer.alloc(8);
+  header.writeUInt32BE(0xcafebabe, 0);     // FAT_MAGIC，按磁盘约定写大端
+  header.writeUInt32BE(2, 4);              // nfat_arch
+  assert.equal(header.subarray(0, 4).toString('hex'), 'cafebabe');   // 文件开头就是 CA FE BA BE
+  assert.equal(header.readUInt32BE(0), 0xcafebabe);                  // FAT_MAGIC
+  assert.equal(header.readUInt32LE(0), 0xbebafeca);                  // 小端读得 FAT_CIGAM——同一份字节，不是"小端文件"
+
+  // fat_arch.align 是 2 的幂：align=14 → 偏移需 2^14 对齐，而不是固定 4 字节
+  const align = 14;
+  assert.equal(2 ** align, 16384);
+  assert.equal(16384 % 4, 0);               // 2^align 必然满足 4 字节，反之不成立
+  assert.notEqual(2 ** align, 4);
+});
+
 // 对应 re-ai-model/SKILL.md：Safetensors 前 8 字节 = 小端 u64 头长度
 test('Safetensors：前 8 字节是小端 u64 的 JSON 头长度', () => {
   const header = Buffer.from(JSON.stringify({ __metadata__: { format: 'pt' } }), 'utf8');

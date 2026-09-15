@@ -30,7 +30,8 @@ capabilities: [dex-parser]
 
 ### apktool —— 解包 / 回编译（官方/GitHub release）
 
-- 依赖 Java 8+。官方 wrapper：从 `https://github.com/iBotPeaches/Apktool/releases` 下载 `apktool_<版本>.jar` 与 wrapper 脚本（Linux/macOS `apktool`、Windows `apktool.bat`），脚本与 jar 放同目录
+- 依赖 Java 8+（官方安装页的最低要求，jar 以 Java 8 为目标编译）。官方 wrapper：从 `https://github.com/iBotPeaches/Apktool/releases` 下载 `apktool_<版本>.jar` 与 wrapper 脚本（Linux/macOS `apktool`、Windows `apktool.bat`），脚本与 jar 放同目录
+- **版本模型：3.x 为当前主线，2.x 为维护线**——两线命令不完全兼容，官方文档也按 3.x / 2.x 分轨。下载后先 `apktool --version` 确认 major version；2.x 时代的命令与教程直接拿到 3.x 上会报 `Unrecognized option`（变化清单见 [[gotchas]] 版本差异）
 - Debian/Ubuntu: `apt install apktool`（仓库版较旧，命令行为兼容即可）
 - macOS: `brew install apktool`
 - Windows/WSL: WSL 内 Linux 版

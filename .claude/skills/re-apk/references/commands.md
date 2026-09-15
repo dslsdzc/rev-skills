@@ -17,8 +17,9 @@
 - `apktool d app.apk -o out/` 解包（资源转成可读 XML + smali）
 - `apktool d -r app.apk -o out/` 只出 smali 不解码资源（回编译成功率更高，smali 补丁常用形态）
 - `apktool d -s app.apk -o out/` 只出资源不出 smali
-- `apktool b out/ -o patched.apk` 回编译
-- `apktool b out/ --use-aapt2` 强制 aapt2 回编译（资源复杂时比默认 aapt 稳）
+- `apktool b out/ -o patched.apk` 回编译（3.x 起回编译固定走 aapt2，无 aapt1 可选，`--use-aapt2` 这个选择项已随 aapt1 一并移除）
+- `apktool d -a app.apk -o out/` 解全部源码，含未知 dex 文件（3.x 的 `-a`/`--all-src`，取代 2.x 的 `--only-main-classes`；语义相反——前者放开、后者收窄）
+- `apktool b out/ --aapt <file>` 指定 aapt2 二进制（3.x 的换 aapt2 入口，2.x 的 `--use-aapt2` 是开关、这里是路径；传入 aapt1 会被直接拒绝）
 - `apktool --version` 验证；`apktool d` 默认带 `--force`（覆盖旧输出）
 
 ### aapt2 / aapt（资源与清单）
@@ -60,7 +61,7 @@ grep -rE 'key|secret|sign|license|http' java-out/ # 敏感串定位
 ```
 apktool d -r app.apk -o out/          # 保留原资源，只改 smali
 # 在对应 smali 里改：if-eqz ↔ if-nez、const/4 v0, 0x0、return-void
-apktool b out/ --use-aapt2 -o patched.apk
+apktool b out/ -o patched.apk
 keytool -genkey -v -keystore ks.jks -alias r -keyalg RSA -validity 3650 -storepass 123456
 apksigner sign --ks ks.jks --out signed.apk patched.apk
 apksigner verify --print-certs signed.apk        # 签名先自证

@@ -9,7 +9,7 @@
 
 ## apktool 坑组
 
-- **回编译失败先换 `-r` 解包**：完整解包（资源被解码）后 `apktool b` 常报资源编译错误——smali 补丁一律 `apktool d -r`，资源原样保留；必须改资源时再完整解包并 `--use-aapt2` 回编译
+- **回编译失败先换 `-r` 解包**：完整解包（资源被解码）后 `apktool b` 常报资源编译错误——smali 补丁一律 `apktool d -r`，资源原样保留；必须改资源时再完整解包后回编译（3.x 只有 aapt2 这一条编译路径，没有换编译器的开关）
 - **回编译产物与原始包签名必然不一致**：任何重打包都改变包内容——目标含签名自校验（对比 PackageManager 签名信息）时补丁会被拦，先评估校验链（SKILL.md 坑 2）；带壳目标优先免重打包（运行时 hook 签名适配）
 - **`apktool d` 覆盖输出目录**：默认 `--force` 直接覆盖旧目录——多次解包时旧产物被静默替换，补丁对比拿错版本；敏感操作前先 `cp` 存档或换 `-o` 目录
 - **仓库版 apktool 较旧**：apt/dnf 包落后官方 release（wrapper jar 机制）——回编译行为差异（aapt 版本、资源处理）以官方 release 为准，异常时先升官方版再排查
@@ -30,7 +30,8 @@
 ## 版本差异
 
 - **jadx**：1.4.x 起要求 Java 11；1.5.x 主线（本地实测 1.5.6 可用 `--version`）——release zip 与 brew/pacman 包同步，功能差异小；反编译器本身迭代快，老版本对 Kotlin/新 dex 特征支持弱，异常时先升版本
-- **apktool**：2.x 系列；apt/dnf 仓库版明显落后官方 release；`--use-aapt2` 是 2.5+ 选项，老版只有默认 aapt
+- **apktool**：**3.x 为当前主线、2.x 为维护线**，两线命令不完全兼容；apt/dnf 仓库版明显落后官方 release。拿到旧教程/脚本先确认目标 major version
+- **apktool 3.x 的 CLI breaking changes**（照 2.x 写法会直接报错）：① **aapt1 移除**——3.x 只随包发布 aapt2（2.x 的无后缀二进制是 32 位、`_64` 后缀才是 64 位；3.x 只剩单个 64 位），2.x 的 `--use-aapt2` 开关随之消失，换 aapt2 二进制改用 `--aapt <file>`，传入 aapt1 会被直接拒绝；② **不再提供 32 位构建**——32 位系统上无可用产物；③ **`--api-level` 移除**；④ **`--only-main-classes` 由 `-a`/`--all-src` 取代**，语义相反：前者只解主 dex，后者把未知 dex 也一并解出（加固/畸形样本的 dex 常被改名，需要 `-a` 才解得到）；⑤ **高级选项只认长参数**——3.x 的短参数仅 `-a -f -j -l -o -p -q -r -s -t -v`，`-m`/`-k` 一类旧短参报 `Unrecognized option`，须写 `--match-original`/`--keep-broken-res`/`--res-resolve-mode`
 - **aapt2 / build-tools**：34.0.0 示例、新版 SDK 自带更高版本；`aapt2 dump xmltree --file` 等接口稳定；老环境用 `aapt`（34 前默认）
 - **apksigner**：build-tools 内置版本随 SDK；v1/v2/v3 签名行为一致，`--version` 输出以实际版本为准
 
