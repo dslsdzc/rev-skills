@@ -53,10 +53,10 @@ ELF 文件 = ELF 头（ehdr）+ 程序头表（phdr，供加载器）+ 节区（
 
 32 位顺序不同：p_type、p_offset、p_vaddr、p_paddr、p_filesz、p_memsz、p_flags、p_align（p_flags 在第 7 个而不是第 2 个）。
 
-- PT_LOAD：唯一被映射的段类型；可执行文件至少 1 个，通常 2-4 个（R、R X、R W）
+- PT_LOAD：定义需要装载进进程内存映像的 loadable segment（按 p_filesz/p_memsz 建立常规文件→内存映射）；可执行文件至少 1 个，通常 2-4 个（R、R X、R W）。**不要表述成"唯一被映射的段类型"**——PT_PHDR 在存在时同时描述程序头表在文件与内存映像中的位置，PT_TLS 等也具运行时内存语义
 - PT_DYNAMIC：指向 .dynamic 段（DT_* 标签数组），动态链接入口
 - PT_INTERP：解释器路径字符串（`/lib64/ld-linux-x86-64.so.2`）
-- PT_GNU_STACK：无 X 标志 = NX；缺失 = 假定可执行栈
+- PT_GNU_STACK：**存在时**由 PF_X 决定是否请求可执行栈（内核按该 header 的 p_flags 控制用户栈权限）；**缺失时不能一律推断**——默认策略依目标 ABI/内核实现而异（x86-64 上缺失按不可执行处理，ia32 上缺少 PT_GNU_STACK 会走 READ_IMPLIES_EXEC 使映射实际可执行），跨架构固件按目标 ABI 判断。另一条独立佐证：glibc 的 `dlopen` 对缺该段的对象是**直接拒绝**而不是假定可执行（见 SKILL.md 坑）
 - PT_GNU_RELRO：该范围映射为只读（配合 BIND_NOW 为全 RELRO）
 
 ## 节头（shdr）——静态视图

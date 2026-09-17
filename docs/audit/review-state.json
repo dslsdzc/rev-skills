@@ -67,8 +67,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-automotive": {
-      "hash": "2f9962cc9828f8e1",
-      "last_reviewed": "2026-09-14",
+      "hash": "787fd9db0463a7fe",
+      "last_reviewed": "2026-09-17",
       "note": "本轮审查波覆盖"
     },
     "re-behavior": {
@@ -212,8 +212,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-format-elf": {
-      "hash": "ba24413e1cc3d31a",
-      "last_reviewed": "2026-09-13",
+      "hash": "8ba8a5c316352246",
+      "last_reviewed": "2026-09-17",
       "note": "本轮审查波覆盖"
     },
     "re-format-macho": {

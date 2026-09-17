@@ -994,3 +994,73 @@ node bin/auditstate.mjs update <技能...> → 回填当前 hash + 日期
 - **断言只查"像命令一样写出来"的行**——迁移说明会刻意引用旧写法（「`--use-aapt2` 已随 aapt1 一并移除」），按"提到错误 ≠ 主张错误"给迁移语境豁免
 - **变异测试验证非空转**：注入 `apktool b out/ --use-aapt2 -o x.apk` 与 `apktool d --api-level 34 ...` 后，两条断言精准失败；还原后全过。（第一次注入失败是因为样本里带了「旧写法」三个字、正好落进豁免词表——**是样本没造好，不是断言失效**，重造后确认有效）
 - `npm test`：`OK: 122 skills validated` + **120 项测试全过**（上轮 116 + 新增 4）
+
+---
+
+## 补充 30：ELF 段语义 2 项（采纳）+ 一次被驳回的报告（2026-09-17）
+
+### 一、采纳：`PT_LOAD` 的"唯一被映射"表述错误
+
+原文「PT_LOAD：唯一被映射的段类型」把 **loadable segment** 与「运行时内存映像里可能出现的东西」混成了一件事。`elf(5)`（Linux man-pages，内容源自 gABI）原文即是反证：
+
+- **PT_LOAD**："The array element specifies a **loadable segment**, described by p_filesz and p_memsz. The bytes from the file are mapped to the beginning of the memory segment."
+- **PT_PHDR**："specifies the location and size of the program header table itself, **both in the file and in the memory image of the program**." ← 与"唯一被映射"直接矛盾
+- **PT_TLS** 等同样带运行时内存语义
+
+**改法**：改为「定义需要装载进进程内存映像的 loadable segment（按 p_filesz/p_memsz 建立常规文件→内存映射）」，并显式写上"不要表述成唯一被映射的段类型"+ PT_PHDR 这条反证。
+
+### 二、采纳：`PT_GNU_STACK` 缺失的默认策略不能一律推断
+
+原文「无 X 标志 = NX；缺失 = 假定可执行栈」——后半句是把一条**架构相关**的默认当成了跨架构规则。`elf(5)` 对 PT_GNU_STACK 只规定存在时的行为（"used by the Linux kernel to control the state of the stack via the flags set in the p_flags member"），**对缺失不作规定**。内核侧 `fs/binfmt_elf.c` 的 `elf_read_implies_exec()` 才是决定项，而它是架构相关的：
+
+| | 缺 NX 的 CPU | 有 NX，ia32 | 有 NX，x86_64 |
+|---|---|---|---|
+| 缺 PT_GNU_STACK | 需要 RIE | **需要 RIE** | **不需要 RIE** |
+| GNU_STACK == RWX | 需要 RIE | 不需要 RIE：栈 X | 不需要 RIE：栈 X |
+
+即：**x86-64 上缺失按不可执行处理，ia32 上缺失才走 `READ_IMPLIES_EXEC`**。仓内另有一条独立佐证（`re-format-elf/SKILL.md` 的 `dlopen` 坑）：glibc 对缺该段的对象是**直接拒绝**而不是假定可执行——已在 `layout.md` 加交叉引用。
+
+**改法**：拆成「存在时 / 缺失时」两种情形，缺失一侧指明依目标 ABI/内核而异并给出 x86-64 与 ia32 的差别。对逆向固件与跨架构 ELF 有实际意义。
+
+### 三、驳回：udsoncan 的 `ClientConfig` 报告（附实测）
+
+报告称 `from udsoncan.client import Client, ClientConfig` **执行到 import 就会出问题**，`ClientConfig` 不是供用户实例化的配置类，因此示例在建连前就失败，定为高影响操作级错误。**实测三条主张全部不成立**：
+
+| 报告主张 | 实测结果 |
+|---|---|
+| import 会失败 | `udsoncan/client.py:17` 有 `from udsoncan.typing import ClientConfig`——该名字**已绑定在模块命名空间**，import 成功 |
+| `ClientConfig` 不可实例化 | 它是 `TypedDict`（`typing.py:29`）；TypedDict 运行时实例化返回**空 dict**，实测 `ClientConfig()` → `{}`，不抛错 |
+| 照抄示例会失败 | `Client.__init__` 先 `self.config = dict(config)`，紧接着 `refresh_config()` —— 后者 `for k in default_client_config: if k not in self.config: self.config[k] = default_client_config[k]` **把所有缺键补齐** |
+
+实跑记录（udsoncan **1.26.1**，master 2026-08-09，源码 clone 到本地直接执行）：
+
+```
+第 1 步 from udsoncan.client import Client, ClientConfig   → OK
+第 2 步 config = ClientConfig()                            → {}（不抛错）
+第 3 步 Client(Dummy(), request_timeout=2, config=config)  → OK，最终 19 个键，关键键无缺失
+        request_timeout = 2 | data_identifiers = {0xf190: ...}
+对照   dict(default_client_config) 写法                    → OK，同样 19 个键、同样结果
+```
+
+**结论：示例可运行，不做"修复"。** 报告建议的 `dict(default_client_config)` 本身没错、也是官方 README 的用法，但它**不是修正**——改成它不会改变任何行为。若照报告去"修"，属于为不存在的问题改动已正确的代码。
+
+### 四、报告方向仍有价值：顺手把注释从"笼统"换成"实测签名"
+
+既然实跑了一遍，把原文那句过于笼统的「udsoncan 会直接以配置错误终止」换成实测到的精确签名：
+
+- 该 DID **不在**映射里 → 发送请求**之前**抛 `ConfigError`：`Actual data identifier configuration contains no definition for data identifier 0xf190`
+- 映射里有、但 codec 不是 `DidCodec` 实例 → `ValueError`：`Given codec of type <class 'NoneType'> is not a valid DidCodec`
+- 并写明：配置**只需给出要覆盖的键**，其余由 `default_client_config` 补齐——这正是驳倒报告的那条事实，值得让读者也知道
+
+这三条都是跑出来的，不是推的。
+
+### 五、方法教训
+
+- **读代码推断不能替代实跑**：`ClientConfig()` 的真实结果、`refresh_config` 的补齐行为，都在源码里，但**分散在三处**（typing.py / client.py:114 / client.py:156）；不跑一遍就只能停在"看起来会坏"，分不清"看起来会坏"与"实际会坏"
+- **报告的价值不等于报告的正确性**：这一条报告判错了，但它促成的实测把原本笼统的注释换成了精确的失败签名——**错误报告的净收益仍为正**，所以驳回也要给证据链，而不是简单回一句"不成立"
+
+### 六、固化
+
+- 回归断言 +3：PT_LOAD 表述、PT_GNU_STACK 缺失默认、udsoncan 已实测事实（第三条的注释里写明了它对应一次被驳回的报告，防止日后有人"照报告的思路"把正确的例子改错）
+- **变异测试**：把两条 ELF 表述写回旧文本后，两条断言精准失败；还原后全过
+- `npm test`：`OK: 122 skills validated` + **123 项测试全过**（上轮 120 + 新增 3）

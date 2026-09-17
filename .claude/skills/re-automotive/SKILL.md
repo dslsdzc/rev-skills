@@ -120,7 +120,11 @@ capabilities: [automotive-analysis]
      from udsoncan.services import DiagnosticSessionControl, DataIdentifier
 
      # 关键：DID 的 payload 怎么编解码，由 config['data_identifiers'] 决定——
-     # 不配 codec 的话，收到响应也不知道怎么解（udsoncan 会直接以配置错误终止）。
+     # 该 DID 不在映射里时，udsoncan 在发送请求**之前**就抛 ConfigError
+     #（"contains no definition for data identifier 0xf190"）；映射里有但 codec 不是
+     # DidCodec 实例则抛 ValueError（"is not a valid DidCodec"）。
+     # 配置只需给出要覆盖的键：Client 会用 udsoncan.configs.default_client_config 补齐其余项，
+     # 所以 data_identifiers 之外不必逐项照抄默认值。
      config = ClientConfig()
      config['data_identifiers'] = {
          0xF190: ...,      # VIN 的标准 DID；codec = 17 字节 ASCII（用库自带的类型，或自定义 DidCodec 子类）

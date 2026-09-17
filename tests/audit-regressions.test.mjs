@@ -224,6 +224,36 @@ test('补充 27：angr 的 Python 版本矩阵只维护一处（re-angr）', () 
   present(null, f, ['[[re-angr]]'], '指向唯一事实源');
 });
 
+test('补充 30：PT_LOAD 不得表述成"唯一被映射的段类型"', () => {
+  const f = 're-format-elf/references/layout.md';
+  const lines = read(f).split('\n');
+  const offenders = lines.filter((l) => l.includes('唯一被映射') && !/不要|不是|不能|而非/.test(l));
+  assert.deepEqual(offenders, [], 'ELF gABI 只规定 PT_LOAD 是 loadable segment；PT_PHDR 同样描述内存映像中的位置');
+  present(null, f, ['loadable segment'], '应保留 loadable segment 的定位');
+  present(null, f, ['PT_PHDR'], '反证应写明');
+});
+
+test('补充 30：PT_GNU_STACK 缺失不得一律判定为可执行栈', () => {
+  const f = 're-format-elf/references/layout.md';
+  const lines = read(f).split('\n');
+  const offenders = lines.filter(
+    (l) => /缺失.*假定可执行|缺失\s*=\s*可执行栈|缺失.*= *可执行/.test(l) && !/不能|依目标|而异|不可/.test(l)
+  );
+  assert.deepEqual(offenders, [], '缺失 PT_GNU_STACK 的默认策略依目标 ABI/内核而异，不存在统一规则');
+  present(null, f, ['存在时'], '存在与缺失两种情形必须分开写');
+  present(null, f, ['READ_IMPLIES_EXEC', 'x86-64', 'ia32'], '跨架构差异（ia32 缺失才走 RIE）');
+});
+
+test('补充 30：udsoncan 示例保留"部分配置可用"这一已实测事实', () => {
+  const f = 're-automotive/SKILL.md';
+  // 这条对应一次**被驳回的报告**：报称示例里 ClientConfig() 会让 import/实例化失败，实测均不成立
+  //（client.py 运行时 import 了 ClientConfig；TypedDict 实例化得空 dict；refresh_config 会补齐缺键）。
+  // 断言的作用是把这个已核事实钉住，防止日后被"修"成别的说法。
+  present(null, f, ['default_client_config'], 'Client 会用默认配置补齐缺键（实测 1.26.1）');
+  present(null, f, ['ConfigError'], '未配该 DID 的失败签名（发送前抛出）');
+  present(null, f, ['DidCodec'], 'codec 必须是 DidCodec 实例');
+});
+
 test('补充 29：re-apk 的 apktool 版本模型是 3.x 主线 / 2.x 维护线', () => {
   const g = 're-apk/references/gotchas.md';
   present(null, g, ['3.x 为当前主线', '2.x 为维护线'], '版本模型');
