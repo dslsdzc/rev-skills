@@ -93,8 +93,9 @@ capabilities: [lang-runtime-analysis]
    - `@extern` / `@cImport`：Zig 调用 C 库（导入表清晰可查——`readelf -d` 的 NEEDED 与导入符号）
    - `export fn`：Zig 侧导出给 C/宿主调用（GLOBAL 符号，导出表可见）
    - 混合产物：按符号来源区分（Zig 符号 vs C 符号——链接器分组/节归属），边界处是逻辑入口（Zig 主体逻辑在边界内侧）
-   - 调用约定：默认 C ABI（`callconv(.c)` 为默认），x86-64 SysV——反编译时无特殊约定负担
-   - C 库调用点的参数布局直接按 ABI 读（与 [[re-cpp-abi]] 的 C++ thiscall 不同，无隐藏参数/虚表间接层）
+   - 调用约定：**只在 `extern` / `export` 或显式 `callconv(.c)` 的边界上才是 C ABI**——编译器自身的定义是「`c` 是本目标 C 调用约定的别名；**标记为 `extern` 或 `export` 的函数默认获得该约定**」，而**普通 Zig `fn` 用的是 Zig 默认约定**（定义原文：既非 `export` 也非 `inline` 时使用；**不对栈对齐、寄存器等作任何保证，且只能在同一 Zig 编译单元内使用**）。所以 `callconv(.c)` 是**显式要求** C 约定，不是普通函数的默认值
+   - **纯 Zig 内部函数不能无条件套 C ABI**：寄存器参数、聚合类型传参、返回值规则都可能与目标平台 C ABI 不同，恢复原型时以调用点附近的实际用法推断；x86-64 上的 SysV 只适用于 `.c` 在该 target 的映射，不代表 Zig 内部约定本身
+   - C 库调用点的参数布局按 ABI 读（与 [[re-cpp-abi]] 的 C++ thiscall 不同，无隐藏参数/虚表间接层）——**这一条只适用于已确认的 C ABI 边界**
 
 7. **stripped/ReleaseFast 兜底**：
    ```sh

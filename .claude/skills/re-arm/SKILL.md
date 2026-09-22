@@ -77,7 +77,11 @@ capabilities: [arch-analysis]
      - 第 2 项（offset 0x4）：Reset handler（复位后执行的第一条指令）
      - 其后 NMI（0x8）、HardFault（0xC）……每项地址 LSB 必须为 1（Thumb）；LSB=0 触发 INVSTATE 进 HardFault
      - VTOR（0xE000ED08）可重定位向量表，固件可能把表放 RAM 或其他 flash 地址，先按 0x0 试，不成立再搜 MSP/Reset 组合
-   - **Cortex-A 启动代码**：复位向量 0x00000000（或高端向量 0xFFFF0000），异常向量表 8 项（Reset/Undef/SWI/Prefetch Abort/Data Abort/Reserved/IRQ/FIQ）；启动流程一般为 设栈指针 → 拷贝 .data → 清零 .bss → 配置 MMU/时钟 → 跳 main；带引导链的（boot ROM → SPL → u-boot）按链逐级衔接 [[re-fw-rootfs]]
+   - **Cortex-A 启动代码——先分清 AArch32 / AArch64，两套异常模型不同**：
+     - **AArch32（Armv7-A 经典模型）**：复位向量 0x00000000（或高端向量 0xFFFF0000，取决于架构版本的控制位），异常向量表 8 项（Reset/Undef/SWI/Prefetch Abort/Data Abort/Reserved/IRQ/FIQ）
+     - **AArch64（Armv8-A）没有这套固定 8 项表**：异常向量基址来自各 EL 的 **VBAR_EL1/EL2/EL3**，每张表 **16 个 slot、间隔 0x80**（覆盖 +0x000..+0x780），按 当前 EL / 低 EL × SP_EL0 / SP_ELx × AArch64 / AArch32 来源 × Synchronous/IRQ/FIQ/SError 分类；VBAR_ELx 复位后为 undefined，须由启动代码显式配置——**不要用 0x00000000 / 0xFFFF0000 这套 low/high vectors 规则去找 AArch64 异常表**
+     - 逆向裸机 Armv8-A 固件时，定位异常表的可靠线索是 `msr vbar_el1/el2/el3, Xt` 及其地址构造序列；**reset entry 本身由实现/SoC 启动配置决定**（平台可提供 core reset vector base 配置），不能假定固定在 0
+     - 启动流程一般为 设栈指针 → 拷贝 .data → 清零 .bss → 配置 MMU/时钟 → 跳 main；带引导链的（boot ROM → BL1/BL2 → u-boot/EL3 固件）按链逐级衔接 [[re-fw-rootfs]]
    - 定位复位向量后在反编译器中标注入口，沿调用链展开主逻辑
 
 3. **Thumb 函数边界（Thumb/ARM 切换）**：
@@ -126,5 +130,5 @@ capabilities: [arch-analysis]
 - **BL/BLX 距离上限外的 veneer 混淆**：现象——调用链里出现成片 `movw/movt + bx`、`ldr pc` 跳板，被当成业务逻辑分析；原因——BL 立即数只能覆盖 ARM ±32MB / Thumb-2 ±16MB，超限链接器插 veneer；对策——识别短跳板形态（结尾 bx/ldr pc 且目标为远地址）后跳过，继续跟踪最终目标；跨状态（Thumb↔ARM）调用同样经 veneer
 - **M 系外设映射区当数据段**：现象——0x4000xxxx 区域被当"数据"且内容随机，外设读写被当普通内存访问分析不出语义；原因——MMIO 区是寄存器不是存储，读可改状态、写有副作用；对策——反编译器中标注为寄存器区，按 datasheet memory map + 寄存器表逐位还原语义，轮询 status 位识别握手/等待循环
 - **R14(LR) 双用途反编译失真**：现象——某些函数"没保存返回地址"却调用了子函数，调用图断裂；原因——LR 是寄存器不是专用返回栈，叶子函数可把它当普通临时寄存器，Cortex-M 异常入口的 LR 还可能是 EXC_RETURN 特殊值；对策——按 `push {..., lr}` 与 `bl` 前后 LR 赋值点重建调用关系；异常入口现场恢复序列（入栈 8 字 r0-r3/r12/LR/PC/xPSR，PC 在 [sp,#0x18]）用于确认异常处理函数
-- **HFABI 与软浮点混用时参数解读错误**：现象——函数首参是 float，反编译却从 r0 取，值全不对；原因——同一固件可能混编硬浮点（float 走 s0）与软浮点（走 r0）编译单元，或 ABI 识别错误；对策——`readelf -A` Tag_ABI_VFP_args + e_flags 0x400/0x200 定 ABI，按编译单元确认：s0 传参说明硬浮点，浮点参数进 r0-r3 说明软浮点；vcmp/vcvt 等浮点指令出现频率佐证
+- **HFABI 与软浮点混用时参数解读错误**：现象——函数首参是 float，反编译却从 r0 取，值全不对；原因——ABI 判定错（把 softfp 当 hard，或反之）；对策——`readelf -A` 的 Tag_ABI_VFP_args 与 e_flags 的 0x400/0x200 位定 ABI，**再看参数实际落在哪组寄存器**：首参从 s0-s15/d0-d7 收 = 硬浮点，从 r0-r3 收 = 软浮点。**关键：`-mfloat-abi=softfp` 是"软浮点调用约定 + 允许 VFP 指令"**——它照样发射 `vmov/vadd/vcmp` 等浮点指令，参数却仍走整数寄存器（实测：`vmov s0, r1` 把 r1 搬进 s0），所以**浮点指令出现频率不能佐证 float ABI**，只能佐证"代码用了 VFP"
 - **Cortex-M0 当 M3 反汇编（Thumb-2 幻觉）**：现象——反汇编出现大量 32 位 Thumb-2 指令但样本实为 M0；原因——ARMv6-M（M0/M0+）只有 16 位 Thumb-1 指令集、无 Thumb-2；对策——导入时确认变体（v6M vs v7/v8M），M0 固件中出现的 32 位指令是反汇编器越权补的，不可信

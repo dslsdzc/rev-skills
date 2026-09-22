@@ -37,7 +37,7 @@ capabilities: [crypto-decryption]
 
 ### angr（可选）—— 符号执行补足难还原的逻辑
 
-- 全平台: `pip install angr`（Python 3.8+，依赖多，建议 venv: `python3 -m venv venv && venv/bin/pip install angr`）
+- 全平台: `pip install angr`——**Python 版本兼容性以 [[re-angr]] 的「工具准备」为准**（版本矩阵只在该处维护一份，避免多处漂移）；依赖多，建议 venv: `python3 -m venv venv && venv/bin/pip install angr`
 - 验证: `venv/bin/python -c "import angr; print(angr.__version__)"`
 - 用途: 反编译分支爆炸/混淆严重时，用符号执行求解密函数输出（加载目标二进制 → 设密文输入为符号 → 约束求解）
 

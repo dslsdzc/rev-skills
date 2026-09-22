@@ -224,6 +224,85 @@ test('补充 27：angr 的 Python 版本矩阵只维护一处（re-angr）', () 
   present(null, f, ['[[re-angr]]'], '指向唯一事实源');
 });
 
+test('补充 32：Python 版本下限与无 pin 安装一致（torch/protobuf/web3）', () => {
+  absent(null, 're-ai-model/SKILL.md', ['Python 3.9+'], 'torch 当前要求 >=3.10');
+  present(null, 're-ai-model/SKILL.md', ['>=3.10'], 'torch 下限');
+  absent(null, 're-ai-model/SKILL.md', ['（Python 3.8+，onnx'], 'protobuf 当前要求 >=3.10');
+  absent(null, 're-blockchain/SKILL.md', ['Python 3.8+'], 'web3 8.x 要求 >=3.10');
+  present(null, 're-blockchain/SKILL.md', ['7.x'], '3.8/3.9 需 pin 的出路');
+});
+
+test('补充 32：angr 的 Python 矩阵只在 re-angr 维护一处', () => {
+  const f = 're-crypto-decrypt/SKILL.md';
+  absent(null, f, ['（Python 3.8+，依赖多'], '与 re-angr 冲突的旧副本');
+  present(null, f, ['[[re-angr]]'], '指向唯一事实源');
+});
+
+test('补充 32：attach 失败不得直接判成 PPL，内核调试不是唯一手段', () => {
+  const f = 're-anti-cheat/SKILL.md';
+  absent(null, f, ['内核调试是分析反作弊驱动的唯一动态手段', '唯一可用的动态手段',
+    '反作弊驱动用 PPL（Protected Process Light）保护游戏与自身进程'], 'PPL 是 Windows 的机制，不由反作弊驱动"设定"');
+  present(null, f, ['ProcessProtectionLevelInfo', 'PROTECTION_LEVEL_NONE'], '先查真实 protection level');
+  present(null, f, ['ObRegisterCallbacks'], '普通进程 attach 失败的替代解释');
+});
+
+test('补充 32：Zig 普通函数不是默认 C ABI', () => {
+  const files = ['re-zig/SKILL.md', 're-zig/references/layout.md'];
+  const bad = [];
+  for (const f of files) {
+    const lines = read(f).split('\n');
+    for (const l of lines) {
+      if (/默认调用约定即 C ABI|为默认.*x86-64 SysV|调用约定：默认 C ABI/.test(l) && !/只在|不是|仅/.test(l)) {
+        bad.push(`${f}: ${l.trim().slice(0, 80)}`);
+      }
+    }
+  }
+  assert.deepEqual(bad, [], '普通 Zig fn 用 Zig 默认约定，只有 extern/export/callconv(.c) 才是 C ABI');
+  present(null, files[0], ['extern'], 'C ABI 边界的来源');
+  present(null, files[1], ['callconv(.c)'], '显式要求 C 约定');
+});
+
+test('补充 32：DNP3 组 3 是静态双位输入，不是事件', () => {
+  const f = 're-ics/SKILL.md';
+  absent(null, f, ['组 3 事件'], '组 3 = Double-bit Binary Input（静态）；其事件对象是组 4');
+  present(null, f, ['Double-bit Binary Input'], '正确的对象名');
+  present(null, f, ['组 4'], '配对的静态/事件关系');
+});
+
+test('补充 32：AArch32 的 8 项向量表不得泛化到整个 Cortex-A', () => {
+  const f = 're-arm/SKILL.md';
+  const lines = read(f).split('\n');
+  const bad = lines.filter((l) => l.includes('异常向量表 8 项') && !/AArch32|Armv7/.test(l));
+  assert.deepEqual(bad, [], 'AArch64 用 VBAR_ELx + 16×0x80，不存在固定 8 项表');
+  present(null, f, ['AArch32', 'AArch64'], '两套异常模型必须分开写（缺一侧则等于把结论删掉而非改正）');
+  present(null, f, ['VBAR_EL', '0x80'], 'AArch64 向量表的基址寄存器与槽位步长');
+  present(null, f, ['vbar_el1'], '定位异常表的线索（MSR VBAR_ELx 序列）');
+});
+
+test('补充 31：RISC-V Float ABI 以 e_flags 判定，不用浮点指令反推', () => {
+  const f = 're-riscv/SKILL.md';
+  absent(null, f, ['混编软/硬浮点编译单元时按单元确认'], 'linker 会直接拒绝不同 Float ABI 的输入');
+  present(null, f, ['EF_RISCV_FLOAT_ABI'], '以 e_flags 掩码判定');
+  present(null, f, ['cannot link object files with different floating-point ABI'], '链接期实际行为');
+  present(null, f, ['mabi=lp64'], 'ISA 扩展与调用约定是两件事的反例');
+});
+
+test('补充 31：re-arm 不得用浮点指令频率佐证 float ABI（同型缺陷）', () => {
+  const f = 're-arm/SKILL.md';
+  absent(null, f, ['vcmp/vcvt 等浮点指令出现频率佐证'], 'softfp 即反例：有 VFP 指令但参数仍走 r0-r3');
+  present(null, f, ['softfp'], 'softfp 的定位必须写明');
+  present(null, f, ['浮点指令出现频率不能佐证'], '修正后的表述');
+});
+
+test('补充 31：pwntools 的 Python 兼容矩阵只维护一处', () => {
+  const e = 're-exploit/SKILL.md';
+  absent(null, e, ['Python 3.8+'], '与 re-pwn 冲突的旧表述');
+  present(null, e, ['[[re-pwn]]'], '指向唯一事实源');
+  const p = 're-pwn/SKILL.md';
+  present(null, p, ['pwntools==4.15.0'], '旧环境需 pin');
+  present(null, p, ['最后一个支持'], '迁移窗口说明');
+});
+
 test('补充 30：PT_LOAD 不得表述成"唯一被映射的段类型"', () => {
   const f = 're-format-elf/references/layout.md';
   const lines = read(f).split('\n');

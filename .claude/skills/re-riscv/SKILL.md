@@ -94,7 +94,8 @@ capabilities: [arch-analysis]
    - 整数约定：参数 a0-a7（x10-x17，第 9 个起栈传）、返回值 a0、被调用者保存 s0-s11（x8-x9、x18-x27）；ra=x1、sp=x2、gp=x3、tp=x4、fp=s0(x8)；调用边界 sp 16 字节对齐
    - ABI 名：RV32 为 ilp32/ilp32f/ilp32d，RV64 为 lp64/lp64f/lp64d——f/d 后缀表示浮点参数走浮点寄存器（F/D 扩展）
    - 浮点约定：参数 fa0-fa7（f10-f17）、返回值 fa0、被调用者保存 fs0-fs11（f8-f9、f18-f27）；硬浮点 ABI 浮点参数进 fa0-fa7，软浮点进 a0-a7
-   - 判定：`readelf -h` Flags 浮点 ABI 位 + 反汇编浮点指令密度（flw/fadd/fmv 等）佐证；混编软/硬浮点编译单元时按单元确认（同 ARM 场景）
+   - 判定：以 **ELF `e_flags & EF_RISCV_FLOAT_ABI`（掩码 0x6）** 为准——它是**整个 object** 的 Float ABI 字段。**不能靠浮点指令出现与否反推 soft/hard-float**：`-march=rv64ifd -mabi=lp64` 是合法组合，产物照用 fld/fmul 等硬件浮点指令，但函数参数仍走整数寄存器（实测：lp64 产物用 `fmv.d.x fa5, a1` 把 a0/a1 搬进浮点寄存器，lp64d 产物直接用 `fsd fa0` 收浮点寄存器）。浮点指令密度只能佐证 **ISA 含 F/D/Q 扩展**，不能佐证参数 ABI
+   - **不同 Float ABI 的 object 不能混合链接**：linker 直接报 `cannot link object files with different floating-point ABI`，标准流程下不存在"按单元确认"的软硬混编产物。逆向中若观察到局部调用约定不同，先考虑手写汇编、非标准 ABI、`STO_RISCV_VARIANT_CC`、FFI/thunk、或被错误识别的函数边界
 
 6. **系统调用边界（ecall + a7 号）**：
    - **Linux 用户态**：`ecall` 触发系统调用，号在 a7（x17）、参数 a0-a5、返回 a0；RISC-V 用 asm-generic 编号（read=63、write=64、openat=56、exit=93、mmap=222）——与 x86/ARM 编号不同，别拿其他架构的号套

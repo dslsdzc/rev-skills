@@ -59,7 +59,8 @@ _start (GLOBAL)           ← 链接器入口（用户代码不可见）
 
 ## C ABI 边界
 
-- 默认调用约定即 C ABI（`callconv(.c)` 默认，x86-64 SysV）——反编译无特殊约定负担
+- **C ABI 只在 `extern` / `export` 或显式 `callconv(.c)` 的边界上假定**——编译器定义：`c` 是本目标 C 调用的别名，`extern`/`export` 函数默认获得它；**普通 Zig `fn` 用 Zig 默认约定**（既非 `export` 也非 `inline` 时使用，不对寄存器/栈对齐作保证），逆向内部函数时不能套 C ABI 的参数与返回值规则
+- `.c` 在各 target 上有各自的映射（x86-64 Linux 为 SysV AMD64、Windows 为 x64 约定、AArch64 为 AAPCS64）——这是**边界上**的映射，不是 Zig 内部约定本身
 - 导入：`@extern`/`@cImport` → 动态符号表（`readelf -d` NEEDED + UND 符号）
 - 导出：`export fn` → GLOBAL（导出表）
 - 混合产物判别：Zig 侧无 RTTI/异常表符号（`_ZTV*`/`__gxx_personality_v0` 缺失），C++ 侧有

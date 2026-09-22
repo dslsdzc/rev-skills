@@ -31,13 +31,13 @@ capabilities: [kernel-analysis]
 ### 内核调试（[[re-windbg]]）
 
 - 双机/VM 串口（COM Named Pipe）或 KDNET 配置见 [[re-windbg]]「工具准备」
-- **内核调试是分析反作弊驱动的唯一动态手段**（用户态 attach 被驱动拒绝，见坑 1）
+- **内核调试是观察反作弊驱动内核侧执行路径的主要手段**——不是整个反作弊系统唯一的动态手段（用户态组件另有观测面，见坑 1）
 - 验证: 内核会话 `lm` 能看到目标反作弊驱动模块，`.reload /f <驱动名>` 加载符号
 
 ### 用户态快速定位（[[re-x64dbg]] / [[re-windbg]]）
 
 - [[re-x64dbg]]：受保护进程之外的辅助组件（加载器、服务端）快速查看
-- 受保护进程（PPL）直接 attach 不可行——理解 PPL 保护是环境认知的一部分（见坑 1）
+- 目标可能带 PPL 保护但**非必然**——先查真实 protection level 再判定（`GetProcessInformation(..., ProcessProtectionLevelInfo, ...)` / Process Explorer / WinDbg），只有非 `PROTECTION_LEVEL_NONE` 才是 PPL（见坑 1）
 - 验证: `x64dbg` 能打开普通目标 exe
 
 ### 系统工具（服务/驱动枚举）
@@ -57,7 +57,7 @@ capabilities: [kernel-analysis]
    fltmc                                                    # 文件系统过滤驱动（完整性校验常在此）
    ```
    - 典型组件：EAC（EasyAntiCheat.sys + 用户态加载器）、BE（BEDaisy.sys + 用户态服务）、Vanguard（vgk.sys 驱动 + 常驻服务）；各厂商还有更新服务/反篡改守护
-   - 记录：组件清单（驱动名/服务名/安装路径）+ 驱动文件 sha256（版本锚点，见坑 3）+ 自保护状态（PPL 等）
+   - 记录：组件清单（驱动名/服务名/安装路径）+ 驱动文件 sha256（版本锚点，见坑 3）+ 自保护状态（**查实际 protection level**，不要默认 PPL）
 
 2. **驱动校验分析（内存扫描 / 完整性）**：
    - 静态还原（[[re-kernel]] 方法）：DriverEntry → IRP 分发表（`IRP_MJ_DEVICE_CONTROL` 等）→ 用户态 IOCTL 交互界面；重点找：
@@ -87,7 +87,7 @@ capabilities: [kernel-analysis]
 ## 跨域联合
 
 - [[re-kernel]]：驱动逆向方法论底座（DriverEntry / IRP / 回调）+ 内核调试配合——本技能固定依赖
-- [[re-windbg]]：内核调试会话、`!analyze -v`、断点与现场恢复（唯一可用的动态手段）
+- [[re-windbg]]：内核调试会话、`!analyze -v`、断点与现场恢复（观察内核驱动执行路径的主要手段）
 - [[re-x64dbg]]：用户态辅助组件（加载器/服务）快速定位
 - [[re-game]]：游戏侧内存修改 / CE 思路——检测机制的"被检测对象"，对照理解
 - [[re-evasion]]：用户态反调试 / 反分析对抗框架（与驱动层反制对照）
@@ -96,7 +96,8 @@ capabilities: [kernel-analysis]
 
 ## 常见坑与陷阱
 
-- **驱动级检测不可 attach（需内核调试）**：现象——x64dbg/WinDbg 用户态 attach 游戏进程被拒绝（"无法附加"）或附加后进程立即退出/蓝屏；原因——反作弊驱动用 PPL（Protected Process Light）保护游戏与自身进程，普通用户态调试器权限不足；驱动层还会检测调试器活动（调试端口、调试寄存器、`NtQueryInformationProcess` 调试状态）；对策——用户态 attach 不是分析路径，直接搭内核调试（双机/VM，[[re-windbg]]），目标在 VM 内、调试器在宿主；断点下在内核函数（回调/校验）而非游戏进程内；一切在沙箱 + 快照内（蓝屏即回滚）
+- **把 attach 失败一律判成 PPL**：现象——x64dbg/WinDbg 用户态 attach 目标被拒绝（"无法附加"）或附加后进程立即退出/蓝屏，遂记为"目标是 PPL"；原因——**PPL 是 Windows 自身的进程保护机制，有明确的 protection level 与签名者语义**（`PROCESS_PROTECTION_LEVEL_INFORMATION` 区分 `PROTECTION_LEVEL_NONE`=未受保护、`PROTECTION_LEVEL_PPL_APP`=第三方应用启用了进程保护等），**不存在"加载了反作弊驱动 ⇒ 游戏自动成为 PPL"这样的通用规则**——反作弊完全可以只在内核侧做访问过滤、对象回调、完整性校验和反调试，而目标进程仍是普通进程；**attach 被拒只是现象，不能据此反推 PPL**；对策——先查**真实** protection level（`GetProcessInformation(..., ProcessProtectionLevelInfo, ...)`、Process Explorer 的 Protection 列、WinDbg 读 `EPROCESS.Protection`），只有非 `PROTECTION_LEVEL_NONE` 才叫 PPL；普通进程 attach 失败时分别排查：反作弊的句柄访问过滤 / 对象回调（`ObRegisterCallbacks` 剥调试权限）、用户态反调试、自终止策略、调试器检测（调试端口、调试寄存器、`NtQueryInformationProcess` 调试状态）
+- **"内核调试是唯一动态手段"**：现象——因用户态 attach 不通，就把整个分析限制在内核调试一条路上，跳过其他可观测面；原因——把"驱动内核侧"等同于"整个反作弊系统"；对策——**分析内核驱动内部执行路径时以隔离环境下的内核调试为主**（双机/VM，[[re-windbg]]，目标在 VM 内、调试器在宿主，断点下在内核回调/校验函数而非游戏进程内，一切在沙箱 + 快照内，蓝屏即回滚）；但用户态 service/launcher、IPC、文件与注册表活动、ETW/系统事件、网络交互、进程与模块生命周期**各有对应的动态观测方法**，不因 attach 不通而失效
 - **法律边界（仅研究授权环境）**：现象——分析被用于制作外挂 / 在线作弊 / 出售绕过工具，触发法律与游戏厂商反制（封禁、诉讼）；原因——反作弊分析天然接近作弊技术，绕过手段在真实游戏环境使用即侵权/违约；对策——严格限定授权范围（自有设备、自有账号、书面许可的实验室）；报告只做防御向（检测机制如何工作、如何改进检测）；不发布可操作工具、不公开驱动敏感材料；以"理解检测面"为边界，不以"绕过成功"为产出
 - **反作弊更新频繁（结论过期）**：现象——上周分析出的函数地址/偏移/检测点全部失效，报告结论"过时"；原因——EAC/BE 数天一个版本，驱动加壳/混淆与结构变动频繁；对策——分析必须锚定版本：记录驱动 sha256、文件版本号、分析时间（步骤 1）；报告注明版本与日期；分析方法（IRP 还原、回调枚举、IOCTL 解码）跨版本复用，具体地址/偏移不跨版本复用
 - **绕过技术对抗升级（分析方向错位）**：现象——分析出的"弱点"很快被修复或触发新检测，陷入逐点对抗；原因——反作弊是持续对抗工程，单点绕过必然升级；对策——把分析定位为"理解检测面"（系统视角）而非"制造漏洞"（单点视角）；产出按检测面组织（完整性/内存/行为/驱动层）并给出防御建议；对抗升级的案例本身就是防御研究素材（记录新旧检测机制对比）

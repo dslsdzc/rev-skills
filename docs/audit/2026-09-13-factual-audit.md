@@ -1064,3 +1064,176 @@ node bin/auditstate.mjs update <技能...> → 回填当前 hash + 日期
 - 回归断言 +3：PT_LOAD 表述、PT_GNU_STACK 缺失默认、udsoncan 已实测事实（第三条的注释里写明了它对应一次被驳回的报告，防止日后有人"照报告的思路"把正确的例子改错）
 - **变异测试**：把两条 ELF 表述写回旧文本后，两条断言精准失败；还原后全过
 - `npm test`：`OK: 122 skills validated` + **123 项测试全过**（上轮 120 + 新增 3）
+
+---
+
+## 补充 31：RISC-V Float ABI 判定错误（+ 扫出 ARM 同型实例）+ pwntools 迁移窗口（2026-09-18）
+
+### 一、RISC-V：把 ISA 扩展与调用约定混为一谈，并假设软硬可混编
+
+原文：「判定：`readelf -h` Flags 浮点 ABI 位 + 反汇编浮点指令密度（flw/fadd/fmv 等）佐证；**混编软/硬浮点编译单元时按单元确认（同 ARM 场景）**」。两处都错：
+
+| 错误 | 实测反证 |
+|---|---|
+| 用浮点指令密度反推参数 ABI | `-march=rv64ifd -mabi=lp64` 合法：产物**照用**硬件浮点指令，参数却仍走整数寄存器 |
+| 软/硬浮点编译单元可混编 | 链接器**直接拒绝**：`cannot link object files with different floating-point ABI` |
+
+**实验记录**（clang `--target=riscv64`，`-march=rv64ifd`，同一份 `double mul(double,double){return x*y;}`）：
+
+```
+-mabi=lp64   → readelf -h: Flags: 0x0            （软浮点 ABI）
+                disasm: fmv.d.x fa5, a1 / fmv.d.x fa5, a0   ← 从整型 a0/a1 搬进浮点寄存器
+-mabi=lp64d  → readelf -h: Flags: 0x4, double-float ABI
+                disasm: fsd fa0, ... / fsd fa1, ...          ← 参数直接在浮点寄存器 fa0/fa1
+
+ld.lld a_lp64.o b_lp64d.o → error: cannot link object files with different floating-point ABI
+对照 两个都是 lp64d      → 链接成功（产出 1344 字节）
+```
+
+`fmv.d.x fa5, a1` 这一行就是全部要害：**浮点指令在场，参数却从整型寄存器来**。所以浮点指令密度只能佐证「ISA 含 F/D/Q 扩展」，不能佐证参数 ABI。
+
+**e_flags 编码**（本机 `/usr/include/elf.h`）：`EF_RISCV_FLOAT_ABI = 0x0006` 是掩码，SOFT=0x0 / SINGLE=0x2 / DOUBLE=0x4 / QUAD=0x6。仓内 `readelf -h` 那一行的原始描述本来就对，**未改动**——错的是把它和"指令密度"并列当判据。
+
+**改动**：判定改为以 `e_flags & EF_RISCV_FLOAT_ABI` 为准，写明 ISA 扩展与调用约定是两件事，并补上链接器的硬约束与"观察到局部约定不同时"的替代解释（手写汇编、非标准 ABI、`STO_RISCV_VARIANT_CC`、FFI/thunk、函数边界识别错误）。
+
+### 二、扫全仓扫出的同型实例：re-arm
+
+原文 RISC-V 那句末尾写着「同 ARM 场景」，而 `re-arm/SKILL.md` 的对应条目确实是同一缺陷：
+
+- 「同一固件可能混编硬浮点（走 s0）与软浮点（走 r0）编译单元」
+- 「vcmp/vcvt 等浮点指令出现频率佐证」← 同上，用指令反推调用约定
+
+**已实测的部分**：`-mfloat-abi=softfp` 是「软浮点调用约定 + 允许 VFP 指令」——反汇编为 `vmov s0, r1` / `vmov s2, r0`，**从整数寄存器 r1/r0 搬进浮点寄存器 s0/s2**，与 RISC-V 的 lp64 完全同型。它照样发射 `vmov/vadd/vcmp`，所以"浮点指令频率佐证 float ABI"在这里同样不成立。
+
+**刻意没写的部分**：ARM 侧「硬浮点与软浮点能否混编」我没能证实——LLD 在 `-r` 下对 soft+softfp、hard+soft、hard+softfp 三种组合**全部放行**（GNU ld 在此处更严格，但我没有 ARM 版 GNU ld 可验）；并且 clang 产物三种 ABI 的 e_flags **完全相同**（都是 `0x5000000`），`EF_ARM_ABI_FLOAT_HARD/SOFT`(0x400/0x200) 未被设置。这两点都可能只是"LLD 宽松 / clang 不设位"，**不足以推翻仓库现有表述**，因此只改掉已确证的那半句（指令频率不能作判据），并写明 `softfp` 的定位；链接兼容性保持原样不动。
+
+### 三、pwntools：进入迁移窗口（当前仍可用，故不标过时）
+
+官方 4.15.0 release 说明首行即：**"This is the last release supporting Python 2 and Python <3.10."** 而 4.15.0 至今仍是最新 tag（无 4.16）。所以 `pip install pwntools` 本身**现在没坏**——但 4.15.x 已是这条兼容线的末班车，继续维护成无版本限定的「Python 3.8+」会误导到"永远成立"。
+
+**改动（含结构收敛）**：照 `re-angr` 已有的先例，把 Python 兼容矩阵**只留在 `re-pwn` 一处**，`re-exploit` 改为引用：
+
+- `re-pwn`：写明当前正式版 4.15.0、支持 3.8+、官方已声明是最后一个支持 <3.10 的版本、后续按 >=3.10 准备、旧环境需 pin `pwntools==4.15.0`
+- `re-exploit`：`pip install` 命令保留，版本兼容性改为「以 [[re-pwn]] 的工具准备为准」——**单一事实源，避免重演 angr 那种两处矩阵漂移**
+
+### 四、本轮报告中被核验为"仍然有效"的两项：不动
+
+- **Frida**：官方 Python binding 仍声明 Python >=3.7，`pip install frida-tools` 仍是官方推荐——仓内「Python 3.8+」不构成过时项
+- **Volatility 3**：当前 PyPI 版本仍要求 Python >=3.8——`re-mem-forensics` 该项保持有效
+
+两条都不做改动。
+
+### 五、固化
+
+- 回归断言 +3：RISC-V 判定（e_flags 为准 + 链接器行为 + `mabi=lp64` 反例）、re-arm（`softfp` 定位 + 不得用指令频率佐证）、pwntools 矩阵单点维护（`re-exploit` 不得出现 `Python 3.8+`、须指向 `[[re-pwn]]`）
+- **变异测试**：把三处写回旧表述后三条断言全部失败，还原后全过
+- `npm test`：`OK: 122 skills validated` + **126 项测试全过**（上轮 123 + 新增 3）
+
+---
+
+## 补充 32：8 项事实修正（2026-09-23）
+
+本轮报告条目多，按「版本类 / 机制类」分组。**版本类全部以 PyPI 的 `requires-python` 元数据为准**（直接查元数据，不用二手转述）；机制类尽量上机实测。
+
+### 一、版本类 4 项：Python 下限已抬高，无 pin 的安装说明不再成立
+
+| 技能 | 原表述 | PyPI 元数据（本轮实测） | 修正 |
+|---|---|---|---|
+| re-ai-model | torch「Python 3.9+」 | `torch 2.14.0` → **`>=3.10`**；`torchvision 0.29.0` → `!=3.14.1,>=3.10` | 标题改 `Python >=3.10`，补版本下限说明与「3.9 需 pin 2.8.x 及更早」 |
+| re-ai-model | protobuf「Python 3.8+」 | `protobuf 7.36.2` → **`>=3.10`** | 改 `>=3.10`，注明 3.8/3.9 需 pin 旧版 |
+| re-blockchain | web3.py「Python 3.8+」 | `web3 8.0.0` → **`<4,>=3.10`** | 改 `>=3.10`，注明 7.x 才支持 3.8 |
+| re-crypto-decrypt | angr「Python 3.8+」 | `angr 10.0.0` → **`>=3.12`** | **删除本地副本**，改为「以 [[re-angr]] 的『工具准备』为准」 |
+
+- **re-crypto-decrypt 的处理方式与报告建议一致**：`re-angr` 早已维护正确的矩阵（9.3.0+ 要求 3.12+），`re-exploit` 也已改为引用——本次把最后一处副本收掉，angr 的 Python 矩阵**现在全库只有一份**
+- **web3 的 8.0 major release 影响面已核**：全仓搜 `web3.` 只有安装命令、import 验证与一句「经 RPC 只读」的描述，**没有任何 API 示例**，因此不存在「示例按 7.x 写」的迁移问题——只改版本文字即可
+- **提交层面的一致性**：torch / protobuf / web3 三处的共同形态是「泛化的 X.Y+ 与新版本元数据冲突」，此前的 protobuf 与 web3.py 已在本轮一并处理，不再留同类表述
+
+**同时核验为「仍有效、不动」的两项**（避免误报）：`frida 17.18.0` → `>=3.7`；`volatility3 2.28.2` → `>=3.8.0`。仓内相关表述保持原样。
+
+### 二、机制类 4 项：都是「把特例当通则」
+
+这四项形态相同——**用一个窄机制的结论去覆盖整个类别**，因此都按「拆开两种情形 + 给出判定方法」修正。
+
+#### 1. re-anti-cheat：attach 失败 ≠ PPL；内核调试 ≠ 唯一手段（高影响）
+
+原文三处主张需要拆开：
+
+| 原文 | 问题 |
+|---|---|
+| 「反作弊驱动用 PPL 保护游戏与自身进程」 | **PPL 是 Windows 自身的进程保护机制**，不是反作弊"设定"的 |
+| 「受保护进程（PPL）直接 attach 不可行」 | 把 attach 失败当成 PPL 的证据 |
+| 「内核调试是分析反作弊驱动的唯一动态手段」 | 把"驱动内核侧"等同于"整个反作弊系统" |
+
+**核验来源**：Microsoft `PROCESS_PROTECTION_LEVEL_INFORMATION` 文档——该结构有明确的 protection level 枚举（`PROTECTION_LEVEL_NONE` = "The process is not protected"、`PROTECTION_LEVEL_PPL_APP` = "The process is a third party app that is using process protection" 等），**文档中不存在任何「加载某类驱动即成为 PPL」的规则**。反作弊当然可以在内核侧做访问过滤、对象回调、完整性校验与反调试而不把目标设成 PPL。
+
+**修正**：流程改为先查真实 protection level（`GetProcessInformation(..., ProcessProtectionLevelInfo, ...)` / Process Explorer / WinDbg 读 `EPROCESS.Protection`），只有非 `PROTECTION_LEVEL_NONE` 才判 PPL；普通进程 attach 失败时分别排查句柄访问过滤/对象回调（`ObRegisterCallbacks`）、用户态反调试、自终止、调试器检测。原「唯一手段」条目**改写为两个坑**：一个专讲「把 attach 失败判成 PPL」，一个专讲「把内核调试当唯一手段」并列出用户态仍可观测的面（service/launcher、IPC、文件与注册表、ETW、网络交互、进程与模块生命周期）。
+
+#### 2. re-zig：普通 Zig 函数不是默认 C ABI（高影响）
+
+原文（主技能与 `references/layout.md` 各一处）：「调用约定：默认 C ABI（`callconv(.c)` 为默认）」→ 并由此推出「反编译时无特殊约定负担」。
+
+**核验来源 = 本机 Zig 编译器自带的语言定义**（`0.17.0-dev`，`lib/std/lang.zig` 的 `CallingConvention` 枚举，注释即官方定义）：
+
+- `c`：「This is an alias for the default C calling convention for this target. **Functions marked as `extern` or `export` are given this calling convention by default.**」
+- `auto`：「**The default Zig calling convention when neither `export` nor `inline` is specified.** This calling convention makes no guarantees about stack alignment, registers, etc. It can only be used within this Zig compilation unit.」
+
+即 `c` 与 `auto` 是**两个不同的枚举成员**：普通 `fn` 走 `auto`，只有 `extern`/`export` 才默认拿 `c`。**`callconv(.c)` 恰恰是显式要求 C 约定，不是普通函数的默认值。**
+
+**修正**：两处统一改为「C ABI 只在 `extern`/`export` 或显式 `callconv(.c)` 的边界上假定」，并明确「恢复纯 Zig 内部函数原型时不能无条件套 C ABI 的寄存器/聚合传参/返回值规则」；原「C 库调用点参数布局直接按 ABI 读」的作用域收窄到**已确认的 C ABI 边界**。
+
+#### 3. re-ics：DNP3 组 3 是静态双位输入，不是「事件」（中高影响）
+
+原文速查「组 1 二进制输入 / **组 3 事件** / 组 10 二进制输出 / 组 30 模拟输入」——把 Object Group 3 当成了泛化的"事件"。
+
+**核验来源**：Wireshark DNP3 解析器（`epan/dissectors/packet-dnp.c`，IEEE 1815 的独立实现）的对象定义表：
+
+| 定义 | 注释原文 | 组号 |
+|---|---|---|
+| `AL_OBJ_BI_*` | Binary Input / Binary Input With Status | 1 |
+| `AL_OBJ_BIC_*` | **Binary Input Change**（事件） | 2 |
+| `AL_OBJ_2BI_*` | **Double-bit Input** / With Status | 3 |
+| `AL_OBJ_2BIC_*` | **Double-bit Input Change**（事件） | 4 |
+| `AL_OBJ_BO_*` / `AL_OBJ_BOC_*` | Binary Output Status / Change | 10 / 11 |
+| `AL_OBJ_AI_*` / `AL_OBJ_AIC_*` | Analog Input / Analog Input Change | 30 / 32 |
+
+组 3 是**静态双位量**，它的事件对象是**组 4**。
+
+**修正**：按报告建议，把单编号速查**扩展成 static/event 成对映射**（1↔2、3↔4、10↔11、30↔32），并写明「别把静态量组当事件组」——按静态/事件成对建模正是恢复点表时实际需要的对象模型。
+
+#### 4. re-arm：AArch32 的 8 项向量表被泛化成了整个 Cortex-A（高影响）
+
+原文「**Cortex-A 启动代码**：复位向量 0x00000000（或高端向量 0xFFFF0000），异常向量表 8 项（Reset/Undef/SWI/…）」——这是 **AArch32/Armv7-A** 的异常模型，而该技能同时覆盖 AArch64（提供 qemu-aarch64、AAPCS64 路径），会实际误导 Armv8-A 固件入口识别。
+
+**核验来源**：Linux `arch/arm64/kernel/entry.S`（部署中的 AArch64 实现）：
+
+```
+SYM_CODE_START(vectors)
+	kernel_ventry	1, t, 64, sync		// Synchronous EL1t
+	... (共 16 条：EL1t×4 + EL1h×4 + EL0-64×4 + EL0-32×4)
+	.org .Lventry_start\@ + 128	// Did we overflow the ventry slot?
+...
+	msr	vbar_el1, x30			// install vector table
+```
+
+`kernel_ventry` 宏以 `.align 7` + `.org +128` 固定 **0x80 步长**，全表 **16 项**，按 当前 EL/低 EL × SP_EL0/SP_ELx × AArch64/AArch32 来源 × sync/irq/fiq/error 分类；基址来自 **VBAR_EL1**。**AArch64 下不存在"固定 8 项 Reset/Undef/SWI 表"**。
+
+**修正**：拆成 AArch32 与 AArch64 两个子项——AArch32 保留 8 项表（注明 low/high vectors 与架构版本控制位相关）；AArch64 写明 VBAR_ELx + 16×0x80 布局，并给出定位线索（`msr vbar_el1/el2/el3, Xt` 序列），同时提示 **reset entry 由实现/SoC 配置决定**、不能假定固定在 0。
+
+### 三、Ghidra 12.2 / JDK 25 临界项：本轮仍不变
+
+官方 Releases 最新正式版仍是 12.1.3（2026-08-18），12.2 未发布，仓内「正式 release 用 JDK 21」继续成立，不改。
+
+### 四、方法教训：变异测试的样本本身会被设计缺陷骗过
+
+ARM 那条断言我做了**两次**变异才测通：
+
+1. 第一次把 8 项表改写成简短形式，但**该行仍留在 AArch32 项目符号内**——它确实是被正确限定的，断言放行是对的，**是我的样本没造好**
+2. 第二次直接把 AArch32 那一行删掉——结果连 needle 一起消失了，断言「无违规」成了**空真**（存在性检查被 AArch32 出现在别处满足）
+
+只有第三次**完整还原成原始通用表述**才精准失败。教训：变异测试要复现**缺陷形态**本身，而不是"看起来相近的改动"；否则会得到"断言通过"的假信号，反过来掩盖断言的空转。
+
+### 五、固化
+
+- 回归断言 +6：Python 下限四项、angr 矩阵单点维护、PPL/内核调试、Zig 调用约定、DNP3 对象组、AArch32 向量表
+- **变异测试**：六处写回旧表述后对应断言全部失败（ARM 那条按上文重做后失败），还原后全过
+- `npm test`：`OK: 122 skills validated` + **132 项测试全过**（上轮 126 + 新增 6）

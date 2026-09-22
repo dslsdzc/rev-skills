@@ -41,9 +41,10 @@ capabilities: [ai-model-analysis]
 - 验证: `netron --help` 有输出（`pip show netron` 查版本）
 - 用法: `netron model.onnx`（本地起 http 服务并开浏览器可视化；`--no-browser` 无头模式）
 
-### torch（pip，Python 3.9+）—— PyTorch 模型加载
+### torch（pip，Python >=3.10）—— PyTorch 模型加载
 
 - Linux/Windows: `pip install torch`（默认 PyPI 轮子为带 CUDA 全量包，数 GB；仅 CPU 分析用 `pip install torch --index-url https://download.pytorch.org/whl/cpu`）
+- **Python 版本下限**：当前 torch 2.x 要求 **Python >=3.10**（PyPI `requires-python`；torchvision 同步为 >=3.10）——3.9 环境要装需 pin 到仍支持 3.9 的旧版（2.8.x 及更早）。torch / torchvision / Python 的具体组合以官方 compatibility matrix 为准，别按「3.9+」泛化
 - macOS: `pip install torch`（官方 wheel 为 CPU/arm64）
 - 验证: `python3 -c "import torch; print(torch.__version__)"`
 - **安全注**：torch.load 底层是 pickle——不要直接 load 未知 pkl 文件；PyTorch 2.6+ 默认 `weights_only=True`，旧版本/显式 `weights_only=False` 仍有任意代码执行风险；未知模型先 `unzip -l`/`xxd` 粗查（坑 2），在隔离环境用 `weights_only=True` 加载，能转 safetensors 就转
@@ -55,7 +56,7 @@ capabilities: [ai-model-analysis]
 
 ### protobuf / protoc（onnx 是 proto）—— 底层格式
 
-- Python 绑定: `pip install protobuf`（Python 3.8+，onnx 已自带依赖、通常无需单独装）
+- Python 绑定: `pip install protobuf`（当前 7.x 要求 **Python >=3.10**，6.x 起下限已在抬升；3.8/3.9 需 pin 对应旧版本。onnx 已自带依赖、通常无需单独装）
 - protoc 编译工具: Debian/Ubuntu `apt install protobuf-compiler`、Fedora `dnf install protobuf-compiler`、Arch `pacman -S protobuf`、macOS `brew install protobuf`
 - 验证: `protoc --version`；`python3 -c "import google.protobuf; print(google.protobuf.__version__)"`
 

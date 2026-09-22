@@ -32,9 +32,9 @@ capabilities: [blockchain-analysis]
 - Arch: 官方仓库**无** foundry——用 AUR `foundry-bin`（`yay -S foundry-bin` 等）；**注意 `pacman -S foundry` 是无关的 GNOME Builder 工具包，别装错**；Debian/Ubuntu/Fedora 无官方包——用官方安装器
 - 验证: `cast --version && anvil --version`
 
-### web3.py（pip，Python 3.8+）—— 脚本化链上分析
+### web3.py（pip，Python >=3.10）—— 脚本化链上分析
 
-- `pip install web3`（官方 PyPI，web3 7.x 要求 Python ≥3.8，PyPI 声明 `<4` 无 3.12 上限）
+- `pip install web3`（官方 PyPI；当前 8.x 要求 **Python >=3.10**，PyPI `requires-python` 为 `<4,>=3.10`——7.x 才支持 3.8。Python 3.8/3.9 环境需 pin 7.x）
 - 验证: `python3 -c "import web3; print(web3.__version__)"`
 
 ### panoramix（pip，Python 3.9–3.11）—— EVM 反编译器（disasm→流程）

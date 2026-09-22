@@ -22,9 +22,10 @@ capabilities: [exploit-development]
 
 参考 [[re-analyze/platform-tips]]——利用验证默认沙箱；先静态分析（反汇编 / checksec）再动态调试，符合「静态优先」思路。
 
-### pwntools（pip 安装，Python 3.8+）—— 利用脚本主力
+### pwntools（pip 安装）—— 利用脚本主力
 
-- `pip install pwntools`（官方 PyPI，4.15.x；官方文档声明支持 Python 3.8+，64 位系统支持最好）
+- `pip install pwntools`（官方 PyPI，当前正式版 4.15.0；64 位系统支持最好）
+- **Python 兼容矩阵（本库只在 re-pwn 维护这一份，其他技能引用此处）**：4.15.0 支持 Python 3.8+，但官方 release 已声明**这是最后一个支持 Python 2 与 Python <3.10 的版本**——后续版本按 Python >=3.10 准备；要在 3.8/3.9 上跑需 pin `pwntools==4.15.0`
 - 发行版包（版本可能落后，功能一致）：Debian/Ubuntu `sudo apt install python3-pwntools`、Fedora `sudo dnf install python3-pwntools`、Arch `sudo pacman -S python-pwntools`（Extra 仓库官方包）
 - **Python 3.12+（如 Ubuntu 24.04 自带 3.12）直接 pip 装会报 PEP 668 `externally-managed-environment`**——对策：建 venv（`python3 -m venv ~/venvs/pwn && source ~/venvs/pwn/bin/activate` 后 pip install），或发行版 apt 包，或 `pip install --break-system-packages`（系统级，注意风险）
 - 验证: `pwn --version` / `python3 -c "import pwn; print(pwn.version)"`
