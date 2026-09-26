@@ -29,6 +29,17 @@ test('块标量吸收缩进行，不吞并下一个同级键', () => {
   assert.equal(fm.capabilities, '[a, b]');
 });
 
+test('顶格游离行报错，不静默丢弃（块标量误写列表项回归）', () => {
+  // 行号以 frontmatter 块内 1-based 计（对应 SKILL.md 文件行号 +1，块首为文件第 2 行）
+  const md = '---\nname: re-x\ndescription: >\n  正文\n- 游离行\n  触发词：x\n---\n\n# 体';
+  assert.throws(() => parseFrontmatter(md), /unparsable frontmatter line 4.*游离行/);
+});
+
+test('re-mobile description 覆盖块标量全部续行（截断回归）', () => {
+  const md = readFileSync(join(SKILLS, 're-mobile', 'SKILL.md'), 'utf8');
+  assert.match(parseFrontmatter(md).description, /加密体系审计/);
+});
+
 test('splitFrontmatter 缺 frontmatter 报错并保留正文', () => {
   assert.throws(() => splitFrontmatter('# 无 frontmatter'), /frontmatter/);
   assert.equal(splitFrontmatter('---\na: b\n---\n\n正文').body, '正文');
