@@ -13,7 +13,15 @@
 - `analysis/unfixed-report.md` —— 121 条修复状态对账（含 A/B/C 三类判定与文件:行证据）
 - `analysis/findings.json` —— 报告项结构化数据（F001–F121）
 
-已确立的前提：**「未修」不等于「是缺陷」**。仓库已有实测驳回机制（`docs/audit/2026-09-13-factual-audit.md` 补充 30）。C 类 3 条已由本次外部核对确认报告有误（udsoncan `ClientConfig`、pwntools 4.15.0、Capstone 6），**不进入修复任务**，只在判定表与审查记录里留驳回证据。
+已确立的前提：**「未修」不等于「是缺陷」**。
+
+**判定已完成（2026-09-30）**：95 条逐条判定——采纳 70、部分成立 9、**驳回 11**、已修 5。判定表见
+`docs/audit/2026-09-30-adjudication.md`（提交 f532491），依据与改法以该表为准。
+
+**驳回的 11 条（F022 / F034 / F035 / F036 / F047 / F052 / F069 / F072 / F080 / F110 / F111）
+严禁出现在任何 `fix:` 提交里**——改动它们等于把正确内容改错。Task 5 Step 1 与 Task 6 Step 1
+已按此改写作废步骤。各任务的「Consumes」栏引用的判定结论，以判定表中该条目的「改法」列为准；
+标「不改」的即跳过。
 
 **并行协调：** 本计划任务**串行执行**（后一任务依赖前一任务 commit）；执行期间不得与其他计划交叉修改同一技能目录。文件集隔离见各任务 Files 清单。
 
@@ -120,14 +128,20 @@
 - Consumes: Task 1 判定表（ELF gABI 字段定义、glibc `dlopen` 对缺 `PT_GNU_STACK` 的实际行为、`DT_SYMENT` 的 ELF32/64 差异）
 - Produces: 修正后的字段表与步骤；**消除本技能内部的两处自相矛盾**
 
-- [ ] **Step 1: `e_entry` 语义** — `references/layout.md` 的 `e_entry` 行改为规范定义（入口虚拟地址；ET_DYN/PIE 运行时地址 = load bias + e_entry，load bias 由 PT_LOAD 映射推导）；**同时检查同文件 `p_vaddr` 的同类措辞**
+- [ ] **Step 1: `e_entry` 语义 — 已作废，不改**（判定表 F036/F047/F069/F110 驳回）
+
+  报告称「DYN 下为相对基址的偏移」是事实错误。实测反证：gABI ch5 定义 base address = 内存地址与文件
+  虚拟地址之差，对 executable/shared object 是同一常量；Linux `fs/binfmt_elf.c:1245` 即
+  `e_entry = elf_ex->e_entry + load_bias;`——DYN 下 `e_entry` 本就是相对 base 的值，仓库措辞与该模型
+  一致，且从未称其为文件偏移/RVA。`p_vaddr` 行同理。**本步骤不执行任何修改**，仅保留此记录防止
+  后续有人照报告把正确措辞改错。
 - [ ] **Step 2: `DT_SYMENT`** — 删除固定 24 字节的写法，按 ELFCLASS 分别给出（或写明以 `DT_SYMENT` 实际值为准）
 - [ ] **Step 3: `.fini_array` 定位** — `SKILL.md` 步骤 3 标题不再把 `.fini_array` 与 `.init_array` 并列为「main 之前执行」；与同文件坑项（fini 在退出清理阶段）对齐
 - [ ] **Step 4: Canary 判定** — 删除「符号表出现 `__stack_chk_fail` ⇒ 有 Canary」的等价关系，改为「存在引用 ⇒ 有带该保护的编译单元」，并说明与"该二进制启用了栈保护"的区别
 - [ ] **Step 5: `PT_GNU_STACK` 缺失** — `SKILL.md` 与 `references/layout.md` 两条表述统一到同一结论（缺失时的实际行为依 ABI/glibc 版本而异，不写成必然 `EINVAL`，也不写成必然可执行栈），按判定表实测结论落笔
 - [ ] **Step 6: 验证** — `node validate.mjs`；`npm test` 全绿
 - [ ] **Step 7: 回填** — `node bin/auditstate.mjs update re-format-elf`
-- [ ] **Step 8: Commit** — `fix: ELF 字段语义 5 项——e_entry / DT_SYMENT / fini_array / Canary / PT_GNU_STACK`
+- [ ] **Step 8: Commit** — `fix: ELF 字段语义 4 项——DT_SYMENT / fini_array / Canary / PT_GNU_STACK`
 
 ### Task 6: re-format-macho（load command 组）
 
@@ -136,15 +150,20 @@
 - Modify: `.claude/skills/re-format-macho/references/layout.md` + `references/examples.md`
 
 **Interfaces:**
-- Consumes: Task 1 判定表（Apple `loader.h` 对 `LC_MAIN.entryoff` 的定义、`LC_DYLD_INFO(_ONLY)` 的信息流条数）
+- Consumes: Task 1 判定表（`LC_DYLD_INFO(_ONLY)` 的信息流条数、`cmdsize` 对齐规则）。注意 `LC_MAIN.entryoff` 一条已驳回，不在本任务范围
 - Produces: 修正后的入口定位与 dyld 信息表描述
 
-- [ ] **Step 1: `LC_MAIN.entryoff`** — 语义与入口 VA 公式按 `loader.h` 与实测样例改写（注意 `__TEXT` 的 `fileoff` 与 `vmaddr` 不必然同基）；同步核对 `references/examples.md` 的对照要点
+- [ ] **Step 1: `LC_MAIN.entryoff` — 已作废，不改**（判定表 F034 驳回）
+
+  报告称语义与入口 VA 公式写错。实测反证：Apple `loader.h` 注释 `file (__TEXT) offset of main()`；
+  dyld `common/MachOAnalyzer.cpp:627` 为 `startAddress = preferredLoadAddress() + mainCmd->entryoff`；
+  本机用 `ld64.lld` 造 Mach-O 实测 `__TEXT.vmaddr=0x100000000`、`entryoff=0x330`、`_main=0x100000330`
+  精确命中。仓库公式与 Apple 实现一致。**本步骤不执行任何修改**。
 - [ ] **Step 2: LC 最小长度** — 修正「64 位下 LC 最小 16 字节」的说法（按结构体实际对齐规则）
 - [ ] **Step 3: `LC_DYLD_INFO(_ONLY)`** — 补 `weak_bind`，删除「四张表」的计数表述；同步 `references/layout.md` 的三处
 - [ ] **Step 4: 验证** — `node validate.mjs`；`npm test` 全绿
 - [ ] **Step 5: 回填** — `node bin/auditstate.mjs update re-format-macho`
-- [ ] **Step 6: Commit** — `fix: Mach-O load command 3 项——LC_MAIN / LC 最小长度 / LC_DYLD_INFO 信息流`
+- [ ] **Step 6: Commit** — `fix: Mach-O load command 2 项——LC 最小长度 / LC_DYLD_INFO 信息流`
 
 ### Task 7: 格式判定组（re-format-pe / re-cpp-abi / re-unpack-simple / re-triage）
 
@@ -176,24 +195,23 @@
 - Modify: `.claude/skills/re-tee/references/gotchas.md`
 
 **Interfaces:**
-- Consumes: Task 1 判定表（Armv6-M 实际指令集、AAPCS32/64 的 Thumb 位规则、MIPS Branch Likely 的 annul 语义、RISC-V 入口与 binutils 包名、SM83 ISA、SMCCC 调用约定）、Task 3 的 binwalk 源侧结论
+- Consumes: Task 1 判定表（Armv6-M 实际指令集、AAPCS32/64 的 Thumb 位规则、MIPS Branch Likely 的 annul 语义、RISC-V binutils 包名、SM83 ISA、SMCCC 调用约定）。**RISC-V 入口定位一条已驳回，不在本任务范围**、Task 3 的 binwalk 源侧结论
 - Produces: 五处 ISA/ABI 判定修正；re-arm / re-mips / re-console 的 binwalk 副本指回 `[[re-fw-extract]]`
 
 - [ ] **Step 1: re-arm** — 删除「Cortex-M0/M0+ 只有 16 位 Thumb」及「32 位指令是反汇编幻觉」的表述，按 Armv6-M 实际指令集改写（三处：变体说明、BL 距离、坑项）；虚表函数指针的 Thumb 位规则限定到 AArch32 并写明 AAPCS64 下的差异（两处）
 - [ ] **Step 2: re-mips** — 延迟槽不再写成「无条件执行」，补 Branch Likely 的 annul/nullify 语义（步骤 + 坑项两处）
-- [ ] **Step 3: re-riscv** — 入口定位区分「程序入口 `e_entry`」与「动态链接时的首条用户态指令」；binutils 安装与验证命令一一对应
+- [ ] **Step 3: re-riscv** — 只改一处：binutils 安装与验证命令一一对应（装 `binutils-riscv64-linux-gnu` 就验 `riscv64-linux-gnu-objdump`；需要裸机 triplet 则单列 `binutils-riscv64-unknown-elf`）。**入口定位那句不改**——判定表 F052 驳回：该句本身已写「动态链接程序先经 ld.so（PT_INTERP）」，`gdb starti /bin/ls` 实测首条指令确在 ld.so
 - [ ] **Step 4: re-console** — SM83 不再描述成 Z80 变体，删除「用 Z80 近似」的默认路径，改为专用 SM83 language/loader 或明确标注近似；与同文件坑项对齐
 - [ ] **Step 5: re-tee** — `HVC`/`SMC` 不再简化成「EL2 用 HVC、EL3 用 SMC」，按调用者 EL 与目标 EL 拆开（并检查 x1–x17 的 SMCCC 版本限定）
 - [ ] **Step 6: binwalk 副本** — re-arm / re-mips / re-console 三处改写为引用 `[[re-fw-extract]]` 的安装矩阵，删除各自复制的 `pip install binwalk` 比较性描述
 - [ ] **Step 7: 验证** — `node validate.mjs`；`npm test` 全绿
 - [ ] **Step 8: 回填** — `node bin/auditstate.mjs update re-arm re-mips re-riscv re-console re-tee`
-- [ ] **Step 9: Commit** — `fix: CPU/ISA 判定 5 技能——Armv6-M / Thumb 位 / MIPS 延迟槽 / RISC-V 入口 / SM83 / SMCCC`
+- [ ] **Step 9: Commit** — `fix: CPU/ISA 判定 5 技能——Armv6-M / Thumb 位 / MIPS 延迟槽 / RISC-V binutils / SM83 / SMCCC`
 
-### Task 9: 调用约定与栈组（re-shellcode / re-exploit / re-pwn）
+### Task 9: 调用约定组（re-shellcode / re-pwn）
 
 **Files:**
 - Modify: `.claude/skills/re-shellcode/SKILL.md`
-- Modify: `.claude/skills/re-exploit/SKILL.md`
 - Modify: `.claude/skills/re-pwn/SKILL.md`
 
 **Interfaces:**
@@ -201,11 +219,11 @@
 - Produces: 三处调用约定/栈布局修正
 
 - [ ] **Step 1: re-shellcode** — 删除「Win32 默认 stdcall」的概括，按实际（编译器/调用约定声明）改写；binwalk 副本指回 `[[re-fw-extract]]`
-- [ ] **Step 2: re-exploit** — 修正 x86-64 SysV 的栈对齐条件（两处）
+- [ ] **Step 2: re-exploit — 栈对齐不改**（判定表 F111 驳回）。仓库「`call` 时 `$rsp % 16 == 0`」与 psABI 原文 "immediately before the call instruction is executed" 逐字对应；探针实测 `call printf` 前 `rsp%16==0` 正常、`==8` 触发 `movaps` SIGSEGV，`ret` 转移场景同样成立。本技能本波**无改动项**
 - [ ] **Step 3: re-pwn** — `%N$...` 的参数槽描述改为「第 N 个位置参数（前若干走寄存器）」，删除自相矛盾的注释；**pwntools 版本保持现状**（判定表已驳回，勿改）
 - [ ] **Step 4: 验证** — `node validate.mjs`；`npm test` 全绿
-- [ ] **Step 5: 回填** — `node bin/auditstate.mjs update re-shellcode re-exploit re-pwn`
-- [ ] **Step 6: Commit** — `fix: 调用约定与栈布局 3 技能——stdcall / SysV 对齐 / printf 参数槽`
+- [ ] **Step 5: 回填** — `node bin/auditstate.mjs update re-shellcode re-pwn`
+- [ ] **Step 6: Commit** — `fix: 调用约定 2 技能——stdcall / printf 参数槽`
 
 ### Task 10: Frida 组（re-frida / re-frida-script-author）
 
@@ -346,10 +364,10 @@
 - [ ] **Step 2: re-android-native** — `RegisterNatives` 等槽位按 JNI 规范的固定布局表述（写明 index 与「byte offset = index × 指针宽度」的换算），删除「槽号随 jni.h/NDK/ART 漂移」的建模；`references/probes.md` 的探测策略相应改为「确认 `JNIEnv*` 有效性 / hook 表检测 / 非标准实现」，与 `references/experience.md` 已写死的槽位值对齐
 - [ ] **Step 3: re-ebpf** — helper 号的稳定性按规范改写（枚举为追加式，不以"漂移"描述），保留「以内核源码为准」的核对建议
 - [ ] **Step 4: re-automotive** — UDS 下载流程不再写成固定四步序列，按实际可选路径（含 `0x31`/`0x37` 的变体）表述。**udsoncan 示例保持现状**（判定表已驳回，勿改）
-- [ ] **Step 5: re-emulation** — capstone 版本基线**按判定表结论决定**（若判定为驳回则不改，仅在此记录）
+- [ ] **Step 5: re-emulation — 不改**（判定表 F080 驳回）。PyPI 稳定版仍是 5.0.9，6.x 仅有 `6.0.0a1–a11` 预发行，仓库「当前 5.0.x」准确。6.0.0 正式发行后再复核
 - [ ] **Step 6: 验证** — `node validate.mjs`；`npm test` 全绿
 - [ ] **Step 7: 回填** — `node bin/auditstate.mjs update re-go re-android-native re-ebpf re-automotive re-emulation`
-- [ ] **Step 8: Commit** — `fix: 杂项 5 技能——LD_PRELOAD / JNI 槽位 / eBPF helper / UDS 流程 / capstone`
+- [ ] **Step 8: Commit** — `fix: 杂项 4 技能——LD_PRELOAD / JNI 槽位 / eBPF helper / UDS 流程`
 
 ### Task 17: 运行时基线（Node）
 
