@@ -1237,3 +1237,77 @@ ARM 那条断言我做了**两次**变异才测通：
 - 回归断言 +6：Python 下限四项、angr 矩阵单点维护、PPL/内核调试、Zig 调用约定、DNP3 对象组、AArch32 向量表
 - **变异测试**：六处写回旧表述后对应断言全部失败（ARM 那条按上文重做后失败），还原后全过
 - `npm test`：`OK: 122 skills validated` + **132 项测试全过**（上轮 126 + 新增 6）
+
+---
+
+## 补充 33：监控报告对账波——95 条逐条判定（2026-09-30）
+
+### 一、本轮不是修，是判
+
+2026-09-12 至 09-29 的外部监控累计报出 121 条。对账：**30 条已修、91 条未修**，未修部分自 09-24 起
+再未进入审查流程（补充 32 是上一波，止于 09-23）。本轮把其中 95 条（91 未修 + 5 已修交叉验证）
+**逐条判定「报告本身对不对」**，产出判定表 `docs/audit/2026-09-30-adjudication.md`。
+
+| 判定 | 条数 |
+|---|---|
+| 采纳（报告成立） | 70 |
+| 部分成立（改措辞不推翻原文） | 9 |
+| **驳回（报告不成立，不改）** | **11** |
+| 已修（无需判定） | 5 |
+
+**驳回率 11.6%**——若不设这道闸口而直接照报告修，会把 11 处正确内容改错。
+
+### 二、驳回的 11 条及其形态
+
+5 条属「把可辩护的措辞当成事实错误」，且都集中在两处公式类指控上：
+
+- **`ET_DYN` 的 `e_entry`（F036/F047/F069/F110，同句重复上报 4 次）**：报告称「相对基址的偏移」是
+  把 VA 写成 RVA 的事实错误。反证：gABI ch5 定义 base address = 内存地址与文件虚拟地址之差，对
+  executable/shared object 是同一常量；Linux `fs/binfmt_elf.c:1245` 即 `e_entry = elf_ex->e_entry + load_bias;`
+  ——DYN 下 `e_entry` 本就是相对 base 的值，仓库措辞与该模型一致，且从未称其为文件偏移。
+- **`LC_MAIN.entryoff` 入口公式（F034）**：反证为 Apple `loader.h` 注释、dyld `MachOAnalyzer.cpp:627`
+  `startAddress = preferredLoadAddress() + mainCmd->entryoff`，并用 ld64.lld 造样本实测命中。
+
+其余 6 条：`pwntools` 与 `Capstone`（把开发线/预发行当成已发行——PyPI 分别仍是 4.15.0 与 5.0.9）、
+`re-riscv` 入口（该句本身已写明「动态链接程序先经 ld.so（PT_INTERP）」，`gdb starti` 实测证实）、
+`re-exploit` 栈对齐（仓库「`call` 时 `$rsp % 16 == 0`」与 psABI 原文逐字对应，探针实测 `==8` 触发
+`movaps` SIGSEGV）、udsoncan `ClientConfig`（补充 30 已驳回，本轮 venv 独立复跑再次确认）。
+
+### 三、部分成立 9 条：事实层成立、定性偏高
+
+共同形态是**报告给出的影响面大于实际**，改法为加限定语而非推翻原文。其中两条修正了报告未察觉的方向：
+
+- **`re-format-elf` 的 `PT_GNU_STACK`**：报告只说「缺失 ⇒ dlopen EINVAL」过强；实测发现更准确的分层是
+  glibc `dl-load.c` 在缺 header 时取 `DEFAULT_STACK_PROT_PERMS`（x86/x86-64/arm32 为 RWX、aarch64 等为 RW），
+  且 workaround 应为 `glibc.rtld.execstack=2` 而仓库写的 `=1` 实测失败
+- **Canary 判定**：报告主张的假阴性不成立（grep 为子串匹配，strip 后仍命中），但假阳性成立
+  （`-static -fno-stack-protector` 的程序因 libc 自带 SSP 仍出现该符号）——报告建议的 `-Ws` 改法无效
+
+### 四、采纳 70 条中的高影响项
+
+- **QEMU 默认网络（`re-fw-emulate`）**：仓库把「不加网络参数」当作完全断网，实测 QEMU 11.1.1 默认创建
+  `type=user,net=10.0.2.0,restrict=off` + e1000 网卡。安全基线必须反转——不可信固件须显式 `-nic none`。
+  传播 8 处，其中 `references/commands.md:33` 最危险
+- **IDA 9.x（F083）**：本机 9.4 安装目录无 `ida64`/`idat64`，64 后缀已取消，影响 15 处 / 5 文件
+- **JNI 函数表（F120）**：解析 6 份头文件（JDK 8/11/17/27、GraalVM 21、NDK 30），`RegisterNatives`
+  恒为 index 215，表项只追加不重排；仓库 `probes.md` 的「槽号会漂移」与 `experience.md` 已写死的
+  `0x6b8(槽215)` 自相矛盾
+- **TCP 流重组（F060）**：`re-proto-rev` 全流程把 segment payload 当应用层 message；实测 3 次连续
+  `send()` 在接收端合并为 1 个 chunk
+- **binwalk（F005 等 4 条）**：PyPI 停在 2015 年的 2.1.0，upstream 已转 Rust 重写（v3.1.0），
+  README 安装走 Docker/Cargo/源码——仓库却把 pip 版写成「跨平台、版本新，推荐」
+
+### 五、顺带实测出的、报告未提的两处
+
+- `re-arm` 的变体误选判据：armv6m 下 `movw/movt` 报 `armv8m.base`、`clz/udiv` 报 `thumb2`，armv7m 正常
+- `re-mips` 的 R6 描述：「MIPS32r6 起取消延迟槽」不准——R6 仍保留 BEQ/BNE/JALR/JR 的延迟槽，
+  删的是 branch-likely、新增的是 compact 无延迟槽形式
+
+### 六、方法教训
+
+- **「未修」≠「是缺陷」**：本轮 91 条未修项里 11 条经实测为报告错误。审查波若不设判定闸口、
+  直接按报告改，等于引入新缺陷
+- **公式类指控需要三方交叉**：规范原文 + 上游实现源码 + 本机实测。两条公式类驳回都是这样定的，
+  单看规范措辞会误判
+- **实跑不可替代**：构造 PNG 验证 `IEND` 搜索、连发 3 次 `send()` 看接收端合并、解析 6 份 `jni.h`
+  数槽位——这三条若只看报告措辞都会得出相反结论
