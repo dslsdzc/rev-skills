@@ -23,7 +23,7 @@
     "audit:update": "node bin/auditstate.mjs update"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "license": "Apache-2.0 OR CC-BY-4.0",
   "keywords": [

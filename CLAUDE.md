@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 通用逆向工程 AI 技能库（122 个技能），发布形态有三个：npm 包（`bin/install.mjs` 安装器）、Claude Code 插件市场（`.claude-plugin/marketplace.json`）、以及可被任意 Agent Skills 兼容运行时读取的 `.claude/skills/` 目录。
 
-内容主体是 Markdown 技能文档，工具代码是零依赖 Node.js（>=18，ESM）。**没有构建步骤**——技能即目录，改完跑校验即可。
+内容主体是 Markdown 技能文档，工具代码是零依赖 Node.js（>=22，当前受支持 LTS，ESM）。**没有构建步骤**——技能即目录，改完跑校验即可。
 
 双许可：技能文档内容 CC BY 4.0，工具代码（`bin/`、`validate.mjs`、`tests/`）Apache-2.0。新增文件注意落在正确一侧。
 

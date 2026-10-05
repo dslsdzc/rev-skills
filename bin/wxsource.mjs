@@ -10,7 +10,7 @@
 //   wechat <文章URL> [--md]                             微信文章抓取（备用渠道）
 //
 // 输出默认 JSON（结构化，便于管道/喂给 AI）；--md 输出 markdown（便于直接入库）。
-// 零依赖（Node >=18 内置 fetch）。导出纯函数供 tests/wxsource.test.mjs 测试。
+// 零依赖（Node >=22 内置 fetch）。导出纯函数供 tests/wxsource.test.mjs 测试。
 
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36';
