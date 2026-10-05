@@ -3,7 +3,7 @@ name: re-crash-triage
 description: >
   崩溃/漏洞样本分析：确定性复现、ASAN/UBSAN 报告解读、输入最小化
   (afl-tmin/cmin)、gdb 回溯定位、rr 录制重放、PoC 产出。
-  触发词：崩溃、crash、ASAN、UAF、堆溢出、越界、段错误、segfault、
+  触发词：崩溃、crash、ASAN、UBSAN、未定义行为、UAF、堆溢出、越界、段错误、segfault、
   core dump、PoC、漏洞分析、崩溃分析。
 capabilities: [debugging]
 ---
@@ -53,12 +53,16 @@ capabilities: [debugging]
   sudo sysctl kernel.perf_event_paranoid=1
   ```
 - 虚拟机内需 PMU 透传（VMware/KVM 可，VirtualBox 不可）
+- **容器/受限环境先自检**: `rr check` 会检查 PMU/`perf_event` 可用性与已知限制，通过后再用；嵌套虚拟化、未透传 PMU 的容器里 rr 无法录制
+- **PMU 不可用时的回退**（不要卡在 rr 上）: 改用「同一输入多次重跑 + 日志/条件断点」缩小竞态窗口；数据竞争类问题用 `valgrind --tool=helgrind` 或 `-fsanitize=thread` 构建定位；纯 ASLR 抖动可先 `set disable-randomization on` 排除
 - 验证: `rr --version`
 
 ### afl-tmin / afl-cmin —— 输入最小化与去重（随 AFL++ 安装）
 
 - 安装见 [[re-fuzzing]] 的 AFL++ 一节（`afl-tmin` / `afl-cmin` 随包安装）
-- 验证: `afl-tmin -h`
+- **前置（`afl-cmin` 尤其重要）**: `afl-cmin` 需要目标可被 AFL 观测——通常要求它由 AFL 插桩构建（`afl-clang-fast` / `afl-gcc`），否则会报「无插桩 / not instrumented」而失败。`afl-tmin` 的约束弱得多（可按纯崩溃判据工作），未插桩目标通常也能跑
+- **常见踩空**: 目标是独立 ASAN 构建（`gcc -fsanitize=address -g`）而**没有**走 `afl-clang-fast` 时，`afl-cmin` 不保证能跑。先确认构建方式；不是 AFL 编译器产出时，改用 `afl-tmin` 逐个最小化，或回 [[re-fuzzing]] 重建插桩版本
+- 验证: `afl-tmin -h` / `afl-cmin -h`
 
 ## 操作步骤
 
@@ -82,9 +86,14 @@ capabilities: [debugging]
 3. **输入最小化**：
    ```sh
    afl-tmin -i crash_input -o crash.min -- ./target @@
-   # 多个崩溃输入先按路径去重：
+   # 多个崩溃输入先按路径去重（需 AFL 插桩，见工具准备）：
    afl-cmin -i crashes_dir -o minimized -- ./target @@
    ```
+   - **`@@` 只适用于「文件参数」目标**（AFL 把 `@@` 替换成输入文件路径）。目标是 **stdin** 读输入时不要用 `@@`，把「文件 → stdin」这一步补进命令行，例如：
+     ```sh
+     afl-tmin -i crash_input -o crash.min -- sh -c './target < "$1"' _ @@
+     ```
+     或在目标自带 `-f <file>` 之类文件参数时用它替代 `@@`；先按第 1 步确认过的真实输入形态选写法
    - afl-tmin 产出保持崩溃的最短输入；可再手工删头/尾字节验证（二分查找最小边界）
    - 最小化后输入即 PoC 底稿；崩溃类型保持 = 同一 bug 的判定依据
 4. **gdb 回溯定位**：
@@ -124,5 +133,9 @@ capabilities: [debugging]
 - **非确定性崩溃（多线程）**：现象——同一输入 10 次里崩 3 次，gdb 重跑复现不了；原因——线程竞态 / 未初始化内存 / ASLR 地址差异；对策——rr 录制（`rr record ./target input`）在崩溃点自动停止，`rr replay` + `reverse-continue` 反向定位根因；先 `set disable-randomization on` 排除 ASLR 因素
 - **ASAN 与优化差异**：现象——ASAN（-O0/-O1）崩溃但 release（-O2）不崩，或反过来 release 才崩；原因——优化改变内存布局/时序，掩盖或暴露未定义行为；对策——两种构建都试；补 `-fsanitize=undefined` 抓 UB；影响与可达性判断以真实 release 行为为准（ASAN 报出的是潜在漏洞，需确认）
 - **崩溃≠漏洞（可达性）**：现象——ASAN 报越界但在死代码/不可达分支，或崩溃由 harness 引入；原因——fuzzer 触发的输入未必对应真实攻击面；对策——gdb 回溯 + 反编译确认崩溃路径可触达、输入可控；区分 harness bug 与目标 bug（[[re-vuln]] 工作流第 4 步兜底确认）
-- **core 被系统收走**：现象——`ulimit -c unlimited` 后崩溃仍无 core 文件；原因——`core_pattern` 指向 systemd-coredump（管道方式）/apport 拦截；对策——`cat /proc/sys/kernel/core_pattern` 确认；临时 `sudo sysctl kernel.core_pattern=core`（core 落到工作目录）；或 `gdb --args ./target crash.min` 直接跑、不依赖 core
+- **core 被系统收走**：现象——`ulimit -c unlimited` 后崩溃仍无 core 文件；原因——`core_pattern` 指向 systemd-coredump（管道方式）/apport 拦截；对策——先 `cat /proc/sys/kernel/core_pattern` 确认落点，再按落点取回：
+  - `core_pattern` 形如 `|/usr/lib/systemd/systemd-coredump ...`：core 已被 systemd 接管，**不要急着改全局设置**，直接取用即可——`coredumpctl list` 找条目（按可执行名/时间），`coredumpctl info <PID|可执行名>` 看元数据，`coredumpctl dump <PID> -o core` 导出，或 `coredumpctl gdb <PID>` 直接进 gdb 调试。这比改 `core_pattern` 更完整，也不影响系统上其它程序的 core 行为
+  - apport 接管（Ubuntu）：core 落在 `/var/crash/`，用 `apport-unpack` 展开
+  - 确实需要原始 core 文件时再临时改：`sudo sysctl kernel.core_pattern=core`（core 落到进程工作目录，注意只对之后启动的进程生效）
+  - 兜底：`gdb --args ./target crash.min` 直接跑，不依赖 core 文件
 - **符号缺失**：现象——`bt` 全 `??`、地址对不上；原因——strip / 静态链接 / 二进制与 core 版本不一致；对策——core 与二进制必须同版本（对比 sha256）；记录崩溃模块基址与偏移，在 [[re-ghidra]] / [[re-ida]] 按偏移定位函数，换算回 gdb 地址
