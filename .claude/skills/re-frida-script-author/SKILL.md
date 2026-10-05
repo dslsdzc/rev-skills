@@ -22,9 +22,8 @@ capabilities: [frida-instrumentation]
 
 ### frida-tools（脚本编写与运行验证）
 
-- Linux: `pip install frida-tools`（或 `apt install frida-tools` / `pacman -S frida`）
-- macOS: `pip install frida-tools` / `brew install frida`
-- Windows: `pip install frida-tools` / `choco install frida`
+- 推荐（upstream 路径）: `python -m pip install -U frida-tools`，建议用 venv 或 pipx 隔离环境
+- 第三方渠道: `brew install frida` 等非 upstream 渠道，安装前核验版本与维护状态，不与 pip 路径等同看待
 - 验证: `frida --version`、`frida-ps -U`（连设备后）
 - 注意: `frida`（运行时）与 `frida-tools`（CLI）版本需配套；跨大版本升级（16 → 17）有 API 移除，写法差异见 [[gotchas]] 版本组
 
@@ -39,7 +38,7 @@ capabilities: [frida-instrumentation]
 
 ### 目标设备/模拟器
 
-- Android 真机/模拟器 + frida-server（版本与主机 frida 一致，安装见 [[re-frida]] 工具准备）；桌面目标直接本机
+- Android 真机/模拟器 + frida-server（至少与主机 frida 同 major，安装见 [[re-frida]] 工具准备）；桌面目标直接本机
 - iOS 越狱环境 frida-server 见 [[re-ios-jb]]
 
 ## 操作步骤

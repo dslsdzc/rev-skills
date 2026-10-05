@@ -28,7 +28,7 @@ capabilities: [frida-instrumentation]
 ### frida-server —— 移动端插桩代理
 
 - 下载：GitHub release `https://github.com/frida/frida/releases`，选 `frida-server-<版本>-android-<架构>`（arm64 选 `-arm64`，32 位选 `-arm`，模拟器 x86_64 选 `-x86_64`）
-- **版本必须与主机 frida 完全一致**（对照 `frida --version`），架构与设备匹配，否则连接报协议错误（见坑 1）
+- **客户端与 frida-server 至少须同 major**（对照 `frida --version`）；为避免功能/API 差异，推荐使用完全相同且最新的版本。架构与设备匹配，否则连接报协议错误（见坑 1）
 - Android 推送与启动：
   ```sh
   adb push frida-server-xxx /data/local/tmp/frida-server
@@ -40,9 +40,10 @@ capabilities: [frida-instrumentation]
 
 ### objection —— 免写 JS 的快速插桩
 
-- 跨平台: `pip install objection`
+- 要求 Python >=3.10（与 frida 自身 binding 的 `>=3.7` 下限不同，需单独满足）: `python -m pip install -U objection`，建议另建 3.10+ 的 venv 或 pipx 隔离
 - 验证: `objection --version`
-- 用法: `objection -g <应用> explore`，内置 `android hooking` / `ios hooking` 子命令（如 `android hooking list activities`、`ios sslpinning disable`）
+- 用法: `objection -n <应用或 Bundle ID> start`，内置 `android hooking` / `ios hooking` 子命令（如 `android hooking list activities`、`ios sslpinning disable`）
+- 1.12.x 起 `-g` / `explore` 已弃用（在 CLI 中隐藏，仅出弃用告警，旧写法仍可跑）；新写作用 `-n` + `start`
 
 ## 操作步骤
 
@@ -113,7 +114,7 @@ capabilities: [frida-instrumentation]
    var SecTrust = Module.findGlobalExportByName("SecTrustEvaluateWithError");   // Frida 17+：全局符号静态查找
    Interceptor.attach(SecTrust, { onLeave: function (r) { this.context.x0 = 0; } }); // arm64 返回寄存器 x0；x86_64 用 rdi 场景先验证
    ```
-   现成命令：`objection -g com.target.app explore` → `android sslpinning disable` / `ios sslpinning disable`。
+   现成命令：`objection -n com.target.app start` → `android sslpinning disable` / `ios sslpinning disable`。
 
 5. **反检测对抗（隐藏 frida-server、改名）**：
    - 常见检测点：frida-server 默认端口 27042、`/data/local/tmp/frida-server` 路径、`gum-js-loop` / `gmain` 线程名、`/proc/self/maps` 中的 frida 特征、`frida` 字符串
@@ -143,7 +144,7 @@ capabilities: [frida-instrumentation]
 
 ## 常见坑与陷阱
 
-- **版本不匹配 → 协议错误**：现象——`frida-ps -U` 报 `unable to communicate with the frida server` / 协议错误；原因——主机 frida 与设备 frida-server 版本号不一致；对策——`frida --version` 对照 GitHub release 下载同版本 frida-server（工具准备），或 `pip install -U frida-tools` 升级主机
+- **版本不匹配 → 协议错误**：现象——`frida-ps -U` 报 `unable to communicate with the frida server` / 协议错误；原因——客户端与 frida-server major 不一致，或所用的功能在目标版本上不存在；对策——先查 major 是否匹配（`frida --version` 对照 frida-server 版本，见工具准备），再确认该功能是否被对应版本支持；升级侧用 `pip install -U frida-tools`
 - **Frida 17 移除静态 Module 查找/枚举 API**：现象——脚本报 `TypeError: Module.findExportByName is not a function`（或 getExportByName / enumerateExports / findBaseAddress 同类）；原因——17.0.0 起静态查找与枚举 API 全部移除，静态只余 `Module.load` / `Module.findGlobalExportByName` / `Module.getGlobalExportByName`，其余改为**模块实例方法**；对策——先取实例再查：`Process.getModuleByName("libfoo.so").findExportByName("func")`（find 返 null，get 抛异常）、基址用 `.base`、枚举用 `.enumerateExports()`；全局符号（原 `null` 模块参数）改用 `Module.findGlobalExportByName(...)`；注意 `Process.getModuleByName` 在模块未加载时**抛异常**（旧 `Module.findExportByName` 返 null）——不确定时先用 `Process.findModuleByName` 判空再查；动笔前 `frida --version` 确认版本再选写法（迁移清单见 [[re-frida-script-author]] 版本相关组）
 - **spawn 时机晚 → 错过早期逻辑**：现象——attach 后 hook 不触发或早期解密已完成；原因——应用启动即解密 / 校验，attach 时已过；对策——用 `-f` spawn 模式起步即插桩；仍错过则 hook `dlopen` / `ClassLoader.loadClass` 这类更早的执行点
 - **目标检测 frida（端口 / 特征）**：现象——spawn 后应用闪退 / 卡死 / 行为异常；原因——应用扫描 27042 端口、frida-server 路径、`frida` 线程名或 maps 特征；对策——步骤 5 改名 + 换端口；仍检测用 frida-gadget 注入（隐藏于进程内）
@@ -161,5 +162,5 @@ capabilities: [frida-instrumentation]
 （来源：reverse-skills（inliver233），MIT）
 - **redroid 容器搭建与使用坑**：现象——guest 静默挂死 / servicemanager 空转、vold 崩溃、adb 反复掉线、容器无法重启；原因——binder 挂载方式错误（必须 bind-mount `/dev/binder`，不能用 `--device` 或 binderfs）、新内核无 ashmem 时未加 `androidboot.use_memfd=1`、设了 `ro.secure=1 ro.debuggable=0` 杀掉 root adb、停掉的容器 binder 已消失无法 docker restart、adbd 高负载下崩溃；对策——binder 用 bind-mount、新内核强制 use_memfd、保留 root adb（防篡改用保持签名有效而非藏 root）、重建容器后重注入 adb 公钥（`echo $PUBKEY > /data/misc/adb/adb_keys`）、大文件用 docker cp 而非 adb push、动态分析用 spawn 模式（`frida -U -f`，attach 在防篡改下常 0 命中）；定位认知——它是数据采集工具而非迭代环境，采完动态数据回稳定环境做静态 patch 回归
 （来源：reverse-skills（inliver233），MIT）
-- **AOT 目标上 hook 静默不触发 / 找不到调用者**：现象——hook 无输出、目标函数静态 callers=0、门字段未知无法下针；原因——目标 so 晚于引擎加载（attach 时未加载）、虚方法经 cid 分派墙（不经 BL 调用，静态无捷径）、guard 字段位置未知；对策——等目标 so 加载后再 hook：200ms 轮询 `findModuleByName` 的 waitForLibapp 包装器，起步优先 spawn 模式；破 cid 墙：目标函数 onEnter 记 `lr`（returnAddress）+ `Thread.backtrace(Backtracer.ACCURATE)` 前 20 帧，一次回溯定位分派点；guard 定位三件套：Stalker.follow transform 里对 `ldr` 类指令放 putCallout（首个命中 PC = guard）、MemoryAccessMonitor.enable 等重建触发（arm64 支持不一需回退）、候选 hook 扫射；**运行时翻转验证前置**：live `writePointer` 翻转候选门字段 → 触发重建 → 组件消失即确认门字段，确认后再投静态 patch，省掉反复重打包；frida 17+ 内置 Java bridge 已移除，需 frida-compile 打包 frida-java-bridge
+- **AOT 目标上 hook 静默不触发 / 找不到调用者**：现象——hook 无输出、目标函数静态 callers=0、门字段未知无法下针；原因——目标 so 晚于引擎加载（attach 时未加载）、虚方法经 cid 分派墙（不经 BL 调用，静态无捷径）、guard 字段位置未知；对策——等目标 so 加载后再 hook：200ms 轮询 `findModuleByName` 的 waitForLibapp 包装器，起步优先 spawn 模式；破 cid 墙：目标函数 onEnter 记 `lr`（returnAddress）+ `Thread.backtrace(Backtracer.ACCURATE)` 前 20 帧，一次回溯定位分派点；guard 定位三件套：Stalker.follow transform 里对 `ldr` 类指令放 putCallout（首个命中 PC = guard）、MemoryAccessMonitor.enable 等重建触发（arm64 支持不一需回退）、候选 hook 扫射；**运行时翻转验证前置**：live `writePointer` 翻转候选门字段 → 触发重建 → 组件消失即确认门字段，确认后再投静态 patch，省掉反复重打包；frida 17 起 Java bridge 不再内置于底层 GumJS runtime，但 `frida` CLI/REPL 与 `frida-trace` 仍自带三个 bridge，普通 `frida -l` 脚本无需改动；仅自建 agent / 走 bindings 注入脚本时需显式安装 `frida-java-bridge`（必要时用 frida-compile 打包）
 （来源：reverse-skills（inliver233），MIT）
