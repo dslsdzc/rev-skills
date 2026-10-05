@@ -41,7 +41,7 @@ capabilities: [arch-analysis]
 - Fedora: `dnf install binutils-riscv64-linux-gnu gcc-riscv64-linux-gnu`（cross-binutils / cross-gcc 源包，提供 `riscv64-linux-gnu-objdump`；官方仓库无 riscv64-unknown-elf 裸机工具链，裸机反汇编用 riscv64-linux-gnu-objdump，RVC 支持一致）
 - Arch: `pacman -S riscv64-elf-binutils riscv64-elf-gcc`（裸机，提供 `riscv64-unknown-elf-objdump`）或 `pacman -S riscv64-linux-gnu-binutils riscv64-linux-gnu-gcc`（用户态）
 - macOS: `brew install riscv64-elf-binutils riscv64-elf-gcc`（homebrew-core，提供 `riscv64-unknown-elf-objdump`）；Windows/WSL: WSL 内 Linux 版
-- 验证: `riscv64-unknown-elf-objdump --version`（Debian/Ubuntu/Arch/brew）、`riscv64-linux-gnu-objdump --version`（Fedora）；objdump 对 RVC 混编流自动识别（2/4 字节）
+- 验证: 按所装包一一对应——`binutils-riscv64-linux-gnu` → `riscv64-linux-gnu-objdump --version`（Debian/Ubuntu/Fedora）；`binutils-riscv64-unknown-elf` → `riscv64-unknown-elf-objdump --version`（Arch/brew，Debian/Ubuntu 需裸机 triplet 时单列该包）；objdump 对 RVC 混编流自动识别（2/4 字节）
 
 ### qemu-riscv64 / qemu-riscv32 —— RISC-V 用户态仿真（动态验证）
 

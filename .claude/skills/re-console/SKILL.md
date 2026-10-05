@@ -30,7 +30,7 @@ capabilities: [console-analysis]
 - Ghidra（免费，官方 release 包，需 JDK；部分发行版仓库有 `apt install ghidra` / `pacman -S ghidra`）：
   - Linux: 官方 release 包；macOS: `brew install --cask ghidra`；Windows: 官方 zip
   - 验证: `analyzeHeadless -help`（headless 模式）或 GUI 导入目标文件
-  - 架构覆盖：Switch 为 aarch64、PS4/PS5 为 x86-64、PSX 为 MIPS R3000（方法论见 [[re-mips]]）、GBA 为 ARM7TDMI（Thumb 处理见 [[re-arm]]）、NES 为 6502 系；GB 的 SM83 是 Z80 变体，Ghidra 无原生模块，用 Z80 近似或专用 Game Boy loader 插件（见坑 6）
+  - 架构覆盖：Switch 为 aarch64、PS4/PS5 为 x86-64、PSX 为 MIPS R3000（方法论见 [[re-mips]]）、GBA 为 ARM7TDMI（Thumb 处理见 [[re-arm]]）、NES 为 6502 系；GB/GBC 用 Sharp SM83：与 8080/Z80 编码相近但不是 Z80 兼容变体（无 IX/IY、无 DD/FD/ED 前缀、无 IN/OUT，有自家 STOP/LDH 与 HL 自增减）；Ghidra 核心无 SM83，装 GhidraBoy 等 SM83 SLEIGH + Game Boy loader；Z80 模块仅可作人工对照，不得作为 ROM 的处理器语言（见坑 6）
 - IDA：商业版架构模块齐全；Freeware 版架构支持范围以官方页面为准
 - 导入 ROM 时按平台设基址：GBA 0x08000000（卡带映射区）、PSX 按 EXE 头 0x18 字段（典型 0x80010000，RAM 基址 0x80000000）；NES/GB 是固定地址空间 + bank 切换，需要 loader 支持 mapper/bank（见坑 6）
 
@@ -68,7 +68,7 @@ capabilities: [console-analysis]
 
 ### binwalk —— 内嵌文件扫描
 
-- 同 [[re-fw-extract]]：`pip install binwalk`（或发行版包）；验证: `binwalk --version`
+- 安装渠道与版本分辨（v3 主线 / v2 legacy）见 [[re-fw-extract]] 的 binwalk/unblob 安装矩阵；验证: `binwalk --version`
 
 ## 操作步骤
 
@@ -155,5 +155,5 @@ capabilities: [console-analysis]
 - **元数据头与正文分离**：现象——只解析了 NSO 或只看了 NPDM，权限面/入口信息/代码互不关联，分析缺块；原因——NPDM（权限/入口元数据）是与 NSO 并存的独立文件，NCA 分区表在头部而分区数据按偏移散布，XEX2 的头部字段与 PE 数据分离存放；对策——把同批容器产物（NPDM+NSO、NCA 各分区、XEX 头+PE 段）作为一个整体建档，先列清单再逐个解析
 - **ROM 头校验和与补丁失效**：现象——改 ROM（patch/汉化/修改）后模拟器或真机拒绝启动；原因——GBA 头 0xBD 是 0xA0-0xBC 逐字节求和的 complement 校验（再减 0x19 取 8 位），改标题/游戏码必须重算；GB 头 0x14D 校验和覆盖 0x134-0x14C；NES 改 mapper 位不影响启动但影响映射正确性；对策——改头后按算法重算校验和，补丁方案把校验和重算写进步骤
 - **模拟器与真机行为差异**：现象——mGBA 上能跑的修改在真机闪退、FCEUX 与 Mesen 对同一 ROM 的 mapper 行为不同；原因——时序敏感代码（GBA 音频/中断时序）、mapper 实现差异、模拟器精度差异；对策——结论标注「模拟器环境验证」，需要真机级结论时用多种模拟器交叉验证 + 真机（读卡器/烧录卡）复核；存档写回与断电时序在模拟器上尤其不可靠
-- **反编译器缺原生 CPU 支持时的错位反汇编**：现象——GB 的 SM83 无原生模块，用 Z80 近似反汇编出不存在指令；NES 6502 变体细节被当普通指令；原因——近似指令集不等于目标 CPU；对策——先识别 CPU（GB 看 0x104 logo/0x147 卡带类型、NES 看 flags 的 mapper），无原生支持时用专用 loader 插件或手动标注限制，近似反汇编结果标注「近似」，关键逻辑用模拟器调试器实测校正
+- **反编译器缺原生 CPU 支持时的错位反汇编**：现象——GB 的 SM83 无原生模块，用 Z80 近似反汇编出不存在指令（同一编码在 SM83/Z80 含义分叉，如 0x22/0xE8/0x10）；NES 6502 变体细节被当普通指令；原因——SM83 与 8080/Z80 编码相近但不是 Z80 兼容变体，近似指令集不等于目标 CPU；对策——先识别 CPU（GB 看 0x104 logo/0x147 卡带类型、NES 看 flags 的 mapper），GB 用 GhidraBoy 等 SM83 SLEIGH + Game Boy loader，无原生支持时手动标注限制，近似反汇编结果须以模拟器实测校正
 - **授权边界**：改机/自制固件、零售媒体解密、未授权 ROM 获取与分发不在本技能范围；分析样本须来自合法渠道；卡带 dump 仅限自有卡带分析用途，按所在司法辖区规定自行确认；技能正文只提供格式解析与分析方法

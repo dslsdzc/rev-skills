@@ -33,7 +33,7 @@ capabilities: [arch-analysis]
 
 ### binwalk / unblob —— 固件与内嵌文件扫描
 
-- 同 [[re-fw-extract]] 工具准备：`pip install binwalk`（推荐）或发行版包；unblob: `pip install unblob`
+- 安装渠道与版本分辨（v3 主线 / v2 legacy）见 [[re-fw-extract]] 的 binwalk/unblob 安装矩阵
 - 验证: `binwalk --version`、`unblob --version`
 
 ### readelf / file —— 架构与字节序确认（binutils）
@@ -75,7 +75,7 @@ capabilities: [arch-analysis]
    - 确认后导入反编译器选对变体，后续 $gp、跳转目标、字符串偏移全程按该端序——端序选错则数据、指令、地址全部错位
 
 3. **反编译注意（MIPS 特有语义）**：
-   - **延迟槽（硬件特性）**：分支/跳转指令后紧跟的一条指令无条件执行（无论跳转与否，先执行再转移控制）；`beq` / `bne` / `j` / `jal` 后常见汇编器填充的 nop 或有用的指令；手读代码时把该指令同时计入跳转两路；补丁时分支后必须处理延迟槽（填 nop 或等价指令）；MIPS32r6 起取消延迟槽（r6 代码无此问题）
+   - **延迟槽（硬件特性）**：pre-R6 的普通分支/跳转（`beq` / `bne` / `j` / `jal`）后紧跟的一条指令在 taken / not-taken 两路都执行（先执行再转移控制）；**Branch Likely**（`beql` / `bnel` / `blezl` / `bgtzl` / `bltzl` / `bgezl` 及 FP likely 类）不同——只在 taken 时执行延迟槽，not-taken 时延迟槽被 **annul**（跳过）；`beq` / `bne` / `j` / `jal` 后常见汇编器填充的 nop 或有用的指令；补丁时分支后必须处理延迟槽（填 nop 或等价指令）；MIPS32r6 删除 branch-likely、新增无延迟槽的 compact 分支形式（`beqc` / `bnec` / `bc` / `balc` / `jic` / `jialc`），但 `beq` / `bne` / `jalr` / `jr` 仍带延迟槽——按 ISA revision + opcode 分类，不能一概说 R6 取消了延迟槽
    - **调用约定**：$a0-$a3 传前 4 个参数（多余参数栈传）、$v0 返回值、$ra 返回地址（`jal` 自动写入）、$s0-$s7 被调用者保存、$t0-$t9 调用者保存；PIC 间接调用模式 `jalr $t9`（$t9 载入被调函数地址，函数开头常重载 $gp）
    - **$gp 与 .got**：$gp（r28）一般指向 .got 中间（常见 .got+0x7FF0，±32KB 偏移覆盖整个 GOT）；数据访问形如 `lw $t0, off($gp)` / `addiu $t0, $gp, off`；函数序言常见 `lui gp, %hi(...)` + `addiu gp, gp, %lo(...)` 重设 $gp
    - **-mlong-calls 跳板**：`j` / `jal` 立即数跳转只覆盖同 256MB 段（26 位地址左移 2 位），跨段调用由编译期生成 stub 跳板（先加载地址再 `jalr`）；看到成片 `lui + addiu + jalr` 三指令序列多为跳板，不要当业务逻辑
@@ -108,7 +108,7 @@ capabilities: [arch-analysis]
 
 ## 常见坑与陷阱
 
-- **延迟槽执行流错位**：现象——手读分支处逻辑对不上，紧跟分支的指令"看似不该执行"却改变了状态；原因——MIPS 硬件特性：分支/跳转后紧跟的一条指令无条件执行后才转移控制（MIPS32r6 起取消）；对策——读代码把延迟槽指令同时计入跳转两路，补丁分支后补 nop/等价指令；依赖反编译器输出时核对延迟槽指令的还原位置
+- **延迟槽执行流错位（含 branch-likely 的 annul 语义）**：现象——手读分支处逻辑对不上，紧跟分支的指令"看似不该执行"却改变了状态（或反之，likely 分支 not-taken 时槽内指令并未执行）；原因——MIPS 硬件特性：pre-R6 普通分支/跳转（beq/bne/j/jal）后紧跟的一条指令在跳转两路都执行后才转移控制，而 Branch Likely（beql/bnel/blezl/bgtzl/bltzl/bgezl 及 FP likely 类）只在 taken 时执行延迟槽，not-taken 时 annul；对策——区分 non-likely 与 likely：前者把延迟槽指令同时计入跳转两路，后者只在 taken 路径计入；补丁分支后补 nop/等价指令；依赖反编译器输出时核对延迟槽指令的还原位置
 - **大小端判断错 → 全部乱码**：现象——字符串、立即数、地址全乱，反编译面目全非；原因——MIPS 大小端并存（路由器固件多为大端，也有小端），读错端序后 4 字节整字全部错位；对策——`file`（MSB/LSB）+ `readelf -h` Data 字段 + strings 可读性三重确认，导入工具选对 mips / mipsel 变体
 - **无重定位信息时 $gp 基址只能猜**：现象——`lw $t0, off($gp)` 指向不明、GOT 引用解不出；原因——剥离符号/静态链后重定位丢失，$gp 值（常见 .got+0x7FF0）需自行确认；对策——在 `_start` / crt0 序言的 `lui gp` + `addiu gp` 处计算实际 gp 值并在反编译器中标注；无符号时按 .got 段基址推算
 - **路由器固件非标准头/多层压缩**：现象——binwalk 解不出或解出物不是文件系统，web 后端找不到；原因——厂商自定义头 + 多层压缩/嵌套打包（同 [[re-fw-extract]] 常见坑）；对策——hexdump 手工查魔数、跳过头部偏移 dd 切分、逐层 file 确认后再分析

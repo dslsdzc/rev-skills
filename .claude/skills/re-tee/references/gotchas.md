@@ -10,9 +10,9 @@
 
 ## 调用约定组（SMC/ABI 边界）
 
-- **SMC 不是普通函数调用**：SMCCC 约定功能号在 w0（含 OEN 与 SMC32/SMC64 标识），参数在 w1-w7（SMC32）或 x1-x17（SMC64），返回值从 w0 起——按普通 ABI 读寄存器会整条数据流错位
+- **SMC 不是普通函数调用**：SMCCC 约定功能号在 w0（含 OEN 与 SMC32/SMC64 标识），参数在 w1-w7（SMC32）或 x1-x17（SMC64，SMCCC ≥1.2；1.0/1.1 仅 x1-x7），返回值从 w0 起——按普通 ABI 读寄存器会整条数据流错位
 - **SMC32 vs SMC64 寄存器宽度不同**：同功能号在两种约定下参数位次/宽度不同——先看功能号第 30 位（SMC64 标识）再选解析方式
-- **HVC 与 SMC 通道别混**：EL2 hypervisor 用 `hvc` 指令、EL3 用 `smc`——反编译先分清通道再标注调用点，混标会把 hypervisor 调用误归 TEE
+- **HVC 与 SMC 通道别混**：`hvc` / `smc` 由较低 EL 的调用者执行、作为同步异常分别进入 EL2 / EL3（`svc` 进 EL1，使能受 SCR_EL3.HCE/SMD 等控制）——反编译先分清通道再标注调用点，混标会把 hypervisor 调用误归 TEE；看到 `smc` 不能直接等价 TEE，继续按 SMCCC FID/OEN 判服务归属
 - **32/64 位 TA 混合**：AArch32 TA 与 AArch64 TA 的调用约定（TEE_Param 布局）有差异——按 ELF 架构选解析模板
 
 ## 主机侧组
