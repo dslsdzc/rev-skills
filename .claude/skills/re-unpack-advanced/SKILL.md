@@ -38,7 +38,7 @@ capabilities: [unpack]
 ### 脚本工具（脱壳辅助/标注）
 
 - idapython: IDA 自带（[[re-ida]] 工作流），验证：IDA 内 `File > Script Command` 能执行 Python
-- rizin 脚本: `apt install rizin` / `dnf install rizin` / `pacman -S rizin` / `brew install rizin`，验证 `rizin -v`
+- rizin 脚本: 安装矩阵见 [[re-radare2]]，安装后以 `rizin -v` 验证
 
 ## 操作步骤
 

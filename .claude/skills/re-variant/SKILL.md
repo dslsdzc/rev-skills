@@ -32,8 +32,8 @@ capabilities: [binary-diffing]
 
 ### radiff2 / rz-diff（rizin 命令行对比）
 
-- Linux: `apt install rizin` / `pacman -S rizin`；macOS: `brew install rizin`；Windows: 官方安装包
-- 验证: `rz-diff --version`；radiff2 随 radare2 包（`apt install radare2` 类）
+- 安装矩阵见 [[re-radare2]]（含 radare2 兼容层），安装后以 `rizin -v` 验证
+- 验证: `rz-diff --version`；radiff2 随 radare2 包
 - 用途: 无 GUI 的快速函数级对比与批量脚本化（见步骤 1 命令）；radiff2 做字节/指令级快查（`radiff2 -s` 字节、`-C` 指令）——小文件快查用，函数级对比用 rz-diff
 
 ### readelf（符号对齐辅助）

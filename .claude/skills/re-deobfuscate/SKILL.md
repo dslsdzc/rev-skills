@@ -23,13 +23,13 @@ capabilities: [deobfuscation]
 
 ### idapython（批量脚本化）
 
-- IDA 内置（8.x/9.x 自带 Python 3）；命令行跑脚本：`idat64 -A -S"script.py" sample.exe`
+- IDA 内置（8.x/9.x 自带 Python 3）；命令行无头跑脚本的可执行文件名与用法见 [[re-ida]]
 - 验证: IDA 内 `File > Script Command` 能执行 Python
 
 ### rizin 脚本（批量 patch / 查询）
 
-- Linux: `apt install rizin` / `dnf install rizin` / `pacman -S rizin`；macOS: `brew install rizin`；Windows/WSL: WSL 内 Linux 包
-- 验证: `rizin -v`；配合 `pip install r2pipe` 用 Python 驱动
+- 安装矩阵见 [[re-radare2]]，安装后以 `rizin -v` 验证
+- Python 驱动用 Rizin 侧绑定 `rzpipe`（`pip install rzpipe`，rizinorg/rz-pipe）
 
 ### D-810（IDA 插件，可选）
 
@@ -39,7 +39,7 @@ capabilities: [deobfuscation]
 
 ### python3（仿真 / 批量解密）
 
-- `apt install python3`（多数系统自带）；按需 `pip install pefile r2pipe`
+- `apt install python3`（多数系统自带）；按需 `pip install pefile rzpipe`
 - 验证: `python3 --version`
 
 ## 操作步骤
@@ -79,7 +79,7 @@ capabilities: [deobfuscation]
      import idaapi, idc
      # 例：枚举引用 sym_decrypt 的调用点，取参数地址后 idc.get_bytes 解密并打印
      ```
-   - rizin / r2pipe：`rizin -A sample -c 'axt @ sym.decrypt'` 列引用，脚本循环解密，导出 `strings_decrypted.txt` 供 [[re-ioc]] / 人工分析。
+   - rizin / rzpipe：`rizin -A sample -c 'axt @ sym.decrypt'` 列引用，脚本循环解密，导出 `strings_decrypted.txt` 供 [[re-ioc]] / 人工分析。
    - 产出：全量解密字符串表（地址 → 明文），存档进分析记录。
 
 5. **还原前后对比验证**：

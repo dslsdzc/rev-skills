@@ -29,7 +29,7 @@ capabilities: [license-analysis]
 ### 反编译器（[[re-ghidra]] 等，交叉引用工作台）
 
 - Ghidra: `apt install ghidra` / `dnf install ghidra` / `pacman -S ghidra` / `brew install --cask ghidra`，验证 `analyzeHeadless -help`（安装细节见 [[re-ghidra]]）
-- 替代: [[re-ida]]（`idat64 -A` headless）、[[re-radare2]]（`apt install rizin`，验证 `rizin -v`）
+- 替代: [[re-ida]]（无头 `idat`，命令见该技能）、[[re-radare2]]（安装矩阵见该技能，安装后以 `rizin -v` 验证）
 - 作用：strings / API 的交叉引用（xref）是"谁在调用注册相关函数"的关键
 
 ### strings —— 可打印串快速扫描（全平台）

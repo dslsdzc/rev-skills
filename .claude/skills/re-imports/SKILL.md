@@ -32,9 +32,7 @@ capabilities: [pe-parser, elf-parser]
 
 ### rizin / rz-bin
 
-- macOS: `brew install rizin`
-- Arch: `pacman -S rizin`
-- Debian 13+ / Ubuntu 24.04+: `apt install rizin`；旧发行版用 GitHub 官方 release 二进制
+- 安装矩阵见 [[re-radare2]]，安装后以 `rizin -v` 验证
 - Windows: 官方 release 解压即用；radare2 用户可 `choco install radare2` 作兼容（命令见下）
 - 验证: `rz-bin -V`
 
