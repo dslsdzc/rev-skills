@@ -310,7 +310,7 @@
 
 - 位置: `re-ida/SKILL.md:14,27,28,46,79,116｜re-ida/references/commands.md:27,28,29,30,61｜re-plugin-dev/SKILL.md:73,107｜re-deobfuscate/SKILL.md:26｜re-license/SKILL.md:32（共 15 处 / 5 文件）`
 - 报告主张: IDA 9.x 已移除 64 后缀，ida64/idat64 命令不存在
-- 依据: 本机 IDA 9.4 安装 /opt/ida-pro/（版本串 9.4.260713.a97520e5，58 个顶层条目）顶层可执行文件仅 hv/ida/idapyswitch/idat/lc/lsadm/picture_decoder/upg32，`ls
+- 依据: 本机 IDA 9.4 安装目录（58 个顶层条目）顶层可执行文件仅 hv/ida/idapyswitch/idat/lc/lsadm/picture_decoder/upg32，`ls
 - 改法: 以 IDA 9.x 为基线统一 `idat -A -S"script.py" sample`、验证用 `idat --help`，删除「idat=32 位 / idat64=64 位」表述；如需兼容旧版加一行版本分支（IDA<=8.x 才用 ida/idat 的 64 后缀形态）
 
 ### F084 — 采纳（报告成立）
