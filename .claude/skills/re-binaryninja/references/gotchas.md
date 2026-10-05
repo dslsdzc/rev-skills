@@ -3,9 +3,10 @@
 ## 版本差异
 
 - **Python API 与软件版本强绑定**：API 不随软件自动同步——重装软件或升级后必须重跑安装目录 `install_api.py`，否则 `import binaryninja` 指向旧版 API，行为与文档不符（最常见故障源）
-- **主版本间 API 变化**：2.x → 3.x（类型 API 重构）→ 4.x 各有破坏性变更——脚本依赖先查 `core_version()` 与对应版本文档；旧插件在新主版本下可能直接加载失败
+- **主版本间 API 变化**：2.x → 3.x（类型 API 重构）→ 4.x → 6.x 各有破坏性变更——脚本依赖先查 `core_version()` 与对应版本文档；旧插件在新主版本下可能直接加载失败
+- **6.0 迁移（Plugin Manager → Extension Manager）**：6.0 起插件管理器重构为 Extension Manager，旧 `pluginmanager` 仅保留 shim；bundled Python 升至 3.13（首次覆盖 Linux），外部 Python 最低仍 3.10——升级后需跑一次依赖迁移（重装插件依赖），否则旧插件报缺依赖或加载失败
 - **`i` 键是 IL 循环，`m` 不是**：`m` 在官方文档里是「整数应用枚举显示」（类型操作）——网上流传的「m 切 MLIL」说法与现行版本不符，切 IL 用 `i` 或右下角 Options 菜单
-- **插件兼容性**：插件按主版本编译/适配——`File > Manage Plugins` 里标记版本要求的插件，跨主版本升级后逐个验证
+- **插件兼容性**：插件按主版本编译/适配——Extension Manager（6.x；旧菜单 `File > Manage Plugins`）里标记版本要求的插件，跨主版本升级后逐个验证
 
 ## 个人版限制
 

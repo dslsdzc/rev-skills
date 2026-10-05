@@ -24,12 +24,13 @@ capabilities: [decompilation]
 
 ### Binary Ninja（商业，有个人版）
 
-- 下载/购买: 官网 binary.ninja（Commercial / Personal 个人版；个人版仅限个人用途，自动化与部分功能按版本受限）
+- 下载/购买: 官网 binary.ninja（Commercial 商业版 / Personal 个人版；个人版仅限个人用途，自动化与部分功能按版本受限；另有免费 Free 档）
+- Free 版: 无 API 与插件访问、IL 受限；支持架构 x86 / x86_64 / armv7+Thumb2 / armv8——需要 MLIL 或脚本自动化时按预算升档
 - Windows: 安装器直接运行；macOS: `brew install --cask binary-ninja`（社区 cask，需已有 license）；Linux: 官网 tar 包解压运行 `./binaryninja`
 - 容器格式: 直接导入 PE/ELF/Mach-O/Dalvik/固件 ROM 等（不需要单独解包步骤）；带壳目标例外（壳段未解密，先脱壳）
 - 验证: 打开任意样本完成自动分析，`Functions` 面板有函数列表；`Options > About` 显示 license 类型
 - Linux 无图形环境: GUI 版需要 X 显示（`xvfb-run ./binaryninja` 可临时跑）；批量任务直接走 headless（商业版），headless 不需要显示器
-- 版本差异: 3.x/4.x 间 Python API 大体兼容但个别函数签名变化——脚本依赖先看 `core_version()` 与发行说明（见 [[gotchas]]）
+- 版本差异: 6.x 为当前主线；6.0 起插件管理器重构为 Extension Manager（旧 `pluginmanager` 仅保留 shim）、bundled Python 升至 3.13（首次覆盖 Linux）而外部 Python 最低仍 3.10——2.x → 3.x → 4.x → 6.x 主版本间有破坏性 API 变更，脚本依赖先查 `core_version()` 与发行说明（见 [[gotchas]]）
 
 ### binaryninja Python API
 
@@ -72,7 +73,7 @@ capabilities: [decompilation]
    ```
    - 批量改名: `bv.get_function_at(0x401000).name = "check_license"` 后 `bv.save()` 写回
    - 导出反编译文本: `str(f.high_level_il)` 直接拿 HLIL 伪代码字符串——批量导出函数逻辑的最快方式
-   - 插件: `File > Manage Plugins` 浏览社区插件；插件目录按平台：Windows `%APPDATA%\Binary Ninja\plugins`、Linux `~/.binaryninja/plugins`、macOS `~/Library/Application Support/Binary Ninja/plugins`（macOS 非 `~/.binaryninja`，放错不会被加载）
+   - 插件: 6.x 经 Extension Manager 管理（旧 `File > Manage Plugins` 的职责并入其中）；插件目录按平台：Windows `%APPDATA%\Binary Ninja\plugins`、Linux `~/.binaryninja/plugins`、macOS `~/Library/Application Support/Binary Ninja/plugins`（macOS 非 `~/.binaryninja`，放错不会被加载）
    - 自写脚本先 `File > Python` 面板试跑（能看到 `print` 输出与异常），稳定后再转插件或无头脚本——调试脚本比跑完看结果快得多
    - 无头模式: 商业版可用 headless——没有 `binaryninja-headless` CLI，正路是 `install_api.py` 注册后写脚本（`binaryninja.load()` + `update_analysis_and_wait()`，即上文代码结构）；headless license 用官方独立下载包；个人版受限时用 GUI 内 `File > Python` 面板执行同样代码
    - 无头脚本出错不会弹窗——异常直接打到 stderr/日志文件，排错看输出尾部与 `bv.log_info` 痕迹

@@ -24,10 +24,10 @@ IDA 双入口：GUI 快捷键（主界面）与 IDAPython（`File > Script comma
 
 ## 无头批处理命令
 
-- `idat64 -A -S"script.py" sample`：自动模式跑脚本（`-A` 分析完自动退出；不写 `-S` 则只分析）
-- `idat64 -A -S"script.py log.txt" sample`：脚本参数 `log.txt` 传给 `sys.argv`（argv[0]=脚本路径，argv[1:]=剩余参数）
-- `idat64 -A -S"script.py" -L"ida.log" sample`：IDA 自身日志写文件（排错必需，问题常藏在日志里）
-- `idat -A ...`（32 位无头）/ `idat64 -A ...`（64 位无头）；Windows 加 `.exe`
+- `idat -A -S"script.py" sample`：自动模式跑脚本（`-A` 分析完自动退出；不写 `-S` 则只分析）
+- `idat -A -S"script.py log.txt" sample`：脚本参数 `log.txt` 传给 `sys.argv`（argv[0]=脚本路径，argv[1:]=剩余参数）
+- `idat -A -S"script.py" -L"ida.log" sample`：IDA 自身日志写文件（排错必需，问题常藏在日志里）
+- IDA 9.x 无头可执行文件为 `idat`（单二进制同时处理 32/64 位，无 64 后缀）；Windows 加 `.exe`（`idat.exe`）。IDA ≤8.x 才分 `idat`/`idat64`
 - 无头脚本固定骨架：
 
 ```python
@@ -58,7 +58,7 @@ Alt+T 搜提示文案（"Invalid key"/错误串）→ x 找引用 → 引用处�
 ### 2. 无头批量反编译导出（只读先行）
 
 ```
-idat64 -A -S"dump.py" -L"ida.log" sample
+idat -A -S"dump.py" -L"ida.log" sample
 # dump.py: auto_wait() → 遍历 idautils.Functions() 过滤 FUNC_LIB
 # → 每函数 try: decompile(ea) 存 .c 文件；except: 记 (ea, name, reason) 清单
 # → 结尾打印 total/exported/failed 双通道验证（配合 ida.log 关键字）

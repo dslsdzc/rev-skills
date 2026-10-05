@@ -70,7 +70,7 @@ capabilities: [plugin-development]
        return MyPlugin()
    ```
    - 菜单注册: `idaapi.register_action` + `idaapi.attach_action_to_menu("Edit/...", "my:action")`；对话框: `ida_kernwin.ask_str` / `ask_buttons`（注意 IDA 9.x 中部分 API 迁到 `ida_kernwin`，见坑 1）
-   - 无头测试: `idat64 -A -S"plugin_test.py" sample`（脚本内 `ida_auto` 等按 [[re-ida]] 步骤 4 写法）
+   - 无头测试: 无头可执行文件名与 `-A -S` 用法见 [[re-ida]]（脚本内 `ida_auto` 等同样按该处写法）
    - 验证: 启动日志有 `Loading plugin ... MyPlugin`；快捷键触发动作输出正常
 
 4. **与现有脚本复用（[[re-ghidra]] / [[re-ida]] 的脚本）**：
@@ -104,4 +104,4 @@ capabilities: [plugin-development]
 - **维护成本失控**：现象——插件发布三个月后跟不上升级/新样本形态，没人修，反而拖慢分析；原因——插件是长期承诺（API 升级 + 场景变化都要跟进），一次性脚本没有这个成本；对策——步骤 1 先判值不值: 逻辑简单/变化快 → 脚本；稳定且复用高 → 插件；插件内把易变逻辑（模式串/表/阈值）外置配置，减少改码面；每次发布记录版本与对应工具版本
 - **修改型插件直接改库，改坏不可逆**：现象——批量改名/patch 插件跑完，IDB 标注错乱且撤销困难；原因——跳过只读验证、没在副本上跑；对策——先跑只读统计脚本确认预期（[[re-ida]] 坑），修改逻辑先在副本 .i64/.idb 或独立 Ghidra 工程上验证，验收通过再上正式库
 - **Ghidra 扩展版本范围拒载**：现象——扩展装进 Ghidra 无报错但列表里不出现；原因——extension.properties 声明的适用版本范围与当前 Ghidra 不匹配，被安装器拒载；对策——先解压 zip 核对 extension.properties 的版本范围（`ghidra.version` 字段），用 GhidraDev 生成工程时按目标版本建；分发文档写明测试过的 Ghidra 版本
-- **无头/批处理环境不能依赖交互对话框**：现象——`analyzeHeadless` 或 `idat64 -A` 下插件行为异常/卡住；原因——批处理模式没有 UI 事件循环，ask_* 对话框类 API 与菜单触发逻辑不可用；对策——交互参数（路径/阈值/模式串）改从命令行参数或配置文件读取，插件内先判断运行环境（是否 GUI 会话）再决定走哪条分支；无头测试脚本只验证纯计算逻辑
+- **无头/批处理环境不能依赖交互对话框**：现象——`analyzeHeadless` 或 IDA 无头模式（[[re-ida]]）下插件行为异常/卡住；原因——批处理模式没有 UI 事件循环，ask_* 对话框类 API 与菜单触发逻辑不可用；对策——交互参数（路径/阈值/模式串）改从命令行参数或配置文件读取，插件内先判断运行环境（是否 GUI 会话）再决定走哪条分支；无头测试脚本只验证纯计算逻辑

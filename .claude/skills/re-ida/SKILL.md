@@ -11,7 +11,7 @@ capabilities: [decompilation, debugging]
 ## 何时使用 / 何时不用
 
 - 用：已有 IDA 授权/免费版，目标需要 FLIRT 库识别、Hex-Rays 反编译、idapython 批处理
-- 用：大规模重复性标注/导出（无头批处理 `idat64 -A -S`，序列见 [[commands]]）
+- 用：大规模重复性标注/导出（无头批处理 `idat -A -S`，序列见 [[commands]]）
 - 不用：免费版无法处理时（无 Hex-Rays → 用 [[re-ghidra]] 兜底）；只需快速结论（[[re-triage]]）
 - 不用：内存受限环境（大二进制卡顿，换 [[re-radare2]]）；纯命令行快速分析（[[re-radare2]] 更轻）
 - 不用：macOS/Linux 目标动态调试（[[re-lldb]] / [[re-gdb]]）；IDA 调试器只对 Windows 本地目标价值最大
@@ -24,9 +24,9 @@ capabilities: [decompilation, debugging]
 
 - 下载: hex-rays.com（IDA Free 免费版，支持 x86/x64；其他架构与分析器需商业版）
 - Windows: 安装程序直接运行；`choco install ida-free`（社区包，或官网手动下载）
-- macOS/Linux: 官网 tar 包解压运行 `ida` / `ida64`（Windows 对应 `ida.exe`/`ida64.exe`，无头用 `idat`/`idat64`）
-- 验证: 启动后成功打开一个样本完成 auto-analysis，函数窗口有内容；`idat64 --help` 有输出；无头模式试跑 `idat64 -A -L"t.log" /bin/true` 能正常退出
-- 版本差异: 7.5 起数据库统一 `.i64`（旧 `.idb`/`.idb64` 可升级）；8.x 需 64 位宿主；9.0 起 32/64 位安装合一、内置 FLIRT 签名管理器、idalib 无头 API——详见 [[gotchas]]
+- macOS/Linux: 官网 tar 包解压运行 `ida`（Windows 对应 `ida.exe`，无头用 `idat`/`idat.exe`）
+- 验证: 启动后成功打开一个样本完成 auto-analysis，函数窗口有内容；`idat --help` 有输出；无头模式试跑 `idat -A -L"t.log" /bin/true` 能正常退出
+- 版本差异: 7.5 起数据库统一 `.i64`（旧 `.idb`/`.idb64` 可升级）；8.x 需 64 位宿主；9.0 起 32/64 位安装合一、内置 FLIRT 签名管理器、idalib 无头 API——**9.x 可执行文件不再带 64 后缀**（`ida`/`idat` 一个二进制同时处理 32/64 位），IDA ≤8.x 才分 `ida`/`ida64`、`idat`/`idat64`——详见 [[gotchas]]
 
 ### idapython（内置）
 
@@ -43,7 +43,7 @@ capabilities: [decompilation, debugging]
 1. **导入与 auto-analysis**：
    - `File > New` 选择样本 → 等左下角 `AU: analyzing` 结束（无 AU 字样且分析日志停止）
    - 确认 `Options > General > Analysis` 中 Auto-analysis 开启；确认 `segments` 与 `entry point` 已识别
-   - 无头批处理: `idat64 -A -S"myscript.py" -L"log.txt" sample`（`-A` 自动模式，Windows 用 `idat64.exe`）
+   - 无头批处理: `idat -A -S"myscript.py" -L"log.txt" sample`（`-A` 自动模式，Windows 用 `idat.exe`）
    - 无头脚本开头 `ida_auto.auto_wait()` 等分析完成、结尾 `idc.qexit(0)` 退出——缺这两行会拿到空函数列表或进程挂住
 
 2. **FLIRT 识别库函数**：
@@ -76,7 +76,7 @@ capabilities: [decompilation, debugging]
    import ida_funcs, ida_name
    # 遍历函数: ida_funcs.get_func() / idc.get_func_name()
    ```
-   无头运行: `idat64 -A -S"script.py log.txt" sample`，脚本末尾 `idc.qexit(0)` 保证退出（`idc.qexit` 是 `ida_pro.qexit` 别名，IDA 7.0+ 一致）。
+   无头运行: `idat -A -S"script.py log.txt" sample`，脚本末尾 `idc.qexit(0)` 保证退出（`idc.qexit` 是 `ida_pro.qexit` 别名，IDA 7.0+ 一致）。
 
 6. **免费版限制处理**：
    - 免费版无 Hex-Rays: 用反汇编 + idapython（按步骤 5 方式人工还原循环/算法），或直接导出给 Ghidra:
@@ -113,6 +113,6 @@ capabilities: [decompilation, debugging]
 - **修改型脚本直接在原库上跑，改坏难回滚**：现象——批处理改名/改字节脚本跑完发现一堆错误标注，撤销费劲甚至不可逆；原因——跳过只读验证直接写库，也没对副本操作；对策——官方推荐先跑只读脚本（打印库路径/架构/函数与字符串统计）确认预期，修改型脚本逐步增量验证（最小脚本→看输出→加功能）；批量改动前先复制一份 .i64/.idb 或在副本上跑
 
 - **Hex-Rays interr（decompiler 内部错误）**：现象——无头反编译跑到某个函数报 `interr: create_stkvar(...) dtype=7` 之类后整个进程崩溃，跳过/重试无效；原因——decompiler 对特定栈布局的内部 bug，与样本/脚本无关；对策——换 Ghidra 完成该目标（互证也更好），别在同一函数上硬刚；批量反编译场景先小样本试跑确认不触发再全量
-- **无头批量导出没等 auto-analysis 完成（静默产出 0 个函数）**：现象——`idat64 -A -S"export.py" sample` 批量导出跑完，产物 0 个函数或严重不全，日志无任何报错；原因——`-A` 模式下脚本注入与 auto-analysis 异步并行，脚本在分析完成前就遍历函数列表得到空集，失败被静默吞掉；对策——收集函数前先 `ida_auto.auto_wait()` 阻塞至分析结束；导出循环逐函数 try/except，单个函数失败只记入清单（地址/名字/原因）后继续，结尾汇总 total/exported/failed，不中断全量；只导出非库函数（FUNC_LIB 标志）时无用户代码的小二进制合法产出 0 个，验证用「日志关键字 + 产物计数」双通道并容忍这种合法空产出；调用图（callers/callees）先整体算好缓存再进反编译循环，导出按便宜到贵排序（strings → imports → exports → memory → decompile），每函数一个按地址命名的文件
+- **无头批量导出没等 auto-analysis 完成（静默产出 0 个函数）**：现象——`idat -A -S"export.py" sample` 批量导出跑完，产物 0 个函数或严重不全，日志无任何报错；原因——`-A` 模式下脚本注入与 auto-analysis 异步并行，脚本在分析完成前就遍历函数列表得到空集，失败被静默吞掉；对策——收集函数前先 `ida_auto.auto_wait()` 阻塞至分析结束；导出循环逐函数 try/except，单个函数失败只记入清单（地址/名字/原因）后继续，结尾汇总 total/exported/failed，不中断全量；只导出非库函数（FUNC_LIB 标志）时无用户代码的小二进制合法产出 0 个，验证用「日志关键字 + 产物计数」双通道并容忍这种合法空产出；调用图（callers/callees）先整体算好缓存再进反编译循环，导出按便宜到贵排序（strings → imports → exports → memory → decompile），每函数一个按地址命名的文件
 （来源：LazyReverse（a0yami），MIT）
 - IDA 9 脚本迁移（`get_struc` 等已移除）、版本差异与反调试边界见 [[gotchas]]

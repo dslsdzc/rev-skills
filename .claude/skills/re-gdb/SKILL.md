@@ -25,19 +25,19 @@ capabilities: [debugging]
 - WSL: Linux 包直接可用（跨 Windows 边界 attach 不可行，见 [[re-analyze/platform-tips]] WSL 分支）
 - 验证: `gdb --version`
 
-### pwndbg / gef（二选一，装到 ~/.gdbinit）
+### pwndbg / gef（选其一）
 
-- pwndbg:
+- pwndbg: 官方 portable 安装脚本（Linux/macOS 主路径）：
   ```sh
-  git clone https://github.com/pwndbg/pwndbg
-  cd pwndbg && ./setup.sh        # 自动装依赖并写 ~/.gdbinit
+  curl --proto '=https' --tlsv1.2 -LsSf 'https://install.pwndbg.re' | sh -s -- -t pwndbg-gdb
   ```
+  LLDB 版把 `-t` 换成 `pwndbg-lldb`；另有 Homebrew（`brew install pwndbg/tap/pwndbg-gdb`）、Nix 与发行版包可选。仓内 `git clone + ./setup.sh` 属 legacy/开发用（内部调 sudo 需 root），不再是主路径
 - gef:
   ```sh
   curl -L https://github.com/hugsy/gef/raw/master/gef.py -o ~/.gdbinit
   ```
 - 验证: 进入 gdb 出现 pwndbg/gef banner
-- 注意: 两者都写 ~/.gdbinit，**不要同时装**（后装的覆盖前装，残留脚本互相干扰）；版本滚动较快，功能差异以各自官方 README 为准（详见 [[gotchas]]）
+- 注意: 两者不要同时装（hook 互相干扰）；pwndbg portable 版经包装脚本加载、不写 `~/.gdbinit`，与 gef 的 `~/.gdbinit` 注入方式不同；版本滚动较快，功能差异以各自官方 README 为准（详见 [[gotchas]]）
 
 ### checksec（二进制防护检查）
 

@@ -1,6 +1,6 @@
 # GDB 命令速查与操作序列
 
-gdb 本体 + 增强前端二选一（pwndbg / gef，都写 ~/.gdbinit）。命令按族分组；pwndbg/gef 命令以各自官方 README 为准。
+gdb 本体 + 增强前端二选一（pwndbg / gef；安装方式见 [[re-gdb]]）。命令按族分组；pwndbg/gef 命令以各自官方 README 为准。
 
 ## 会话与运行族
 

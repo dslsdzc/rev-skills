@@ -24,8 +24,8 @@
 ## 环境与版本坑
 
 - **PIE/ASLR 地址漂移**：无符号样本每次运行地址变——`set disable-randomization on` 固定；复盘 core 时先 `info proc mappings` 求偏移再对反编译地址
-- **pwndbg 与 gef 冲突**：都写 ~/.gdbinit，同时装 = 后装覆盖前装，或残留 Python 初始化报错——二选一，装前先删旧 .gdbinit
-- **pwndbg 依赖版本**：pwndbg 依赖较新的 gdb（Python 3 API）；发行版自带 gdb 过旧时 `./setup.sh` 会提示——先 `gdb --version` 核对（如 Debian 老版本自带 gdb 10.x 与新版 pwndbg 不兼容）
+- **pwndbg 与 gef 冲突**：同时装 = 初始化脚本互相干扰或后装覆盖前装，常见残留 Python 报错——二选一；gef 与 legacy `./setup.sh` 版 pwndbg 都写 `~/.gdbinit`，切换前先清旧文件，portable 版 pwndbg 走包装脚本不占 `~/.gdbinit`
+- **pwndbg 依赖版本**：pwndbg 依赖较新的 gdb（Python 3 API）；发行版自带 gdb 过旧时安装或加载会报错——先 `gdb --version` 核对（如 Debian 老版本自带 gdb 10.x 与新版 pwndbg 不兼容）
 - **gdb 版本差异**：`catch syscall` 需 Linux gdb（macOS 的 lldb 走 `[[re-lldb]]`）；`dump memory`/`gcore` 各版本行为一致但文件名默认带 pid
 - **LD_PRELOAD/环境注入痕迹**：调试器注入的 `LD_PRELOAD` 可被检测——`unset env LD_PRELOAD` 类方式清理后 attach；样本自身依赖 `LD_PRELOAD` 时先记录原始值
 
