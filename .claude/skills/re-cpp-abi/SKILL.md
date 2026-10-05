@@ -52,7 +52,9 @@ capabilities: [decompilation]
 2. **RTTI 重建（Itanium）**：
    ```sh
    readelf -s sample | grep _ZTI | head
-   # _ZTI<类名> 指向 typeinfo；typeinfo 首 8 字节 vptr 指向 _ZTVN10__cxxabiv1... 类型信息虚表（+8 为类型名指针）
+   # _ZTI<类名> 指向 typeinfo：起始为 vptr（指向 _ZTVN10__cxxabiv1... 类型信息虚表），
+   # 下一 pointer-sized 槽为 __type_name；64 位通常 +0/+8、32 位 +0/+4
+   # 解析前先定 ELF class / 指针宽度；__si_class_type_info / __vmi_class_type_info 同样按目标 ABI 对齐与字段宽度解析
    ```
    - 结构：`typeinfo` → `__class_type_info` 派生链 → 每个类的完整继承路径
    - 脚本化：Ghidra/IDA 遍历 _ZTI 引用，重建类继承图（父子关系表）
@@ -78,7 +80,7 @@ capabilities: [decompilation]
 
 5. **模板/lambda 识别**：
    - 模板：符号含 `<...>` 参数（Itanium mangling 中展开为长串）；实例化爆炸时按调用模式聚类
-   - lambda：Itanium 中 `_ZZ<作用域>ENK...` 特征、MSVC 中 `<lambda_...>`；lambda 局部类**无 RTTI**（步骤 2 缺失时反推）
+   - lambda：closure type 是真实的匿名 class type；普通调用场景常不发射独立 RTTI，缺 `_ZTI` 既不能排除也不能反推 lambda（typeid 等 ODR-use 时可有对应 RTTI）。识别优先用 Itanium 的 `_ZZ<作用域>ENK...` / `operator()` mangling、捕获成员布局与调用点，MSVC 的 `<lambda_...>`
    - 输出：疑似模板实例化/lambda 的函数清单 + 调用点
 
 6. **mangling 解码（批量）**：
@@ -100,6 +102,6 @@ capabilities: [decompilation]
 
 - **ABI 误判导致全部解析失败**：现象——用 Itanium 结构解析 MSVC 目标（或反之）全盘错位；原因——识别步骤跳过；对策——先做步骤 1，mangling 特征双查
 - **模板展开导致符号爆炸**：现象——readelf 输出几万行 `_Z...`；原因——模板实例化；对策——按调用模式聚类、过滤标准库符号（libstdc++/STL 前缀）
-- **lambda 无 RTTI**：现象——类继承图缺节点；原因——lambda 局部类不生成 typeinfo；对策——按 `_ZZ` mangling 特征与调用点识别，不硬找 RTTI
+- **lambda 缺 RTTI 被当成无类型**：现象——类继承图缺节点，误以为 lambda 不是真实类型；原因——closure type 是真实的匿名 class type，只是普通调用场景常不发射独立 typeinfo，缺 `_ZTI` 既不能排除也不能反推；对策——按 `_ZZ<作用域>ENK...` / `operator()` mangling、捕获成员布局与调用点识别，不硬找 RTTI（typeid 等 ODR-use 时可另有 RTTI）
 - **异常表版本差异**：现象——.xdata 解析错位；原因——MSVC 异常处理版本（__CxxFrameHandler3 等）不同；对策——按导入函数（__CxxFrameHandler）确认版本再解析
 - **虚调用无法静态定名**：现象——`call *reg` 全是间接调用；原因——虚分派；对策——结合 vtable 槽位与调用点证据缩小候选，不猜

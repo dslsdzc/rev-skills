@@ -110,7 +110,8 @@ capabilities: [triage]
 
 5. **安全特性与编译器识别**：
    ```sh
-   readelf -h sample.bin | grep Type              # ET_DYN=PIE / ET_EXEC=非 PIE
+   readelf -h sample.bin | grep Type              # ET_EXEC 通常为非 PIE；ET_DYN 可能是 PIE 或共享对象
+   readelf -d sample.bin | grep -i FLAGS_1        # FLAGS_1 含 PIE（DF_1_PIE）才是 PIE 可执行文件
    readelf -l sample.bin | grep -A1 GNU_STACK     # 栈含 E 权限=缺 NX
    readelf -l sample.bin | grep GNU_RELRO         # 存在=RELRO 开启（Full 再查 BIND_NOW）
    readelf -s sample.bin | grep __stack_chk_fail  # 有=canary 开启

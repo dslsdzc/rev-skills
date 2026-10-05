@@ -122,7 +122,7 @@ capabilities: [pe-parser]
 ### Delphi（VCL）特征与定位
 
 - **类体系字符串**：VCL 类名以短字符串（1 字节长度前缀）明文存放，`TPersistent`/`TApplication`/`TComponent` 类名成体系出现是强信号；先扫字符串定位类名，再反向找引用者
-- **vmt（虚方法表）定位**：类 vmt 是代码节里的指针数组，起点处 vmtSelfPtr 自指；元数据挂在 vmt 负偏移区（**经典布局，Delphi 7 及以前**）——32 位下类名字符串指针在 vmt-0x20、实例大小在 vmt-0x24、TypeInfo（RTTI 指针）在 vmt-0x10、published 方法表在 vmt-0x18；64 位指针翻倍、偏移按 8 对齐（vmtClassName 约 -0x40）。现代 Delphi（XE2+）布局已重新设计。偏移别死记，用「类名指针 → 类名内容」双向校验
+- **vmt（虚方法表）定位**：类 vmt 是代码节里的指针数组，起点处 vmtSelfPtr 自指；元数据挂在 vmt 负偏移区。**经典布局（Delphi 7 及以前）Win32**：TypeInfo（RTTI 指针）vmt-0x3C、published 方法表 vmt-0x34、类名字符串指针 vmt-0x2C、实例大小 vmt-0x28（旁证：vmtSelfPtr -0x4C、vmtParent -0x24）；**Win64 按官方值**、不自行翻倍推演：vmtTypeInfo -0xA8、vmtMethodTable -0x98、vmtClassName -0x88、vmtInstanceSize -0x80。Delphi 2009 起 TObject 新增虚方法，负偏移整体前移，现代布局不再与经典值通用（XE2 只引入 Win64，未改负偏移）。偏移别死记，用「vmtSelfPtr 自指 + 类名指针 → 类名内容」双向校验
 - **RTTI 还原类结构**：从 vmt 负偏移的 TypeInfo 指针出发，RTTI 记录含类型名与 published 属性/方法名表，可系统还原类体系与对象布局，作为后续反编译的骨架
 - **Borland 资源段特征**：.rsrc 内 RT_RCDATA 出现命名资源 `PACKAGEINFO`（包/单元列表）、`DVCLAL`（版本校验标记）；配合「无 Rich Header」（Borland 工具链不生成）交叉确认
   ```python
@@ -180,6 +180,6 @@ capabilities: [pe-parser]
 - **数据目录偏移别凭记忆**：PE32+ optional header 的数据目录数组从 `oh + 112` 起（+96 是 SizeOfHeapCommit）——实测 PE32+ 标准布局（24 标准 + 80 Windows 特有（含 8 字节 ImageBase）+ LoaderFlags/NumberOfRvaAndSizes 8 = 112）；写 96 会读到 HeapCommit 的垃圾值
 - **TLS 目录 4 个地址字段是 VA 不是 RVA**（StartAddressOfRawData/EndAddressOfRawData/AddressOfIndex/AddressOfCallBacks）——与多数数据目录条目不同，换算 RVA 前必须先减 ImageBase
 - **RVA→文件偏移判定用 raw_size 而非 vsize**：文件内只有 raw_size 字节存在，vsize 可能更大（BSS 类）；用 vsize 判定会越界读
-- **死导入检测**：IAT 槽存在桩（`jmp [IAT]`）但 .text 无任何指令引用 → 该导入实际走 LoadLibrary+GetProcAddress 动态解析（游戏/插件常见）——静态 IAT 分析结论作废，去字符串区找 `dllname`/`funcname` 动态加载参数
+- **未引用 import 检测**：IAT 槽存在桩（`jmp [IAT]`）但 CFG/.text 扫描未见引用，只能作为 unused 或间接引用候选——继续查数据引用（`push offset [IAT]` 一类）、间接调用与反汇编覆盖（未识别/未分析代码区）。不能由「无 xref」反推该导入改走动态解析：纯动态解析的 API 通常根本不进导入表。确需下动态解析结论时，须有独立证据：`LoadLibrary*`/`GetModuleHandle*` + `GetProcAddress` 调用点、`Ldr*` 原生 API、PEB/导出表遍历、API hash 表
 - **x64 TEB 布局（Wine winnt.h 核实）**：`gs:[0x30]`=Self；`gs:[0x58]`=ThreadLocalStoragePointer（`__declspec(thread)` 的 TLS 数组指针，访问序列 `mov rax,gs:[58]; mov ecx,[_tls_index]; mov rax,[rax+rcx*8]`）；`TlsSlots[64]` 在 **0x1480**（动态 TLS）；`TlsExpansionSlots` 在 0x1780——0x58 不是 TlsSlots
 - **内存格式字节序按名书写**：`VK_FORMAT_B8G8R8A8_UNORM`/DXGI 同名格式回读字节序 = [B,G,R,A]（px[0] 是 B 不是 R）——像素/纹理断言前先验证字节序，同类陷阱对 R8G8B8A8 反向成立
