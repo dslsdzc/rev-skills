@@ -40,10 +40,8 @@ capabilities: [shellcode-analysis]
 
 ### binwalk —— 从宿主文件里扫出嵌入 blob
 
-- Linux: `apt install binwalk` / `dnf install binwalk` / `pacman -S binwalk`
-- macOS: `brew install binwalk`
-- Windows: WSL 内 Linux 版（或 GitHub release 预编译 exe）
-- 验证: `binwalk --help`
+- 安装渠道与版本形态（v2 legacy / v3 主线）见 [[re-fw-extract]] 工具准备；使用前先按该处确认 major
+- 验证: `binwalk --version`
 
 ### xxd —— 十六进制查看/特征定位
 
@@ -162,7 +160,7 @@ capabilities: [shellcode-analysis]
          print(name, hex(djb2(name.encode())))
      ```
    - 算法对照: Metasploit 系（msfvenom 生成）API hash 默认 ROR13（非 djb2）——穷举对照时两种都要算，命中即确认生成器来源
-   - 还原调用约定: 先确定位数/调用约定（Win32 默认 stdcall、x64 默认 fastcall）——决定参数寄存器/栈顺序与返回值位置（坑 3）
+   - 还原调用约定: 先确定位数——32 位无唯一约定：Win32 API 常见 `WINAPI`/`__stdcall`（callee 清栈、收尾为 `RET n`），程序自身默认 `__cdecl`、成员函数 `__thiscall`（只有 `/Gz` 才把默认改成 `__stdcall`），按符号修饰 / 调用者栈平衡 / ECX-EDX 使用判定；64 位用统一 x64 ABI（前四整型/指针参数 RCX/RDX/R8/R9 + 32 字节 shadow space，类 fastcall，不是 `__fastcall`）——决定参数寄存器/栈顺序与返回值位置（坑 3）
    - API 集合 = 行为意图: VirtualAlloc/VirtualProtect + WriteProcessMemory → 注入；CreateThread/CreateRemoteThread → 执行；WinExec/CreateProcess → 运行程序——直接对应 [[re-behavior]] 的 ATT&CK 映射（T1055 进程注入等）
    - 模拟 stub: 把 API 调用点加入 hook_code 的 API_ADDRS，按功能返回假值（如 VirtualAlloc 返回一块已映射内存地址），观察控制流走向
 
@@ -181,5 +179,5 @@ capabilities: [shellcode-analysis]
 
 - **位置无关地址（无基址概念）**：现象——Ghidra/objdump 反汇编出来跳转/数据引用全是"乱"地址，按虚拟地址分析对不上；原因——shellcode 无 PE/ELF 头、无固定基址，位置无关代码用相对偏移和 call/pop 自定位，偏移而非绝对地址才是真相；对策——按 blob 内偏移分析（rizin `s <偏移>`、xref 看相对偏移），Ghidra 用 Raw Binary 导入并从候选入口标函数，别拿绝对地址对齐
 - **编码器变体（msfvenom 多种编码）**：现象——入口定位后反汇编全是垃圾字节，找不到"正常代码"；原因——载荷是编码器生成（shikata_ga_nai/xor_dynamic 等），解码循环执行前一切都是密文；对策——先找解码循环（XOR/ROL 特征指令 + LOOP），用步骤 4 模拟执行直接让它自己解码，或用 msfvenom 生成同编码器对照样本确认指令形态；shikata_ga_nai 的 key 是动态插入的，静态 key 还原法会失效——模拟执行是首选
-- **宿主依赖（需先还原调用约定）**：现象——模拟执行到某处行为怪异/栈错乱/返回值不对；原因——shellcode 设计为在宿主进程内运行，假定宿主已初始化（已加载 DLL 基址、栈对齐、调用约定）；对策——先确定位数与调用约定再 stub（32 位 stdcall 参数在栈上、64 位 fastcall 在 rcx/rdx/r8/r9），栈页按宿主近似布局初始化，API 按签名返回合理值
+- **宿主依赖（需先还原调用约定）**：现象——模拟执行到某处行为怪异/栈错乱/返回值不对；原因——shellcode 设计为在宿主进程内运行，假定宿主已初始化（已加载 DLL 基址、栈对齐、调用约定）；对策——先确定位数与调用约定再 stub（32 位整型/指针参数多在栈上、按 callee/caller 清栈判定；64 位前四整型/指针参数在 rcx/rdx/r8/r9），栈页按宿主近似布局初始化，API 按签名返回合理值
 - **模拟执行缺 API（stub）**：现象——Unicorn 执行到 `call kernel32...` 或 `syscall` 时 UcError 终止，控制流走不下去；原因——Unicorn 无 OS，内核与 DLL 都不存在；对策——步骤 5 先解析 API hash 还原真实 API 集合，按功能 stub（hook 调用点返回假值 + 记录参数），必要时 hook_mem 补内存映射（VirtualAlloc 返回的"新页"先 mem_map 好）

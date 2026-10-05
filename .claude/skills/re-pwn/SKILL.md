@@ -103,13 +103,13 @@ capabilities: [exploit-development]
    ```python
    from pwn import *
    p = process('./target')
-   p.sendline(b'%6$p %7$p')      # 固定读第 6/7 个参数（%1$–%5$ 是 rsi/rdx/rcx/r8/r9 寄存器，即栈上第 1/2 个 8 字节）
+   p.sendline(b'%6$p %7$p')      # %N$ 是逻辑参数列表第 N 个参数: format 占 rdi，%1$–%5$ 来自 rsi/rdx/rcx/r8/r9，%6$/%7$ 即调用者栈上第 1/2 个 8 字节
    print(p.recvline())
    ```
-   - 泄露：`%N$p` 直接读栈上第 N 个参数（往返几次定位 flag / 返回地址 / libc 地址，见坑 4 的环境差异）
+   - 泄露：`%N$p` 读 printf 逻辑参数列表的第 N 个参数，不是第 N 个栈槽；SysV AMD64 下 format 占 RDI，前 5 个整型/指针可变参来自 RSI/RDX/RCX/R8/R9，第 6 个起才来自栈；无对应实参时读到的是调用现场残留，偏移必须探测（往返几次定位 flag / 返回地址 / libc 地址，见坑 4 的环境差异）
    - 任意写：`%N$n` 把已输出字节数写到第 N 个参数指向的地址——payload 布局 = 目标地址（前 8 字节）+ 偏移到该地址 + `%<len>c%N$n` 分段写（先小后大，或用 `%hhn` 按字节写省字节数）
    - 经典目标：GOT 表项（RELRO partial 时）改成 system / win 函数地址；或改返回地址为 one_gadget
-   - pwntools 辅助: `fmtstr_payload(offset, {got_addr: win_addr}, write_size='byte')`
+   - pwntools 辅助: `fmtstr_payload(offset, {got_addr: win_addr}, write_size='byte')`（offset 来自实测，不是可套用的 ABI 常数）
 
 5. **本地验证（pwntools 脚本）**：
    ```python
