@@ -27,7 +27,7 @@ capabilities: [decompilation, debugging]
   - Windows: `choco install temurin21`（或 Oracle JDK 21）
 - 启动: `./ghidraRun`（GUI）/ `./support/analyzeHeadless`（无头）
 - 验证: `java -version`（须 21+）；`./support/analyzeHeadless -help` 正常输出
-- 版本: 12.x 为当前主线（12.0 起 2025 年底，2026-08 最新 12.1.3）；运行官方 release 只需 JDK 21，从源码构建 Ghidra 自身需 JDK 25 + Gradle 9.1+；11.x → 12.x 有破坏性脚本 API 变更，写脚本先查目标版本 javadoc，细节见 [[gotchas]]
+- 版本: 12.x 为当前主线（核验基线 12.1.4）；安装时以官方 Releases 的 Latest 为准；运行官方 release 只需 JDK 21，从源码构建 Ghidra 自身需 JDK 25 + Gradle 9.1+；11.x → 12.x 有破坏性脚本 API 变更，写脚本先查目标版本 javadoc，细节见 [[gotchas]]
 
 ### ghidra-bridge（Python 远程控制）
 

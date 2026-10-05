@@ -32,7 +32,7 @@ capabilities: [ai-model-analysis]
 
 ### onnx（pip，Python 3.10+）—— ONNX 解析主力
 
-- `pip install onnx`（官方 PyPI；onnx 1.22 要求 Python 3.10+，自带 protobuf 依赖与 `onnx.proto3` 类型定义）
+- `pip install onnx`（官方 PyPI；当前 onnx 要求 Python 3.10+，具体版本以 PyPI Requires-Python 为准；自带 protobuf 依赖与 `onnx.proto3` 类型定义）
 - 验证: `python3 -c "import onnx; print(onnx.__version__)"`
 
 ### netron（pip，Python 3）—— 模型可视化

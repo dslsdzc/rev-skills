@@ -12,8 +12,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-ai-model": {
-      "hash": "9f161cbb051e9869",
-      "last_reviewed": "2026-09-22",
+      "hash": "89465fbbe42d4a4a",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-ai-triage": {
@@ -37,8 +37,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-angr": {
-      "hash": "ce6d9b8a397b3ca7",
-      "last_reviewed": "2026-09-13",
+      "hash": "384dc09a7cecb9bb",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-anti-analysis": {
@@ -102,8 +102,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-cpp-abi": {
-      "hash": "53903d58413f24f0",
-      "last_reviewed": "2026-09-13",
+      "hash": "db36bad3c5715d97",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-cracking": {
@@ -217,13 +217,13 @@
       "note": "本轮审查波覆盖"
     },
     "re-format-macho": {
-      "hash": "6008e14f5edc491a",
-      "last_reviewed": "2026-09-14",
+      "hash": "5278645d8ddbcf37",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-format-pe": {
-      "hash": "9eef3678eea9b463",
-      "last_reviewed": "2026-09-13",
+      "hash": "aeaac45f1bafa091",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-fp-runtime": {
@@ -272,8 +272,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-ghidra": {
-      "hash": "c7845c1749aeb639",
-      "last_reviewed": "2026-09-13",
+      "hash": "f8a7a11f61715903",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-go": {
@@ -552,8 +552,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-triage": {
-      "hash": "14ff1ba6ac10684b",
-      "last_reviewed": "2026-09-13",
+      "hash": "b64b946192d207be",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-uefi": {
@@ -567,8 +567,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-unpack-simple": {
-      "hash": "5e7dadd38040db58",
-      "last_reviewed": "2026-09-13",
+      "hash": "15a21c26036971b7",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-variant": {

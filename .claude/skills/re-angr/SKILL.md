@@ -23,8 +23,8 @@ capabilities: [symbolic-execution]
 ### angr（pip 安装）
 
 - `pip install angr`（Linux / macOS / Windows 均可；Windows 下 pip 装 win32 wheel，WSL 内安装 Linux 版亦可）
-- **Python 版本兼容性（重点）**：**angr 9.3.0 起要求 Python 3.12+**（`requires-python >=3.12`）；**9.2.x 不是固定区间**——下限随补丁版本抬高（9.2.91 要求 ≥3.8，9.2.203 已要求 ≥3.10），不能按「9.2.x」整线判断。装前以目标版本的 PyPI `requires-python` 为准（`pip index versions angr` 看可用版本），再按系统 Python 选：
-  - 系统自带 Python 3.12+（Ubuntu 24.04 默认 3.12）→ 直接 `pip install angr`（最新 9.3.x 线）
+- **Python 版本兼容性（重点）**：**angr 9.3.0 起要求 Python 3.12+**（`requires-python >=3.12`；当前主线 10.x 同）；**9.2.x 不是固定区间**——下限随补丁版本抬高（9.2.91 要求 ≥3.8，9.2.203 已要求 ≥3.10），不能按「9.2.x」整线判断。装前以目标版本的 PyPI `requires-python` 为准（`pip index versions angr` 看可用版本），再按系统 Python 选：
+  - 系统自带 Python 3.12+（Ubuntu 24.04 默认 3.12）→ 直接 `pip install angr`（当前主线 10.x；Python >=3.12）
   - 系统为 Python 3.11 及以下 → `pip install "angr<9.3"`（9.2.x 线），**别硬装 9.3+**
   - 多版本并存用 venv 隔离：`python3.12 -m venv ~/venvs/angr && source ~/venvs/angr/bin/activate`（或 `brew install python@3.12` / `py -3.12 -m venv angr-venv`）
 - 装前先升级基础工具：`pip install --upgrade pip setuptools wheel`（避免原生组件编译失败）
