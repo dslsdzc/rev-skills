@@ -40,7 +40,7 @@ capabilities: [exploit-development]
 
 - gdb: Debian/Ubuntu `sudo apt install gdb`、Fedora `sudo dnf install gdb`、Arch `sudo pacman -S gdb`、macOS `brew install gdb`（建议 lldb）
 - **32 位目标**：Debian/Ubuntu 需 `sudo apt install gdb-multiarch`（64 位 gdb 调 32 位目标要它）；跑 32 位动态链接程序还需 32 位运行库 `sudo apt install libc6-i386`
-- pwndbg / gef 二选一（`git clone` 后 `./setup.sh` / curl 到 ~/.gdbinit，见 [[re-gdb]]）；验证: 进 gdb 有 pwndbg/gef banner
+- pwndbg / gef 二选一（安装方式以 [[re-gdb]] 为准：pwndbg 走官方 portable 安装脚本，gef 走 curl 到 `~/.gdbinit`）；验证: 进 gdb 有 pwndbg/gef banner
 
 ### one_gadget（可选）—— libc 一键 RCE
 
