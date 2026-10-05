@@ -40,6 +40,11 @@ test('no-tools 叶子技能报缺工具准备', () => {
   assert.ok(errors.some(e => e.includes('工具准备')));
 });
 
+test('bad-frontmatter 顶格游离行报错（校验闸口不再放过非法 frontmatter）', () => {
+  const { errors } = checkSkillDir(FIX + 'bad-frontmatter');
+  assert.ok(errors.some(e => e.includes('frontmatter line')), `未报错：${JSON.stringify(errors)}`);
+});
+
 test('链接规则：技能死链与跨技能裸引用报错，本技能 references 放行', () => {
   const { errors } = checkSkillDir(FIX + 'broken-link', { knownSkills: ['re-abc'] });
   assert.ok(errors.some(e => e.includes('re-does-not-exist')), '技能死链应报错');
@@ -73,7 +78,7 @@ test('gateway-skill 豁免工具准备检查', () => {
 
 test('collectSkills 收集全部技能目录名', () => {
   const names = collectSkills(FIX);
-  assert.deepEqual([...names].sort(), ['bad-name', 'broken-link', 'gateway-skill', 'good-skill', 'no-tools']);
+  assert.deepEqual([...names].sort(), ['bad-frontmatter', 'bad-name', 'broken-link', 'gateway-skill', 'good-skill', 'no-tools']);
 });
 
 test('parseFrontmatter 解析 capabilities list', () => {
