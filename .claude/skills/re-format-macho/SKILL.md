@@ -81,7 +81,7 @@ capabilities: [macho-parser]
    otool -l sample | grep -A9 LC_DYLD_INFO_ONLY
    llvm-objdump --macho --exports-trie sample   # 导出符号（trie 解码）
    ```
-   rebase（基址修正点）、bind/lazy_bind（外部符号绑定）、export（导出 trie）四张表的 offset+size 都在 LC_DYLD_INFO_ONLY（48 字节）里；新版二进制用 LC_DYLD_CHAINED_FIXUPS（链式修正，iOS 13+ 默认）。dylib 的导出符号在 trie 里，`nm -gU` 同效果。
+   offset+size 共五组、合计 48 字节，都在 LC_DYLD_INFO_ONLY 里：rebase（基址修正点）、bind（外部符号绑定，非惰性）、weak_bind（弱符号绑定，弱符号合并语义独立，不得并入 bind）、lazy_bind（惰性绑定）、export（导出 trie）；新版二进制用 LC_DYLD_CHAINED_FIXUPS（链式修正，iOS 13+ 默认）。dylib 的导出符号在 trie 里，`nm -gU` 同效果。
 
 6. **动态库依赖链（注入检测）**：
    ```sh
@@ -127,5 +127,5 @@ capabilities: [macho-parser]
 - **通用二进制含多架构片**：先 `lipo -info` 确认架构再 `lipo -thin` 提取，别对全片解析；fat 头里各片 offset 是绝对文件偏移，按 (offset, size) 切出单片
 - **GOT 位置随版本迁移**：新产物 GOT 在 `__DATA_CONST,__got`（只读，装载后重定位一次）；旧产物在 `__DATA,__got`（可写）——找 GOT 先 `otool -l` 看段名，别假设
 - **dyld 共享缓存里没有独立 dylib 文件**：系统库（libSystem.dylib 等）实际在 `/System/Library/dyld/` 缓存内，文件系统里只有 stub——分析系统库用 `dyld_shared_cache_util -extract` 抽出
-- **load command 遍历错位**：现象——`otool -l` 输出中途乱码/报错；原因——ncmds 与 sizeofcmds 被伪造或某条 LC 的 cmdsize 异常；对策——按 32/64 位结构体逐条校验 cmdsize（64 位下 LC 最小 16 字节），从 sizeofcmds 总量反推合法性
+- **load command 遍历错位**：现象——`otool -l` 输出中途乱码/报错；原因——ncmds 与 sizeofcmds 被伪造或某条 LC 的 cmdsize 异常；对策——所有 LC 至少 8 字节（`load_command` 头本身 `cmd`+`cmdsize`），64 位下 cmdsize 须为 8 的倍数、32 位为 4 的倍数，再按具体 cmd 校验其结构最小尺寸与尾随 section/字符串，累计不超 sizeofcmds
 - **__LINKEDIT 是映射段，但内容可能被 dyld 加工**：它有自己的 vmaddr/vmsize，通常以只读映射存在（`vmmap` 可见）；不过 shared cache 共享库的链接元数据驻留在共享缓存里，直接从进程内存按文件偏移找符号表常常对不上——定位符号表优先用 `nm`/`dyldinfo`/MachOView 等按 LC_SYMTAB 解析，而不是照抄文件偏移

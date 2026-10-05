@@ -19,7 +19,7 @@ Mach-O 文件 = mach_header + load commands 区 + 段数据（__TEXT/__DATA/__LI
 
 ## load commands（LC）通用头
 
-每条 LC 前 8 字节固定：`cmd: u32 + cmdsize: u32`；cmdsize 是整条命令长度（含这 8 字节），按此顺序遍历。
+每条 LC 前 8 字节固定：`cmd: u32 + cmdsize: u32`；cmdsize 是整条命令长度（含这 8 字节），按此顺序遍历。下界只有这 8 字节（`load_command` 头本身），无 16 字节之说；64 位下 cmdsize 须为 8 的倍数、32 位为 4 的倍数，且按具体 cmd 校验其结构最小尺寸与尾随 section/字符串。
 
 ### 常见 LC 类型值
 
@@ -35,7 +35,7 @@ Mach-O 文件 = mach_header + load commands 区 + 段数据（__TEXT/__DATA/__LI
 | 0x19 | LC_SEGMENT_64 | 段（64 位） |
 | 0x1B | LC_UUID | 24 字节 UUID |
 | 0x1D | LC_CODE_SIGNATURE | 签名区（dataoff/datasize） |
-| 0x22 / 0x80000022 | LC_DYLD_INFO / _ONLY | dyld 四表（新） |
+| 0x22 / 0x80000022 | LC_DYLD_INFO / _ONLY | dyld 信息表（新） |
 | 0x24 | LC_VERSION_MIN_MACOSX | 最低 macOS 版本（旧式） |
 | 0x26 | LC_FUNCTION_STARTS | 函数起始地址压缩表 |
 | 0x80000028 | LC_MAIN | 新入口（entryoff/stacksize） |
@@ -111,7 +111,7 @@ __LINKEDIT    vmaddr 末尾段             R     （映射只读；链接元数�
 ```
 LC_LOAD_DYLIB → 依赖库列表（otool -L）
 LC_SYMTAB     → 符号表（nlist_64×nsyms + 字符串表）
-LC_DYLD_INFO_ONLY → rebase/bind/lazy_bind/export 四表
+LC_DYLD_INFO_ONLY → rebase/bind/weak_bind/lazy_bind/export 五组表（weak_bind 语义独立于 bind，不得并入）
 导出符号定位：export trie 逐字节匹配前缀 → 叶子存 symbol 偏移（相对 trie 所在区域）
 绑定信息定位：bind 表的 opcode 流（ADDR/SYMBOL/TYPE 等）→ GOT 槽 ← 符号
 ```
@@ -138,7 +138,7 @@ LC_DYLD_INFO_ONLY → rebase/bind/lazy_bind/export 四表
 
 - 入口：老二进制 LC_UNIXTHREAD（0x05），新二进制 LC_MAIN（0x80000028）
 - 版本命令：LC_VERSION_MIN_MACOSX（0x24）→ LC_BUILD_VERSION（0x32，多 platform 字段）
-- dyld 重定位：LC_DYLD_INFO_ONLY 四表（macOS 10.8+）→ LC_DYLD_CHAINED_FIXUPS 链式（iOS 13+/macOS 10.15+，减小启动开销）
+- dyld 重定位：LC_DYLD_INFO_ONLY 五组表（macOS 10.8+）→ LC_DYLD_CHAINED_FIXUPS 链式（iOS 13+/macOS 10.15+，减小启动开销）
 - GOT 位置：__DATA,__got → __DATA_CONST,__got（iOS 13+/macOS 10.14+）
 - 导出 trie 可独立成 LC_DYLD_EXPORTS_TRIE（LC_DYLD_INFO 的 export 字段为 0）
 

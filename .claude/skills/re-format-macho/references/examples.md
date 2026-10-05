@@ -182,7 +182,7 @@ for _ in range(5):
 ## 实现教训（内化）
 
 - 一切解析先看 magic 分 64/32 位（字段数不同），fat 先拆片
-- load commands 遍历只信 cmdsize，不信 ncmds 之外的信息；ncmds×最小 16 字节 > sizeofcmds 即异常
+- load commands 遍历只信 cmdsize，不信 ncmds 之外的信息；每条 LC 至少 8 字节（`load_command` 头），ncmds×8 > sizeofcmds 即异常，且各条 cmdsize 之和须等于 sizeofcmds
 - 段节是一棵树（段→节），不是平铺数组；节地址 = 段 vmaddr 内的相对偏移
 - otool 输出与文件字节必须能互相印证：对不上说明头被修改或工具解析歧义，先手工核对再下结论
 
