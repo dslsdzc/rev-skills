@@ -31,7 +31,7 @@ capabilities: [memory-dump]
 
 ### volatility（内存取证分析）
 
-- 全平台: `pip install volatility3`（命令 `vol`）；volatility2 旧版 Python2 按需
+- 全平台: `pip install volatility3`（命令 `vol`）——Volatility 3 是当前唯一维护主线；Volatility 2 已于 2025-05-16 被 upstream 归档（只读），仅用于旧 V2-only 插件/profile 的历史镜像或结果复现，需置于隔离的 Python 2 环境，现代镜像勿作常规 fallback
 - 验证: `vol -h`；`vol -f core windows.info` 能识别镜像
 
 ### proc / psmisc（进程状态）
@@ -47,14 +47,14 @@ capabilities: [memory-dump]
 
 ## 操作步骤
 
-1. **默认转储：等 OEP 解密后 `gcore -o out <pid>`**：
+1. **默认转储：`gcore -o out <pid>`（按明文/代码 materialization 定时机）**：
    ```sh
    gcore -o out <pid>
    # 或调试器内
    gdb -q -p <pid> -ex 'gcore out' -ex detach -ex quit
    ```
    - 转储含完整内存 + 寄存器/线程状态（ELF notes），可直接导入 [[re-ghidra]] / [[re-ida]]
-   - **时机**：脱壳样本必须在进程运行到 OEP（壳解密完成）后再 dump，否则拿到的是壳的初始状态（见坑 2）
+   - **时机**：转储时机由目标明文/代码的 materialization 决定——经典单层壳在真实 OEP 附近转储通常合适，但 OEP 不是通用完成判据；多阶段 loader、按需/逐页解密、虚拟化保护、反射加载、进程注入与 fake OEP 应按「写→执行转移 + 内存保护变化 + payload 头/导入恢复」定 dump 点，必要时多时点快照（见坑 2；多阶段/fake OEP 的判定正例见 [[re-unpack-simple]] 步骤 3「第一次执行即 OEP 不成立」）
    - 一次转储满足后续所有定向提取需求——不重复多次 dump
 
 2. **转储前按 maps 过滤 vsyscall/vdso**：
@@ -131,7 +131,7 @@ capabilities: [memory-dump]
 ## 常见坑与陷阱
 
 - **vsyscall/vdso 读取失败正常**：`[vsyscall]` 只可执行、`[vdso]` 部分页不可读，gdb/pread 访问报错是预期行为——按 maps 过滤后提取，别当 bug 排查
-- **转储时机过早 = 壳的初始状态**：在壳解密前 dump 拿到的是压缩/加密数据——脱壳样本必须等到 OEP 后（见 [[re-analyze/platform-tips]] 关键经验）
+- **转储时机过早 = 壳的初始状态**：在明文/代码尚未 materialize 时 dump 拿到的是压缩/加密数据——经典单层壳在真实 OEP 附近合适，但 OEP 不是通用完成判据；多阶段 loader / 按需解密 / 虚拟化保护 / 反射加载 / 进程注入 / fake OEP 应按「写→执行转移 + 内存保护变化 + payload 头/导入恢复」定 dump 点，必要时多时点快照（见 [[re-analyze/platform-tips]] 关键经验）
 - **/proc/pid/mem 无脑 open 必报错**：直接 `open('/proc/pid/mem').read()` 会失败（偏移非法/权限）——必须 maps 定址 + SIGSTOP + chunked pread
 - core 文件可达数 GB——先 `file out` 确认是 ELF core，再按需定向提取，别整文件导入工具
 - **从转储重建进程时 vDSO 不可移植**：现象——重建/复现进程镜像后程序仍跳回原 vDSO 地址，或 `call *%gs:0x10` 间接调用断掉；原因——vDSO 地址记录在进程栈 auxv 的 `AT_SYSINFO`/`AT_SYSINFO_EHDR`，且 glibc 有缓存，修补 auxv 也不一定能重定位；对策——重建镜像时把 vDSO 相关调用视为必然失效（该页直接跳过），分析以其余映射为准

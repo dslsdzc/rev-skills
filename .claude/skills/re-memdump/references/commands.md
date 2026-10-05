@@ -9,7 +9,7 @@
 - `gcore -o <前缀> <pid>` 按 pid 转储（产物 `<前缀>.<pid>`）；`gcore -a -o <前缀> <pid>` 含所有映射段
 - `gdb -q -p <pid> -ex 'gcore out' -ex detach -ex quit` 调试器内转储（attach 后可见状态再 dump）
 - `gcore --help` 验证；产物是单进程 ELF core（含线程/寄存器 notes）
-- 时机：脱壳样本必须等 OEP 解密完成后再 dump（见 SKILL.md 坑「转储时机过早」）
+- 时机：按明文/代码 materialization 定——单层壳在真实 OEP 附近通常合适，但 OEP 不是通用完成判据（多阶段 loader/按需解密/虚拟化/反射加载/注入/fake OEP 另判，见 SKILL.md 坑「转储时机过早」）
 
 ### maps 定址（/proc）
 
@@ -50,7 +50,7 @@
 
 ```
 cat /proc/<pid>/maps > maps.txt                    # 定址基线
-# 脱壳样本：确认运行到 OEP（壳解密完成）再 dump
+# 脱壳样本：按明文/代码 materialization 定 dump 点（单层壳常在 OEP 附近，非通用判据）
 gcore -o out <pid>
 file out                                           # 确认 ELF core
 grep -abo $'dex\n035' out | head                   # 定向提取（密钥/DEX/字符串）

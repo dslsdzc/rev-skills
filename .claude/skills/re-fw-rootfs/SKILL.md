@@ -27,7 +27,7 @@ capabilities: [firmware-extraction]
 
 ### 7-Zip（7z）—— 通用容器兜底
 
-- Linux: `apt install p7zip-full` / `dnf install p7zip-plugins` / `pacman -S p7zip`
+- Linux: `apt install p7zip-full` / `dnf install p7zip-plugins` / `pacman -S 7zip`
 - macOS: `brew install p7zip`
 - Windows: `choco install 7zip`（或 7-zip.org 官方安装包）
 - 验证: `7z i | head -5`（显示版本）

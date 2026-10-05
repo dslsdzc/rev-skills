@@ -42,7 +42,8 @@ capabilities: [bytecode-parser]
 ### de4dot（GitHub release，去混淆）
 
 - GitHub `de4dot/de4dot` release `de4dot.exe`；Linux/macOS 需 mono:
-  - `apt install mono-devel` / `dnf install mono-devel`；Arch: `yay -S mono-git`（AUR——mono 自 2021 年起不在官方仓库，AUR 亦无稳定 `mono` 包，仅 `mono-git`）；macOS `brew install mono`
+  - `apt install mono-devel` / `dnf install mono-devel`；Arch: `sudo pacman -S mono`；macOS `brew install mono`
+  - 仅在明确需要 upstream Git snapshot 时改用 AUR 的 `mono-git`（属 AUR，非官方仓库）
   - 运行: `mono de4dot.exe --help`；Windows 直接 `de4dot.exe --help`
 - 验证: `--help` 正常输出
 

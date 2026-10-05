@@ -99,10 +99,7 @@ capabilities: [rtos-analysis]
 
 ### binwalk（镜像提取先行）
 
-- Linux: `apt install binwalk`（Debian/Ubuntu）/ `dnf install binwalk` / `pacman -S binwalk`
-- pip（跨平台、版本新）: `pip install binwalk`
-- macOS: `brew install binwalk`
-- Windows/WSL: Windows 本机无官方包，用 WSL 内 Linux/pip 版
+- 安装与版本形态以 [[re-fw-extract]]「工具准备」的安装矩阵为单一事实源，本技能不复制包名列表
 - 验证: `binwalk --version`
 
 ### python3（脚本化解析与批量标注）

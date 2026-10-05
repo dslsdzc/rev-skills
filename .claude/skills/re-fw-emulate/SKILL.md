@@ -100,8 +100,8 @@ capabilities: [emulation]
    全系统内：把 gdbserver 放进 rootfs，`gdbserver :1234 /usr/sbin/httpd`，宿主 `target remote <qemu_ip>:1234`；调试手法按 [[re-gdb]]。
 
 5. **网络隔离下仿真**：
-   - 用户态：默认无网络；需要时用全系统方案
-   - 全系统：先 `-net none`，确认行为后再加 `-netdev user,id=n0`（用户态 NAT，仅模拟出站，隔离宿主机）
+   - 用户态：不是网络沙箱（socket/connect 经 syscall 转发到宿主内核），需要受控网络时改用全系统方案
+   - 全系统：QEMU 不加网络参数会默认建 NIC（e1000）+ user 后端——先显式 `-nic none` 确认行为，需要受控网络再加 `-nic user,restrict=on`（用户态 NAT，仅模拟出站）
    - 分析回连/协议前先隔离（[[re-analyze/platform-tips]] 最高原则），流量抓包与协议重建转 [[re-protocol]]；firmadyne 默认带网卡也需按此原则先行隔离
 
 ## 跨域联合
@@ -116,7 +116,7 @@ capabilities: [emulation]
 
 - **外设寄存器访问崩溃**：现象——程序 mmap 固定地址后读 GPIO/UART 寄存器段错误；原因——QEMU 用户态不模拟外设，地址无映射；对策——strace 定位访问点，LD_PRELOAD stub 返回模拟值（步骤 3）
 - **架构选错直接 segfault**：现象——qemu-arm 跑 MIPS 程序秒崩；原因——没先 `file`/`readelf` 确认架构与字节序（大端 mips ≠ mipsel）；对策——步骤 1 先确认，选对 qemu-<arch>
-- **无网络设备 → 初始化卡死**：现象——程序在网卡初始化处挂起不退出；原因——全系统仿真没配网卡，ioctl 无返回；对策——启动加 `-device e1000` 等虚拟网卡，或先 `-net none` 观察是否跳过（步骤 5）
+- **网卡型号不符 → 初始化卡死**：现象——程序在网卡初始化处挂起不退出；原因——固件按特定芯片初始化，默认挂的 e1000 不匹配，ioctl 无返回；对策——按固件预期加 `-device <型号>` 等虚拟网卡，或先 `-nic none` 观察是否跳过（步骤 5）
 - **时间戳/时钟函数陷阱**：现象——程序读时间怪异（1970/倒退），行为与真实设备不同；原因——QEMU 虚拟时钟与墙钟不同步；对策——`-rtc base=utc` 固定，或 stub 掉 clock_gettime 相关调用
-- **网络未隔离就仿真**：现象——固件真实回连外网（C2/升级服务器）；原因——跳过网络隔离；对策——全系统仿真默认 `-net none` / 用户态 NAT（步骤 5），回连分析前按 [[re-analyze/platform-tips]] 隔离
+- **网络未隔离就仿真**：现象——固件真实回连外网（C2/升级服务器）；原因——QEMU 默认就建 NIC + user 后端（restrict=off），跳过显式隔离即联网；对策——全系统仿真显式 `-nic none`，用户态也非网络沙箱（步骤 5），回连分析前按 [[re-analyze/platform-tips]] 隔离
 - 命令族速查与操作序列见 [[commands]]；工具特有坑与版本差异见 [[gotchas]]

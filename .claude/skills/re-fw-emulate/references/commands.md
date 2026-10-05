@@ -28,9 +28,9 @@
 | 挂磁盘镜像 | `-drive file=rootfs.ext2,format=raw` |
 | 串口到终端 | `-nographic`（`-serial mon:stdio` 变体） |
 | 内核参数 | `-append "console=ttyAMA0 root=/dev/ram rdinit=/sbin/init"` |
-| 网络（默认无） | `-netdev user,id=n0 -device e1000,netdev=n0`（用户态 NAT，仅出站） |
+| 网络（显式添加） | `-netdev user,id=n0 -device e1000,netdev=n0`（用户态 NAT，仅出站） |
 | 网络简写 | `-nic user,model=e1000`（新版推荐；`-net` 旧语法已标记弃用） |
-| 完全断网 | 不加任何网络参数即可（默认 `-net none`） |
+| 完全断网 | 显式 `-nic none`（或 `-nodefaults`）——不加网络参数会默认建 NIC + user 后端 |
 | 虚拟外设 | `-device virtio-net-pci,netdev=n0` / `-device e1000` 等（`-device help` 列全部） |
 | 固定时钟 | `-rtc base=utc`（避免时间怪异，见 [[gotchas]]） |
 | 内存 | `-m 256`（按固件需求，常见 64-256MB） |
@@ -94,7 +94,7 @@ qemu-<arch> -strace 定位首个崩溃访问（如 mmap 固定地址后读 [addr
 ### 5. 网络隔离下仿真
 
 ```
-全系统先不加网络参数（默认 -net none）确认行为 → 需要网络再加 -nic user,model=e1000
+全系统先 -nic none（不加网络参数会默认建 NIC + user 后端）确认行为 → 需要受控网络再加 -nic user,model=e1000,restrict=on
 → 回连/协议分析前按 [[re-analyze/platform-tips]] 隔离；抓包与协议重建转 [[re-protocol]]
 → firmadyne 默认带网卡，同样先隔离再跑
 ```

@@ -33,7 +33,7 @@ capabilities: [memory-forensics]
 
 ### 7zip（可选，解 .7z 压缩转储）
 
-- Linux: `apt install p7zip-full` / `dnf install p7zip-plugins` / `pacman -S p7zip`
+- Linux: `apt install p7zip-full` / `dnf install p7zip-plugins` / `pacman -S 7zip`
 - macOS: `brew install p7zip`
 - Windows: 7-Zip 官网安装
 - 验证: `7z --help`

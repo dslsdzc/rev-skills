@@ -11,7 +11,7 @@
 ## 外设与内存
 
 - **用户态不模拟外设**：mmap 固定地址（GPIO/UART 寄存器）后访问直接段错误——`-strace` 定位访问点，LD_PRELOAD stub 返回模拟值（见 [[commands]] 序列 4）
-- **网卡初始化挂起**：全系统没配网卡时 ioctl 无返回、程序卡死——加 `-device e1000`/virtio 或先 `-net none` 确认是否跳过
+- **网卡型号与固件预期不符导致初始化挂起**：固件按特定芯片初始化时 ioctl 无返回、程序卡死——默认挂的 e1000 未必匹配，按固件预期加 `-device <型号>`/virtio；也可先 `-nic none` 确认是否能跳过网络初始化（见 [[commands]] 序列 5）
 - **内存给太小**：固件按真实内存初始化（malloc 上限/分区表），`-m 32` 可能启动失败——常见 64-256MB 起步试
 - **时间/时钟怪异**：QEMU 虚拟时钟与墙钟不同步（读时间 1970/倒退）——`-rtc base=utc` 固定，或 stub 掉 clock_gettime 相关调用
 
@@ -24,9 +24,10 @@
 
 ## 网络与隔离
 
-- **默认无网络**：qemu-user 无网络；qemu-system 默认 `-net none`——需要出站时显式加 `-netdev user`（用户态 NAT，仅模拟出站，不暴露宿主）
-- **NAT 不等于隔离**：`-netdev user` 的 guest 出站直达宿主网络栈——回连分析前仍按 [[re-analyze/platform-tips]] 隔离（断外网/fake DNS），firmadyne 默认网卡同样先隔离
-- **guest 内需要 IP 固定**：user 模式 NAT 的 DHCP/地址分配与固件假设不符时程序初始化失败——`-netdev user,net=192.168.x.0/24` 定制网段
+- **qemu-system 默认有网络**：未显式声明网络时 QEMU 会自动创建默认 NIC（`e1000`）与 user 模式后端（`type=user,net=10.0.2.0,restrict=off`）——**分析不可信固件必须显式 `-nic none`**（或 `-nodefaults`）才真正无网络；需要受控出站时用 `-nic user,restrict=on` 或隔离 TAP / network namespace
+- **qemu-user 不是网络沙箱**：guest 的 socket/connect 经 syscall 转发到宿主内核，可直接访问宿主回环与网络——从 qemu-user 跑出站连接不代表隔离，回连分析同样按 [[re-analyze/platform-tips]] 隔离
+- **user 模式不是隔离**：`-nic user` 的 guest 出站直达宿主网络栈——回连分析前仍按 [[re-analyze/platform-tips]] 隔离（断外网/fake DNS），firmadyne 默认网卡同样先隔离
+- **guest 内需要 IP 固定**：user 模式 NAT 的 DHCP/地址分配与固件假设不符时程序初始化失败——`-nic user,net=192.168.x.0/24` 定制网段
 
 ## 版本差异
 
