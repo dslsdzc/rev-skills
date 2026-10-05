@@ -24,10 +24,12 @@ capabilities: [decompilation]
 
 - macOS: `brew install rizin`
 - Arch: `pacman -S rizin`
-- Fedora 43+/RHEL(EPEL): `dnf install rizin`（EPEL 8/9 也有包；Fedora 42 及更早版本用官方 release 二进制）
-- Debian/Ubuntu: 官方 release 二进制（GitHub rizinorg/rizin releases：static tar.xz / Windows zip / macOS pkg）或 `rz-pm` 安装——Debian 仓库无 rizin 包，`apt install rizin` 会失败
+- Fedora/RHEL(EPEL 8+): `dnf install rizin`（Fedora 当前受支持版本与 EPEL 8/9/10 均有包）；已 EOL 的 Fedora 先查发行版仓库，无包再用官方 release 或 `rz-pm`
+- Debian/Ubuntu: **仓库无 rizin 包，`apt install rizin` 会失败**——改用官方 release 二进制（GitHub rizinorg/rizin releases：static tar.xz / Windows zip / macOS pkg）或 `rz-pm`
+- Kali: `apt install rizin`（Kali 自有仓库有包，前提是使用 Kali 官方源）
 - Windows: 官方 release zip 解压即用（`rz-bin.exe`）
 - 验证: `rizin -v`、`rz-bin -V`
+- 说明: 发行版包状态随时间变化，安装前先查目标发行版仓库；成功与否一律以 `rizin -v` 为准。其他技能需要 rizin 安装步骤时引用本处矩阵，不各自复制发行版命令。
 
 ### radare2 兼容层（旧命令体系）
 

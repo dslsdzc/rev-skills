@@ -252,8 +252,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-fw-extract": {
-      "hash": "fb69cb85be7c868b",
-      "last_reviewed": "2026-09-13",
+      "hash": "78bd12f02eaeec44",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-fw-rootfs": {
@@ -472,8 +472,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-radare2": {
-      "hash": "624608dac2878a73",
-      "last_reviewed": "2026-09-13",
+      "hash": "e70f9ff51eaed95f",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-ransomware": {
