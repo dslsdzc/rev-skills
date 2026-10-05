@@ -591,3 +591,12 @@ test('驳回守护：capstone 5.x 仍是稳定版', () => {
 test('驳回守护：udsoncan 的 ClientConfig() 示例可运行，不得照报告改', () => {
   present(null, 're-automotive/SKILL.md', ['ClientConfig'], 'TypedDict 实例化返回空 dict，refresh_config 补齐缺键');
 });
+
+test('补充 34：AI 模型格式信号以字节为准（实测 file(1) 输出）', () => {
+  const f = 're-ai-triage/SKILL.md';
+  // 实测：onnx/safetensors/tflite 三种样本 file(1) 都报 `data`；老式 pickle 被误报为 XENIX
+  absent(null, f, ['`08 08`'], 'onnx 第二字节随 ir_version 递增，不是常量');
+  present(null, f, ['TFL3'], 'tflite 的文件标识符在字节 4–7');
+  present(null, f, ['小端头长度'], 'safetensors 先 8 字节长度再 JSON');
+  present(null, f, ['XENIX'], '老式 pickle 的 file(1) 误报可作为识别线索');
+});

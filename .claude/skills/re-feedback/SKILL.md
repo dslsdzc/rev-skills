@@ -19,7 +19,7 @@ description: >
 
 1. 收集（三源归一）：
    - 会话复盘：本次分析会话的踩坑/新方法（[[re-analyze]] 第四步调用时已就绪）
-   - 文章扫描：`bin/wxsource.mjs` 抓取看雪/微信文章（`kanxue thread <ID> --md` / `wechat <URL> --md`），逐篇蒸馏
+   - 文章扫描：`node bin/wxsource.mjs` 抓取看雪/微信文章（`node bin/wxsource.mjs kanxue thread <帖子ID> --md` / `node bin/wxsource.mjs wechat <文章URL> --md`），逐篇蒸馏
    - 手动输入：用户一句话/一段笔记
 2. 蒸馏与脱敏：按 `references/intake.md` —— 坑格式 `**标题**：现象——…；原因——…；对策——…`，同步脱敏
 3. 归域分类：`references/intake.md` 决策表 → grep 技能库兜底 → 仍不确定问用户（不猜）

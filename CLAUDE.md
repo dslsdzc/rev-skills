@@ -42,7 +42,7 @@ node bin/wxsource.mjs wechat <文章URL> [--md]
 
 `node validate.mjs` 输出的技能数必须等于 `.claude/skills/` 下 `re-` 目录数——**这条已有自动检查**（`tests/counts.test.mjs` 比对 README / README_EN / AGENTS / CLAUDE / package.json / marketplace.json 六处的计数），不必再靠人工 grep。
 
-**检查分层**（`npm test` = validate + 169 项测试；该计数由 `tests/counts.test.mjs` 自校验，增删测试后需同步此处）：
+**检查分层**（`npm test` = validate + 170 项测试；该计数由 `tests/counts.test.mjs` 自校验，增删测试后需同步此处）：
 
 | 层 | 查什么 | 落点 |
 |---|---|---|

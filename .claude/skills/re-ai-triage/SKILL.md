@@ -47,7 +47,11 @@ capabilities: [triage]
 ## 操作步骤
 
 1. **输入形态识别**：
-   - 用户给了路径/文件 → 先 `file <path>`（onnx：`file` 常报 `data`——以 `xxd` 首字节 protobuf 头（`08 08`）+ `strings` producer 名辅助识别；safetensors：`JSON metadata` 头；pt/pth：`pickle` 或 zip 容器；tflite：`tflite` 标识）→ 转 [[re-ai-model]]
+   - 用户给了路径/文件 → 先 `file <path>` + `xxd <path> | head -2` 粗看，再转 [[re-ai-model]]。几种形态的可靠信号（**都以字节为准，不靠扩展名**；细节见 [[re-ai-model]] 步骤 1）：
+     - **onnx**：protobuf 流、无固定魔数，`file` 报 `data`；首字节是 ir_version 的 tag `0x08`，**第二个字节是版本号、随 ONNX 版本递增（不是常量 `08`）**；`producer_name` 按规范只 SHOULD 出现
+     - **safetensors**：`file` 报 `data`——前 8 字节是小端头长度，其后才是 JSON 头（`xxd -l 16` 可见长度段与 `{`）
+     - **pytorch**：新版是 zip 容器，`file` 报 `Zip archive`（`PK\x03\x04` 头），`unzip -l` 可见 `data.pkl` 等条目；老式是裸 pickle 流（无 `PK` 头，`file` 常误报 `XENIX 8086 relocatable or i286 small model`）——**不直接 load**，见 [[re-ai-model]] 坑 2
+     - **tflite**：flatbuffers 流，`file` 报 `data`；字节 4–7 是文件标识符 ASCII `TFL3`
    - 用户只有 API 端点/查询能力 → 转 [[re-ai-attack]]
    - 两者都有 → 按任务分类器先文件后行为
 2. **目标归属确认**：文件/API 的持有方与授权（自有 / 授权测试 / CTF·研究）——行为层评估前必须确认（[[re-ai-attack]] guard 前置；授权上下文见 triage 第 0 步 `RE_AUTH`）

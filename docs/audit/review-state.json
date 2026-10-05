@@ -17,8 +17,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-ai-triage": {
-      "hash": "37a32e9608ecf191",
-      "last_reviewed": null,
+      "hash": "7a199c5ab33e8a69",
+      "last_reviewed": "2026-10-05",
       "note": ""
     },
     "re-analyze": {
@@ -187,8 +187,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-feedback": {
-      "hash": "ead151725e3574ae",
-      "last_reviewed": null,
+      "hash": "7e81cc993b739da3",
+      "last_reviewed": "2026-10-05",
       "note": ""
     },
     "re-fileless": {
