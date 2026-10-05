@@ -22,11 +22,15 @@ capabilities: [firmware-extraction]
 
 ### binwalk —— 自动解包主力
 
-- Linux: `apt install binwalk`（Debian/Ubuntu 仓库版为 2.x）/ `dnf install binwalk` / `pacman -S binwalk`
-- pip（跨平台、版本新、签名库全，推荐）: `pip install binwalk`
-- macOS: `brew install binwalk`（或 pip 版）
-- Windows/WSL: Windows 本机无官方包，用 WSL 内 Linux/pip 版
-- 验证: `binwalk --version`（2.x）或 `binwalk --help`（老版）
+binwalk 有两条并存的产品线，装前先分辨：**v3（Rust 重写）是 upstream 当前主线**，**v2（原 Python 实现）属 legacy**，两者的参数集合与模块支持不同。
+
+- v3（当前主线）：按官方 README 的渠道安装——Docker 镜像 / `cargo install binwalk` / 源码构建。upstream 已不再把 pip 当作安装入口
+- v2（legacy）：PyPI 的 `binwalk` 包停在 2.1.0（2015-01），各发行版仓库包同属 2.x 线（Debian trixie 2.4.3、bookworm 2.3.4）
+  - Linux: `apt install binwalk`（Debian/Ubuntu）/ `dnf install binwalk` / `pacman -S binwalk`
+  - pip: `pip install binwalk`
+  - macOS: `brew install binwalk`
+  - Windows/WSL: Windows 本机无官方包，用 WSL 内 Linux 版
+- 验证: `binwalk --version`——**使用前先确认 major**。本技能的命令示例（`-e` / `-M` / `-E`）在 v2 与 v3 均保留；需要 v3 的其它参数时按实际版本查 `binwalk --help`
 
 ### unblob —— 更准的自动解包（推荐主力）
 
