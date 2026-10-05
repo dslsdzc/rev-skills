@@ -1,6 +1,6 @@
 {
   "name": "rev-skills",
-  "version": "0.0.7",
+  "version": "0.0.7-fix1",
   "files": [
     ".claude/skills",
     ".claude-plugin",
