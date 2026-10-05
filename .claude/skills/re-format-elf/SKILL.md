@@ -66,14 +66,14 @@ capabilities: [elf-parser]
    ```
    三表关系: `readelf -h` 输出的每个字段都能在文件前 64 字节里手工核对（`xxd -l 64`）；程序头描述"哪些文件区段按什么权限/对齐映射到内存"，节头描述"文件里的符号/字符串/代码等命名区段"。字段全表与布局图见 [[layout]]。
 
-3. **.init_array / .fini_array（main 之前执行）**：
+3. **初始化与终止回调（.init_array / .fini_array）**：
    ```sh
-   readelf -S sample | grep -i init_array
+   readelf -S sample | grep -iE 'init_array|fini_array'
    readelf -a sample | grep -A5 -i 'init_array'
    objdump -s -j .init_array sample     # .init_array 是函数指针数组（数据节），用 -s 打印内容；-d 只反汇编代码节，实际不输出
    # 取到指针后逐个 `objdump -d --start-address=<ptr> --stop-address=<ptr+len> sample` 看回调函数
    ```
-   `.init_array` 中的函数指针在 main 之前按序执行——初始化/反调试/解密常藏在这里，必须最先查。
+   两者的执行时机不同，别混为一谈：`.init_array` 中的函数指针在启动初始化阶段（main 之前）按数组正序执行——初始化/反调试/解密常藏在这里，必须最先查；`.fini_array` 中的指针在退出/dlclose 清理阶段执行、按数组逆序，不紧跟 main（详见坑项）。
 
 4. **GOT/PLT 与动态符号**：
    ```sh
@@ -89,7 +89,7 @@ capabilities: [elf-parser]
    readelf -s sample | head -20         # .dynsym 动态符号（导入/导出）
    readelf -r sample | grep -E 'JUMP_SLOT|GLOB_DAT|RELATIVE'
    ```
-   关联链: `DT_STRTAB`/`DT_SYMTAB` 标签指向 dynstr/dynsym，符号表按 `DT_SYMENT`(24 字节/条) 定长遍历；`DT_GNU_HASH`（新）替代 `DT_HASH`（旧）做符号查找；重定位类型决定 GOT 槽行为——`R_X86_64_JUMP_SLOT`(PLT 跳转)、`GLOB_DAT`(全局变量)、`RELATIVE`(基址相对)。`DT_BIND_NOW`（或 FLAGS 的 `DF_BIND_NOW`）出现 = 启动时完成全部绑定、无惰性绑定（现代发行版默认）；**但 RELRO 是独立条件**——全 RELRO = `PT_GNU_RELRO` 段 + BIND_NOW 同时成立（GOT 转只读）；只有 `PT_GNU_RELRO` 是 Partial RELRO，只有 BIND_NOW 推不出 RELRO。动态区解析细节见 [[layout]]。
+   关联链: `DT_STRTAB`/`DT_SYMTAB` 标签指向 dynstr/dynsym，符号表按 `DT_SYMENT` 给出的 entry size 定长遍历（标准 ELF32 的 `Elf32_Sym` 为 16 字节、ELF64 为 24 字节；读 `DT_SYMENT` 并按该步长走，勿硬编码 24）；`DT_GNU_HASH`（新）替代 `DT_HASH`（旧）做符号查找；重定位类型决定 GOT 槽行为——`R_X86_64_JUMP_SLOT`(PLT 跳转)、`GLOB_DAT`(全局变量)、`RELATIVE`(基址相对)。`DT_BIND_NOW`（或 FLAGS 的 `DF_BIND_NOW`）出现 = 启动时完成全部绑定、无惰性绑定（现代发行版默认）；**但 RELRO 是独立条件**——全 RELRO = `PT_GNU_RELRO` 段 + BIND_NOW 同时成立（GOT 转只读）；只有 `PT_GNU_RELRO` 是 Partial RELRO，只有 BIND_NOW 推不出 RELRO。动态区解析细节见 [[layout]]。
 
 6. **stripped 二进制符号恢复思路**：
    ```sh
@@ -103,7 +103,7 @@ capabilities: [elf-parser]
    readelf -l sample | grep -E 'GNU_STACK|GNU_RELRO'
    # GNU_STACK 无 E 标志 = 不可执行栈（NX）
    # GNU_RELRO 存在 + BIND_NOW = 全 RELRO；GOT 只读
-   readelf -s sample | grep -c __stack_chk_fail   # >0 = 有 Canary
+   readelf -s sample | grep -c __stack_chk_fail   # >0 仅为 SSP 线索（静态链接会因 libc 自带 SSP 误报；SSP 按函数施加，不代表全部函数受保护）
    ```
    RELRO/Canary/NX 情况决定后续动态分析（如 GOT 是否可写）与 [[re-imports]] 的劫持面判断。
 
@@ -129,7 +129,7 @@ capabilities: [elf-parser]
 
 - **R_X86_64_RELATIVE addend 必须与 vaddr 体系自洽**：`*slot = B + addend`（B=加载 bias）。若产物 vaddr = ImageBase + RVA（PE 转换场景），文件槽内存储值即目标 vaddr → **addend = 存储值**；只有"vaddr = 纯 RVA"体系才用 `存储值 − ImageBase`——混用两套公式是终审级 bug（偏差恒定一个 base，且"能 dlopen"不暴露）
 - **SHF_ALLOC 节必须被 PT_LOAD 覆盖**：动态区（.dynsym/.dynstr/.hash）标记 SHF_ALLOC 但不在任何段内 → 加载器不映射，符号解析失败——手写 ELF 生成器时给动态区单独 PT_LOAD（p_offset 与 p_vaddr 可解耦）
-- **缺 PT_GNU_STACK → dlopen EINVAL**（glibc 对 dlopen 路径直接拒绝，非内核行为；除非启动期设 glibc.rtld.execstack=1）：`cannot enable executable stack`——发射 `PT_GNU_STACK`（PF_R|PF_W、无 X、align 16）
+- **DSO 要求可执行栈而进程未启用 → dlopen 失败**：现象——`dlopen` 报 `cannot enable executable stack as shared object requires: Invalid argument`（glibc 对 dlopen 路径直接拒绝，非内核行为）；原因——该 DSO 要求可执行栈而进程启动时未启用可执行栈，而"缺 `PT_GNU_STACK` 是否算要求"取决于目标 ABI 默认栈权限（x86/x86-64/arm32 等默认可执行、aarch64/riscv 等默认不可执行）；对策——正解是给目标补非 X 的 `PT_GNU_STACK`（PF_R|PF_W、无 X、align 16）；仅在确需兼容时可临时设 `glibc.rtld.execstack=2`（`=1` 实测无效；该值放宽限制、降低安全性）
 - **重定位目标段必须可写**：GLOB_DAT/RELATIVE 的 r_offset 所在段若只读（PF_R），ld.so 写入即 SIGSEGV——含重定位目标的节强制 PF_W（v1 可放弃 RELRO，后续再上 PT_GNU_RELRO）
 - **shstrtab 别用 strlen 取长**：字符串表以 `\0` 开头，strlen 在首字节截断为 1——用显式长度/sizeof；同理会坑 .dynstr 索引
 - **filesz > memsz 是 readelf 报错**：`p_memsz = max(vsize, raw_size)` 保证 filesz≤memsz，BSS 清零区语义由 loader 处理
