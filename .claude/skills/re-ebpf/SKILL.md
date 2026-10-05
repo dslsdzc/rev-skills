@@ -17,7 +17,7 @@ capabilities: [ebpf-analysis]
 - 不用：经典内核模块（.ko 驱动）——走 [[re-kernel]]
 - 不用：seccomp/套接字过滤器等传统 cBPF（经典 BPF，指令集与 BPF-64 不同，本技能不覆盖）
 - 不用：仅需分析宿主加载器二进制的通用场景（[[re-binary-core]]）；链上 BPF 字节码（Solana 类）语义表不同，走 [[re-blockchain]]
-- 注意：helper 调用号与内核结构布局随版本漂移，分析环境内核版本与样本目标版本尽量一致（见坑 3）
+- 注意：helper ID 是 Linux BPF UAPI 的稳定编号（已有 `BPF_FUNC_*` 数值不随内核版本重新编号），版本差异影响 helper 是否存在、是否允许用于特定 prog_type/context，以及内核结构布局；分析环境内核版本与样本目标版本尽量一致（见坑 3）
 
 ## 工具准备
 
@@ -91,7 +91,7 @@ capabilities: [ebpf-analysis]
    - prog type 同时决定 verifier 允许的 helper 白名单与 ctx 语义（如 KPROBE 的 ctx 是 pt_regs、tracepoint 的 ctx 是事件结构体）——白名单直接约束了语义还原空间
 
 5. **语义还原**：
-   - helper: xlated 中 `call <名称>#<调用号>`，调用号对照运行内核版本的 `include/uapi/linux/bpf.h` 的 bpf_func_id 枚举查表（方法见坑 3）；调用约定 r1-r5 参数、r0 返回值
+   - helper: xlated 中 `call <名称>#<调用号>`，调用号按 Linux BPF UAPI 的固定 ID 映射解析（`include/uapi/linux/bpf.h` 的 `___BPF_FUNC_MAPPER` 逐项显式编号，方法见坑 3）；名称对照 bpftool 编译时表或目标内核；调用约定 r1-r5 参数、r0 返回值
    - 数据面: map 内容（收集的数据）、perf ring buffer/trace_pipe 输出（helper 写出的记录）还原程序行为闭环
    - 恶意样本重点: 加载链（加载器 ELF/脚本 + 字节码如何进内核）、持久化（pin 到 /sys/fs/bpf、配套守护进程）、规避手法（hook 目标选择、fentry 前置/后置篡改）；内核语义交叉参考 [[re-kernel]]
    - 产出: 伪代码级说明（xlated 指令 → 函数语义）+ hook 点 + map 布局 + 行为结论
@@ -111,7 +111,7 @@ capabilities: [ebpf-analysis]
 
 ## 常见坑与陷阱
 
-- **helper 调用号随内核版本漂移**：现象——xlated 里 `call <名>#<号>` 的号与手上内核版本表对不上，或 bpftool 显示 `call unknown#<号>`（kptr_restrict=2 时显示 `bpf_unspec#0`）；原因——helper 号是 bpf_func_id 枚举序号，随内核版本增删漂移；名称来源两分：helper 名来自 bpftool 编译时表（与运行内核可能不同版本），`call pc+X#` 子程序名来自运行内核 kallsyms（需 bpf_jit_kallsyms=1、kptr_restrict=0，符号形如 bpf_prog_<tag>_<name>）；对策——按版本查表：以运行内核源码 `include/uapi/linux/bpf.h` 的 bpf_func_id 枚举为准（bpftool 版本过旧时尤其要查源码）；`sudo bpftool feature probe` 列出该内核实际支持的 helper（按名，分 prog type）；kallsyms 关联（`/proc/sys/kernel/bpf_jit_kallsyms`=1、kptr_restrict=0）影响名称显示，号始终以内核源码为准
+- **helper 集合/可用性随内核版本演进，ID 本身稳定**：现象——xlated 里 `call <名>#<号>` 的名称与手上工具显示对不上，或 bpftool 显示 `call unknown#<号>`（kptr_restrict=2 时显示 `bpf_unspec#0`）；原因——helper ID 是 Linux BPF UAPI 的稳定编号，已有 `BPF_FUNC_*` 数值不随内核版本重新编号（`___BPF_FUNC_MAPPER` 逐项显式指定数值，正是为保证 backport 场景下 ID 可移植），版本差异影响的是 helper 是否存在、是否允许用于特定 prog_type/context、语义是否扩展——旧 bpftool 显示 `call unknown#N` 只是它的名称表不认识较新的 ID，不能反推 ID 漂移；名称来源两分：helper 名来自 bpftool 编译时表（与运行内核可能不同版本），`call pc+X#` 子程序名来自运行内核 kallsyms（需 bpf_jit_kallsyms=1、kptr_restrict=0，符号形如 bpf_prog_<tag>_<name>）；对策——解析按 UAPI 固定 ID 映射：以 `include/uapi/linux/bpf.h` 的 `___BPF_FUNC_MAPPER` 核对 ID→名称；可调用性用 `sudo bpftool feature probe` 列出该内核实际支持的 helper（按名，分 prog type）确认；kfunc 不属于该稳定 ABI；kallsyms 关联（`/proc/sys/kernel/bpf_jit_kallsyms`=1、kptr_restrict=0）影响名称显示，ID 本身以 UAPI 为准
 - **xlated 与源码不对应（verifier 重写）**：现象——xlated 指令数/顺序/常量与 llvm-objdump 结果明显不同；原因——xlated 是 verifier 处理后的形态：上下文访问改写（如 __sk_buff 改为 sk_buff 直接偏移）、map 访问内联（helper 调用替换为直接地址加载）、helper 内联为内核实现函数（如 `__htab_map_lookup_elem`）、常量折叠、不可达代码删除；bpf2bpf 子程序显示为 `call pc+X#<子程序符号名>` 相对调用；尾调用目标不在本 prog（藏在 prog_array map 里，xlated 只见 `bpf_tail_call`）；对策——以 xlated 为执行真相，静态反汇编仅作语义参考；用 `linum` 选项把源码行信息贴到 xlated 上对齐；尾调用链沿 prog_array map 的 fd 逐跳展开
 - **BTF 缺失类型盲区**：现象——手写字节码/旧工具链产物没有 `.BTF`，map 布局、结构体偏移无从解析，Ghidra 里全是裸地址；原因——BTF 是类型信息的唯一权威来源（CO-RE 重定位也依赖它）；对策——从 xlated 的 ldimm64 目标与 STX/ST 指令的偏移常量反推布局；有 `.BTF` 时用 `bpftool btf dump file prog.o` 导出类型，vmlinux 侧用 `bpftool btf dump file /sys/kernel/btf/vmlinux` 对照结构体
 - **map 与 prog 分离/生命周期**：现象——只 dump prog 不 dump map，行为链条断裂；prog 卸载后未 pin 的 map 即销毁，现场不留证据；原因——map 独立于 prog 存在（可多 prog 共享、可 pin 于 /sys/fs/bpf 持久化）；对策——分析现场先 `bpftool map show` + `prog list` 做全量快照，再逐 map dump；取证前把 pin 目录 /sys/fs/bpf 完整归档

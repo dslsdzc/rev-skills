@@ -140,7 +140,7 @@ capabilities: [automotive-analysis]
    - Wireshark 打开 candump 日志 → ISO-TP/UDS dissector 自动解码诊断会话
 
 5. **ECU 固件**：
-   - UDS 下载流程（0x27 解锁 → 0x34 请求下载 → 0x36 传输数据 → 0x37 退出传输）或 0x23 读内存获取固件 → 转 [[re-fw-extract]] 解包（ECU/车机固件与 IoT 固件同流程）
+   - UDS 下载流程：标准传输核心是 `0x34 RequestDownload → 0x36 TransferData × N → 0x37 RequestTransferExit`；实际 ECU 编程通常先按 OEM 要求进 `0x10` 编程会话，服务受安全级别保护时执行 `0x27`（安全访问），擦除/完整性校验多经 OEM 定义的 `0x31`（例程控制），过程可能需 `0x3E` 保活、结束可能 `0x11` 复位——具体序列从 ECU 行为/ODX/固件恢复，不假定固定顺序。或 `0x23` 读内存获取固件 → 转 [[re-fw-extract]] 解包（ECU/车机固件与 IoT 固件同流程）
    - 直接拿到的升级包文件 → [[re-fw-extract]]；固件 ELF → [[re-binary-core]]；需硬件 flash 读取 → [[re-hardware-io]]
 
 ## IVI / T-Box / V2X 路径

@@ -100,8 +100,8 @@ capabilities: [jni-analysis]
 3. **注册方式（静态 JNI_OnLoad / 动态 RegisterNatives）**：
    - 静态注册：函数名 `Java_包名_类名_方法名`（下划线转义），直接出现在导出表（步骤 2 可看到）
    - 动态注册：`JNI_OnLoad` 里调 `RegisterNatives(env, clazz, methods, count)`，`methods` 是 `JNINativeMethod{name, signature, fnPtr}` 数组——**三个字段都是指针，宽度随 ABI 变**（64 位下各 8 字节；**armeabi-v7a / x86 等 32 位 ABI 下各 4 字节**，数组步长 12 字节）——**函数地址不在导出表**（见坑 2），反编译定位 `JNI_OnLoad` 后沿 RegisterNatives 第三参数数组逐项还原
-   - 机制要点（知识层）：`JNIEnv*` 指向 `JNINativeInterface` 函数表（见坑 1），`RegisterNatives` 是表中一个槽——**槽号是易变参数**（随 jni.h 声明序/NDK/ART 版本变化），不在核心流程硬编码
-   - frida 观察运行时注册（spawn 目标 App）：脚本模板与槽位探测策略（锚点定位 / runtime 校验 / ABI 分支）见 [[probes]]——易变数值一律以运行时探测为准
+   - 机制要点（知识层）：`JNIEnv*` 指向 `JNINativeInterface` 函数表（见坑 1），`RegisterNatives` 位于标准 `JNIEnv` function table index **215**（`UnregisterNatives` 216）——这是 JNI ABI 的固定布局；实际 byte offset = index × 目标指针宽度（64 位下 215×8=0x6B8）。Android Dalvik/ART、NDK 与标准 `jni.h` 不改变该 index
+   - frida 观察运行时注册（spawn 目标 App）：脚本模板与运行时校验策略（`JNIEnv*` 有效性 / hook 表检测 / ABI 传参分支）见 [[probes]]——易变的是 ABI 传参寄存器与 libart 内部结构，以目标环境实测为准
      ```
    - 还原产物：`Java 方法名 → 签名 → native 函数地址` 对照表
 
