@@ -74,3 +74,20 @@ test('每个技能都在 README 中至少出现一次', () => {
     .filter((d) => !readme.includes(d));
   assert.deepEqual(absent, [], `README 未提及：${absent.join(' ')}`);
 });
+
+// 测试计数也曾漂移过：CLAUDE.md 写「validate + 103 项测试」，实际已到 168。
+// 技能计数有上面的 SITES 看住，测试计数此前无人看——补上同样的检查：
+// 顶层 test( 的静态计数与 `node --test` 报告的 tests 数一致，故可静态比对。
+test('CLAUDE.md 的测试计数与实际测试数一致', () => {
+  let n = 0;
+  for (const f of readdirSync('tests')) {
+    if (!f.endsWith('.test.mjs')) continue;
+    n += (readFileSync(`tests/${f}`, 'utf8').match(/^test\(/gm) || []).length;
+  }
+  const m = /`npm test` = validate \+ (\d+) 项测试/.exec(readFileSync('CLAUDE.md', 'utf8'));
+  assert.ok(m, 'CLAUDE.md 的「检查分层」段应写明测试项数');
+  assert.equal(
+    Number(m[1]), n,
+    `CLAUDE.md 写 ${m[1]} 项，实际 ${n} 项——增删测试后需同步该计数`,
+  );
+});

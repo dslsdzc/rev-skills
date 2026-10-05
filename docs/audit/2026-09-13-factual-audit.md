@@ -1311,3 +1311,51 @@ ARM 那条断言我做了**两次**变异才测通：
   单看规范措辞会误判
 - **实跑不可替代**：构造 PNG 验证 `IEND` 搜索、连发 3 次 `send()` 看接收端合并、解析 6 份 `jni.h`
   数槽位——这三条若只看报告措辞都会得出相反结论
+
+---
+
+## 补充 34：监控报告对账波落地（2026-10-05）
+
+补充 33 的判定表把 95 条报告逐条定案（采纳 70 / 部分成立 9 / 驳回 11 / 已修 5）。本补充记录**落地**：
+按 `docs/superpowers/plans/2026-09-30-factual-audit-wave.md` 的 17 个任务执行，改动落在 **55 个技能**上。
+
+### 一、高影响修正
+
+| 主题 | 原表述 | 改后 |
+|---|---|---|
+| **QEMU 网络（安全基线）** | 「qemu-user 无网络；qemu-system 默认 `-net none`」 | 实测 QEMU 11.1.1 不带网络参数会自建 `type=user,restrict=off` + e1000 网卡；改为「不可信固件必须显式 `-nic none`」，并补 qemu-user 不是网络沙箱。传播 8 处 |
+| **IDA 9.x** | `idat`/`idat64` 分 32/64 位 | 9.x 已取消 64 后缀（本机 9.4 安装目录无该二进制），统一 `idat`，保留 ≤8.x 分支。传播 15 处 / 5 文件 |
+| **JNI 函数表** | 「槽号随 jni.h/NDK/ART 漂移」 | 固定 index 215（解析 6 份头文件：JDK 8/11/17/27、GraalVM 21、NDK 30，表项只追加不重排）；与同技能已写死的 `0x6b8(槽215)` 归一 |
+| **TCP 流重组** | 把 segment payload 当应用层 message | 在流程中插入强制阶段「流重建 → framing」，示例改为 buffer parser；UDP 单独说明 |
+| **binwalk** | pip 版「跨平台、版本新、推荐」 | PyPI 停在 2015 年的 2.1.0，upstream 已转 Rust v3；pip/发行版包标 legacy v2，v3 走官方 Docker/Cargo/源码 |
+
+### 二、驳回项的守护
+
+11 条驳回（e_entry / LC_MAIN 公式、SysV 栈对齐、RISC-V 入口、pwntools、Capstone、udsoncan）**未做任何修改**，
+并在测试里加了**反向守护断言**——照报告去"修"会立刻红。
+
+### 三、固化
+
+- 回归断言 **+33**（`tests/audit-regressions.test.mjs` 78 项），覆盖采纳与部分成立的条目
+- **变异测试**：抽查 4 条（Armv6-M 指令宽度、`LC_DYLD_INFO` 五组、unc0ver 版本、SysV 栈对齐守护），
+  写回旧表述后**全部精准失败**，还原后全过——断言不空转
+- **补上测试计数的自校验**：`CLAUDE.md` 此前写「validate + 103 项测试」而实际已 168 项，与技能计数不同，
+  这一处无人看管。新增 `tests/counts.test.mjs` 的检查（顶层 `test(` 静态计数 == `node --test` 报告的 tests 数），
+  把这份人工清单也变成检查
+- `npm test`：`OK: 122 skills validated` + **169 项测试全过**；`capindex --check` / `toollife check` /
+  `probelist --check` 均 OK；`auditstate` 回填 55 项后为「已复核未变 120｜待复核 0」
+
+### 四、方法教训：并行 agent 共用工作区的代价
+
+本波用多个 subagent 并行执行 17 个任务，全部在**同一个工作区与 git index** 上操作，暴露了几类问题：
+
+1. **裸 `git commit` 会卷走他人暂存的文件**——`git add <自己的文件>` 后直接 commit，会把并行 agent 已暂存的
+   文件一并提交，造成提交信息与内容不符。改用 `git commit -m "..." -- <paths>` 后消除。
+2. **`git reset --soft` 差点造成数据丢失**——有一次连续两次 `reset --soft HEAD~1`，把恰好夹在中间的、
+   **另一个 agent 已完成的提交**一起摘掉了。内容靠 index 里残留的暂存态侥幸保住，靠 `git reflog` 定位并恢复。
+   教训：共享工作区里**禁止任何历史改写操作**，`rebase`/`amend`/`reset` 一律不许。
+3. 状态台账（`review-state.json`）是共享文件，并行任务各自 `auditstate update` 会互相卷入；
+   收尾统一回填一次才是正确做法。
+
+**净结论**：并行提速有效，但代价是协调开销与上述三类风险；若再来一轮，应给每个 agent 独立 worktree，
+或把提交动作串行化到单一执行者。

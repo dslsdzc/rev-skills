@@ -22,8 +22,8 @@
       "note": ""
     },
     "re-analyze": {
-      "hash": "aa391ef3009ea8fe",
-      "last_reviewed": "2026-09-14",
+      "hash": "ab47b4b44eb930d7",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-android-crypto": {
@@ -32,8 +32,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-android-native": {
-      "hash": "87335455d4ab4ed4",
-      "last_reviewed": "2026-09-13",
+      "hash": "23a53c64697f7b84",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-angr": {
@@ -42,8 +42,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-anti-analysis": {
-      "hash": "981287cdd1897a5c",
-      "last_reviewed": "2026-09-13",
+      "hash": "712a8e1a1d64de5e",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-anti-cheat": {
@@ -52,13 +52,13 @@
       "note": "本轮审查波覆盖"
     },
     "re-apk": {
-      "hash": "064a45ca65f19dd4",
-      "last_reviewed": "2026-09-15",
+      "hash": "777943bd778593b9",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-arm": {
-      "hash": "e75cf00ae7103238",
-      "last_reviewed": "2026-09-22",
+      "hash": "1aa780691af0f6ca",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-attribution": {
@@ -67,8 +67,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-automotive": {
-      "hash": "787fd9db0463a7fe",
-      "last_reviewed": "2026-09-17",
+      "hash": "988ae73a587c3934",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-behavior": {
@@ -82,8 +82,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-binaryninja": {
-      "hash": "228898c389fe45dc",
-      "last_reviewed": "2026-09-13",
+      "hash": "34d682df353f5851",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-blockchain": {
@@ -97,8 +97,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-console": {
-      "hash": "bef6ddceced3b43f",
-      "last_reviewed": "2026-09-13",
+      "hash": "8d1c3d04c10263a0",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-cpp-abi": {
@@ -112,23 +112,23 @@
       "note": "本轮审查波覆盖"
     },
     "re-crash-triage": {
-      "hash": "cac530901db56d80",
-      "last_reviewed": "2026-09-13",
+      "hash": "161c402d11632823",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-crypto-decrypt": {
-      "hash": "be0aa7090af19e57",
-      "last_reviewed": "2026-09-22",
+      "hash": "d2a3b5a9587b3498",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-crypto-id": {
-      "hash": "20dd1fe574e67b1c",
-      "last_reviewed": "2026-09-13",
+      "hash": "3b19733b195dd582",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-crypto-keys": {
-      "hash": "67cafe17b577c59e",
-      "last_reviewed": "2026-09-13",
+      "hash": "197de1e9ba753748",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-ctf": {
@@ -137,8 +137,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-deobfuscate": {
-      "hash": "dcc6c8f0aaa24917",
-      "last_reviewed": "2026-09-13",
+      "hash": "98ea3d5f25a282a4",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-disk-forensics": {
@@ -152,8 +152,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-dotnet": {
-      "hash": "3806464a987d7c87",
-      "last_reviewed": "2026-09-13",
+      "hash": "b55739626795eceb",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-drm": {
@@ -162,8 +162,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-ebpf": {
-      "hash": "8dd64745e4a4686e",
-      "last_reviewed": "2026-09-13",
+      "hash": "747cd9f3c3597513",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-electron": {
@@ -207,13 +207,13 @@
       "note": "本轮审查波覆盖"
     },
     "re-forensics": {
-      "hash": "216ea289c53e19dd",
-      "last_reviewed": "2026-09-13",
+      "hash": "34c47907e93a96ba",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-format-elf": {
-      "hash": "8ba8a5c316352246",
-      "last_reviewed": "2026-09-17",
+      "hash": "f43f7774e72c9349",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-format-macho": {
@@ -232,13 +232,13 @@
       "note": "本轮审查波覆盖"
     },
     "re-frida": {
-      "hash": "ed3613be97d53ad8",
-      "last_reviewed": "2026-09-13",
+      "hash": "dd262c38eed86902",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-frida-script-author": {
-      "hash": "e8c61ce30c513b45",
-      "last_reviewed": "2026-09-13",
+      "hash": "3dcbe5d6600acb99",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-fuzzing": {
@@ -247,18 +247,18 @@
       "note": "本轮审查波覆盖"
     },
     "re-fw-emulate": {
-      "hash": "50c5f6e6142ab798",
-      "last_reviewed": "2026-09-13",
+      "hash": "2d1e4a7ea3493900",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-fw-extract": {
-      "hash": "78bd12f02eaeec44",
+      "hash": "a70e6f39b0903c26",
       "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-fw-rootfs": {
-      "hash": "e63837476b26f2cd",
-      "last_reviewed": "2026-09-13",
+      "hash": "6d567331fa5b8848",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-game": {
@@ -267,8 +267,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-gdb": {
-      "hash": "54559a54c7441ce2",
-      "last_reviewed": "2026-09-13",
+      "hash": "b3eb1e6e3932ab52",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-ghidra": {
@@ -277,8 +277,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-go": {
-      "hash": "ae9bcfe58c173c79",
-      "last_reviewed": "2026-09-13",
+      "hash": "a033e719305c60b1",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-hardware-io": {
@@ -317,13 +317,13 @@
       "note": "本轮审查波覆盖"
     },
     "re-ida": {
-      "hash": "3b3a591f658f621a",
-      "last_reviewed": "2026-09-13",
+      "hash": "634bd45cdacc18ca",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-imports": {
-      "hash": "747a7fafa71d429d",
-      "last_reviewed": "2026-09-13",
+      "hash": "661c30890794780a",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-ioc": {
@@ -332,13 +332,13 @@
       "note": "本轮审查波覆盖"
     },
     "re-ios": {
-      "hash": "98ee680c54a7355f",
-      "last_reviewed": "2026-09-13",
+      "hash": "a6c3a96272f6badb",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-ios-jb": {
-      "hash": "f66ff32f4662ecfb",
-      "last_reviewed": "2026-09-13",
+      "hash": "55994dd833db492c",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-iot-proto": {
@@ -367,8 +367,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-license": {
-      "hash": "36c1f0be5c234617",
-      "last_reviewed": "2026-09-13",
+      "hash": "2b6454833e49697d",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-lldb": {
@@ -377,8 +377,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-loader": {
-      "hash": "c6790016da427432",
-      "last_reviewed": "2026-09-13",
+      "hash": "67617eec527578a3",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-macos": {
@@ -397,23 +397,23 @@
       "note": "本轮审查波覆盖"
     },
     "re-mem-forensics": {
-      "hash": "cf24cde010ed9adc",
-      "last_reviewed": "2026-09-13",
+      "hash": "e72f64a0672c769b",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-memdump": {
-      "hash": "6349535bfef32f70",
-      "last_reviewed": "2026-09-13",
+      "hash": "65655acc83d9bd48",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-mips": {
-      "hash": "2e23d8765ce3cdfc",
-      "last_reviewed": "2026-09-13",
+      "hash": "8b06f5832c616d56",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-mobile": {
-      "hash": "65a6c9b969d9adad",
-      "last_reviewed": "2026-09-13",
+      "hash": "95855d75cb5193a0",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-mobile-forensics": {
@@ -437,23 +437,23 @@
       "note": "本轮审查波覆盖"
     },
     "re-packer-id": {
-      "hash": "56ca95d1970b358f",
-      "last_reviewed": "2026-09-13",
+      "hash": "ece21434db2f01ff",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-patching": {
-      "hash": "135bce8ca1ed9ccf",
-      "last_reviewed": "2026-09-13",
+      "hash": "d31157a3ceac77f5",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-plugin-dev": {
-      "hash": "b5002e0a85aa533f",
-      "last_reviewed": "2026-09-13",
+      "hash": "280cdb482af661d4",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-proto-rev": {
-      "hash": "1e86f79c621a7d63",
-      "last_reviewed": "2026-09-13",
+      "hash": "d8916ee12bcbd664",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-protocol": {
@@ -462,8 +462,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-pwn": {
-      "hash": "465c287071045ee1",
-      "last_reviewed": "2026-09-17",
+      "hash": "daaee5c304965f7b",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-python": {
@@ -482,13 +482,13 @@
       "note": "本轮审查波覆盖"
     },
     "re-riscv": {
-      "hash": "86800774046c4c10",
-      "last_reviewed": "2026-09-17",
+      "hash": "82b07b7cb805c5e2",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-rtos": {
-      "hash": "8caec80e414ab2b8",
-      "last_reviewed": "2026-09-13",
+      "hash": "7d1b35dae0c74971",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-rust": {
@@ -517,8 +517,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-shellcode": {
-      "hash": "6ed48842fe7197f6",
-      "last_reviewed": "2026-09-13",
+      "hash": "5217fa0623d50b15",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-stego": {
@@ -532,8 +532,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-tee": {
-      "hash": "4c071a497864b36b",
-      "last_reviewed": "2026-09-13",
+      "hash": "23f10ea6e7107c99",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-ti": {
@@ -542,8 +542,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-tls": {
-      "hash": "2541df89fba1ac7b",
-      "last_reviewed": "2026-09-13",
+      "hash": "aabdc6c51e2a945a",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-tracing": {
@@ -562,8 +562,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-unpack-advanced": {
-      "hash": "27d324c869ba033e",
-      "last_reviewed": "2026-09-13",
+      "hash": "d5adc2359ed3af3b",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-unpack-simple": {
@@ -572,8 +572,8 @@
       "note": "本轮审查波覆盖"
     },
     "re-variant": {
-      "hash": "45012c624a599b0b",
-      "last_reviewed": "2026-09-13",
+      "hash": "d3a421b519dd6d9b",
+      "last_reviewed": "2026-10-05",
       "note": "本轮审查波覆盖"
     },
     "re-vuln": {

@@ -382,3 +382,212 @@ test('补充 23：re-angr 的 recv hook 返回值是长度不是指针', () => {
   present(null, f, ['ssize_t'], '返回值语义');
   absent(null, f, ['hook 返回符号指针'], '旧写法会把控制流建歪');
 });
+
+// ===== 补充 34：监控报告对账波落地（2026-10-05）=====
+// 对 95 条外部报告逐条判定后采纳 70 条。下列断言锁住修正后的表述，防止日后重写时把错的说法写回；
+// 文件末尾另有「驳回项守护」——那 11 条经实测判定为报告有误，仓库原表述是对的，不得被"修"错。
+
+test('补充 34：Ghidra 版本不再钉死 patch 号', () => {
+  const f = 're-ghidra/SKILL.md';
+  absent(null, f, ['2026-08 最新 12.1.3'], '易腐化的版本写法');
+  present(null, f, ['12.x 为当前主线'], '改为以官方 Releases 为准');
+});
+
+test('补充 34：angr 主线已到 10.x（不再是 9.3.x）', () => {
+  const f = 're-angr/SKILL.md';
+  absent(null, f, ['最新 9.3.x 线'], '9.3.x 已不是主线');
+  present(null, f, ['10.x'], '当前主线');
+});
+
+test('补充 34：binwalk 的 pip 渠道标为 legacy v2，v3 走官方安装方式', () => {
+  const f = 're-fw-extract/SKILL.md';
+  absent(null, f, ['版本新、签名库全'], '把 2015 年的 pip 包说成"版本新"');
+  present(null, f, ['legacy', 'v3'], 'v2 遗留 / v3 主线要分清');
+});
+
+test('补充 34：rizin 的 apt 安装不得再作为可用安装方式（副本技能）', () => {
+  const files = [
+    're-variant/SKILL.md', 're-patching/SKILL.md', 're-license/SKILL.md',
+    're-imports/SKILL.md', 're-deobfuscate/SKILL.md', 're-unpack-advanced/SKILL.md',
+  ];
+  // 提醒「apt 装不上」是允许的写法，只禁把 apt 当作可用安装方式
+  const offenders = [];
+  for (const f of files) {
+    for (const l of read(f).split('\n')) {
+      if (l.includes('apt install rizin') && !/会失败|无 rizin|无包|不再|不是|旧写法|勿用/.test(l)) {
+        offenders.push(`${f}: ${l.trim().slice(0, 90)}`);
+      }
+    }
+  }
+  assert.deepEqual(offenders, [], 'Debian/Ubuntu 仓库无 rizin 包，apt 装不上');
+  present(null, files[0], ['re-radare2'], '安装矩阵应指向单一事实源');
+});
+
+test('补充 34：QEMU 默认网络是 user 后端不是断网（安全基线）', () => {
+  const files = ['re-fw-emulate/SKILL.md', 're-fw-emulate/references/commands.md', 're-fw-emulate/references/gotchas.md'];
+  for (const f of files) absent(null, f, ['默认 `-net none`', '默认无网络'], 'QEMU 不加参数会自建 NIC + user 后端');
+  present(null, files[1], ['-nic none'], '不可信固件必须显式断网');
+});
+
+test('补充 34：IDA 9.x 无 64 后缀（无头统一 idat）', () => {
+  const f = 're-ida/SKILL.md';
+  absent(null, f, ['idat64（64 位无头）'], '9.x 已取消 64 后缀二进制');
+  present(null, f, ['idat'], '以 idat 为基线');
+});
+
+test('补充 34：JNIEnv 槽位是固定 ABI（RegisterNatives = 215）', () => {
+  const f = 're-android-native/SKILL.md';
+  absent(null, f, ['槽号是易变参数'], '槽位是 JNI ABI 固定布局');
+  present(null, f, ['215'], 'RegisterNatives 的规范 index');
+  present(null, 're-android-native/references/probes.md', ['215'], '探测层也不得再写"槽号随头文件漂移"');
+});
+
+test('补充 34：eBPF helper 号是 UAPI 稳定编号，不"漂移"', () => {
+  const f = 're-ebpf/SKILL.md';
+  absent(null, f, ['随内核版本增删漂移'], '已有 ID 不随内核重编号');
+  present(null, f, ['稳定'], '编号稳定性');
+});
+
+test('补充 34：Delphi 经典 VMT 负偏移（vmt-0x20 一类写法已纠正）', () => {
+  const f = 're-format-pe/SKILL.md';
+  absent(null, f, ['vmt-0x20'], '原值落进了 TObject 虚方法槽区');
+  present(null, f, ['-0x3C'], '经典 Win32 的 TypeInfo 偏移');
+});
+
+test('补充 34：Itanium typeinfo 布局按指针宽度，不写死 64 位', () => {
+  const f = 're-cpp-abi/SKILL.md';
+  absent(null, f, ['首 8 字节 vptr'], '32 位下为 +0/+4');
+  present(null, f, ['pointer-sized'], 'vptr 后接一个指针宽度的槽');
+});
+
+test('补充 34：lambda closure type 不是"无 RTTI"', () => {
+  const f = 're-cpp-abi/SKILL.md';
+  absent(null, f, ['lambda 无 RTTI'], '缺 _ZTI 既不能排除也不能反推');
+  present(null, f, ['_ZTI'], '按 mangling/捕获布局识别');
+});
+
+test('补充 34：DT_SYMENT 不硬编码 24（ELF32 为 16）', () => {
+  const f = 're-format-elf/SKILL.md';
+  absent(null, f, ['DT_SYMENT`(24 字节/条)'], '只对 ELF64 成立');
+  present(null, f, ['ELF32'], '按目标 class 取步长');
+});
+
+test('补充 34：.fini_array 在退出阶段执行，不与 .init_array 同时机', () => {
+  const f = 're-format-elf/SKILL.md';
+  absent(null, f, ['main 之前执行）'], 'fini_array 在 main 之后');
+  present(null, f, ['退出'], '退出清理阶段');
+});
+
+test('补充 34：缺 PT_GNU_STACK 的 workaround 是 execstack=2', () => {
+  const f = 're-format-elf/SKILL.md';
+  absent(null, f, ['rtld.execstack=1'], '=1 实测无效');
+  present(null, f, ['execstack=2'], '实测有效的取值');
+});
+
+test('补充 34：Mach-O 的 LC 最小长度是 8 字节不是 16', () => {
+  const f = 're-format-macho/SKILL.md';
+  absent(null, f, ['64 位下 LC 最小 16 字节'], 'load_command 头本身即 8 字节');
+  present(null, f, ['至少 8 字节'], '以结构体最小尺寸为准');
+});
+
+test('补充 34：LC_DYLD_INFO 是五组信息流（含 weak_bind）', () => {
+  const f = 're-format-macho/SKILL.md';
+  absent(null, f, ['四张表'], '漏了 weak_bind');
+  present(null, f, ['weak_bind'], '弱符号合并有独立语义');
+});
+
+test('补充 34：PIE 判定要看 DF_1_PIE，不能由 ET_DYN 直接推', () => {
+  const f = 're-triage/SKILL.md';
+  absent(null, f, ['ET_DYN=PIE'], '共享库同样是 ET_DYN');
+  present(null, f, ['DF_1_PIE'], 'readelf -d 的 FLAGS_1: PIE');
+});
+
+test('补充 34：TLS 1.3 的 ALPN 结果在 EncryptedExtensions', () => {
+  const f = 're-tls/SKILL.md';
+  present(null, f, ['EncryptedExtensions'], 'TLS 1.3 的落点');
+});
+
+test('补充 34：私有协议恢复必须先做 TCP 流重组', () => {
+  const f = 're-proto-rev/SKILL.md';
+  present(null, f, ['流重建'], 'segment payload ≠ 应用层 message');
+});
+
+test('补充 34：密文长度不能区分分组/流密码', () => {
+  const f = 're-crypto-id/SKILL.md';
+  absent(null, f, ['密文长度是块大小整数倍'], 'CTR/OFB 可产出与明文等长密文');
+  present(null, f, ['等长'], '长度只辅助判断 mode');
+});
+
+test('补充 34：zipalign 与签名方案的顺序关系', () => {
+  const f = 're-apk/references/gotchas.md';
+  absent(null, f, ['v1 签名需要 zipalign'], '用 apksigner 时必须先对齐后签名');
+  present(null, f, ['zipalign'], '把顺序要求写清');
+});
+
+test('补充 34：Armv6-M 有合法的 32 位编码（BL 不是幻觉）', () => {
+  const f = 're-arm/SKILL.md';
+  absent(null, f, ['只有 16 位 Thumb'], 'Armv6-M 含 32 位 BL/DMB/DSB/ISB/MRS/MSR');
+  present(null, f, ['Armv6-M'], '按具体 opcode 判定变体是否选错');
+});
+
+test('补充 34：MIPS 延迟槽要区分 Branch Likely 的 annul', () => {
+  const f = 're-mips/SKILL.md';
+  absent(null, f, ['无条件执行'], 'likely 分支 not-taken 时延迟槽被取消');
+  present(null, f, ['Branch Likely'], 'annul 语义');
+});
+
+test('补充 34：Game Boy 用 SM83，不是 Z80 变体', () => {
+  const f = 're-console/SKILL.md';
+  absent(null, f, ['Z80 变体'], 'SM83 与 Z80 不兼容');
+  present(null, f, ['SM83'], '专用 processor definition');
+});
+
+test('补充 34：unc0ver 的 iOS 版本范围', () => {
+  const f = 're-ios/references/gotchas.md';
+  absent(null, f, ['unc0ver（iOS 14-15 系）'], 'unc0ver 不支持 iOS 15');
+  present(null, f, ['11.0-14.8'], '实际支持范围');
+});
+
+test('补充 34：Frida host 与 frida-server 只需 major 一致', () => {
+  const f = 're-frida/SKILL.md';
+  absent(null, f, ['版本必须与主机 frida 完全一致'], '官方判据是 major 匹配 + 功能存在');
+  present(null, f, ['major'], '兼容判据');
+});
+
+test('补充 34：运行时基线不再是 EOL 的 Node 18', () => {
+  const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
+  assert.ok(pkg.engines.node !== '>=18', 'engines.node 不得停留在已 EOL 的 18');
+  present(null, 're-crash-triage/SKILL.md', ['coredumpctl'], 'core 取回补全');
+});
+
+// ===== 驳回项守护（2026-10-05）=====
+// 这 6 组经实测判定为「报告有误」，仓库原表述正确。照报告去"修"会把正确内容改错，
+// 因此反向锁住：正确表述必须在位。（依据见 docs/audit/2026-09-30-adjudication.md 第四节）
+
+test('驳回守护：ET_DYN 的 e_entry 措辞不得被改成"文件偏移"', () => {
+  const f = 're-format-elf/references/layout.md';
+  present(null, f, ['相对基址'], 'gABI ch5 的 base address 定义 + 内核 +load_bias 支持此措辞');
+  absent(null, f, ['e_entry 是文件偏移'], 'e_entry 从来不是文件偏移');
+});
+
+test('驳回守护：LC_MAIN 入口公式不得被改', () => {
+  const f = 're-format-macho/SKILL.md';
+  present(null, f, ['vmaddr'], 'Apple loader.h 与 dyld 源码均按 vmaddr + entryoff 计算');
+});
+
+test('驳回守护：x86-64 SysV 栈对齐表述不得被改', () => {
+  const f = 're-exploit/SKILL.md';
+  present(null, f, ['% 16 == 0'], 'psABI 原文即"call 指令执行前 16 字节对齐"');
+});
+
+test('驳回守护：pwntools 4.15.0 仍是当前正式版', () => {
+  present(null, 're-pwn/SKILL.md', ['4.15.0'], 'PyPI 至今无 5.x 发行版');
+});
+
+test('驳回守护：capstone 5.x 仍是稳定版', () => {
+  present(null, 're-emulation/references/gotchas.md', ['5.0'], '6.0.0 仅有预发行');
+});
+
+test('驳回守护：udsoncan 的 ClientConfig() 示例可运行，不得照报告改', () => {
+  present(null, 're-automotive/SKILL.md', ['ClientConfig'], 'TypedDict 实例化返回空 dict，refresh_config 补齐缺键');
+});
