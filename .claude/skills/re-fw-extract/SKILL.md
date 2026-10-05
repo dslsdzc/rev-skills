@@ -90,7 +90,7 @@ binwalk 有两条并存的产品线，装前先分辨：**v3（Rust 重写）是
 4. **嵌套容器逐层解**：
    - unblob / `binwalk -Me` 会自动递归，但嵌套（tar 里再 zip、自定义头包着 gzip）常中途断
    - 逐层手动：先解外层 → `file` 确认内层类型 → 用对应工具（tar/gzip 系统自带；squashfs 用 sasquatch；其他用 [[re-fw-rootfs]] 工具准备的 7z/unsquashfs）再解，直到出现文件系统或 ELF
-   - **结束标记后的附加数据**：图片（PNG `IEND`、JPEG `FFD9`）等格式的结束标记之后常附加容器/压缩流（解析器读到结束标记即停，附加数据对正常查看不可见）——`file` 会把整文件报成图片，检查 `rfind(IEND/FFD9)` 之后的部分，且**结束标记用第一个还是最后一个取决于数据里可能碰巧出现同样的字节对**
+   - **结束标记后的附加数据**：图片（PNG `IEND`、JPEG `FFD9`）等格式的结束标记之后常附加容器/压缩流（解析器读到结束标记即停，附加数据对正常查看不可见）——`file` 会把整文件报成图片。**定结束标记位置不能靠裸字节 first/last 搜索**（`IEND` 字样可出现在 tEXt chunk 载荷内、`FF D9` 可出现在 JPEG 的 APP/COM 段内，首个/末个命中都可能是假标记）：PNG 从 8 字节签名起按 `Length/Type/Data/CRC` 遍历到结构合法且长度为 0 的 `IEND`，JPEG 从 `SOI` 起按 marker/segment 解析、`SOS` 后按 `FF00` stuffing 与 `RSTn` 处理，取**语法位置成立**的 `EOI`；用解析出的真实结尾偏移去切附加数据（裸搜结果只作候选）
    - **zip 缺签名也能修复**：附加的 zip 可能缺本地文件头开头的 `PK\x03\x04`（4 字节被剥）——用字段自洽验证：补上签名后 version（常见 20/45）、mod date（年 1980+）、compressed/uncompressed size（与 EOCD/中央目录条目一致）全部合理，且 EOCD 在尾部完好 → 补 `PK\x03\x04` 前缀即完整可解（`unzip` 报 "missing 4 bytes" 或 zipfile `OSError: Invalid argument` 是典型征兆）
    - **套娃模式自动化**：同一手法重复出现（如每层都是"图片+尾部 zip 含下一层"）时写循环自动剥——提取尾部 → 修复 → 解压 → 定位下一层 → 重复，直到无附加数据；中间产物每层命名保留（可回滚）
 

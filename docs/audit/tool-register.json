@@ -1293,6 +1293,15 @@
       "source": ""
     },
     {
+      "name": "zipalign",
+      "kind": "cli",
+      "where": [
+        "re-apk"
+      ],
+      "last_verified": null,
+      "source": ""
+    },
+    {
       "name": "zsteg",
       "kind": "cli",
       "where": [

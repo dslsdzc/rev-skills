@@ -87,10 +87,11 @@ capabilities: [dex-parser]
 
 4. **smali 补丁思路**：
    ```sh
-   # 改 smali 后回编译、签名、安装
+   # 改 smali 后回编译、对齐、签名、安装（用 apksigner 时 zipalign 必须在签名之前，签名后不得再改包）
    apktool b out/ -o patched.apk
    keytool -genkey -v -keystore ks.jks -alias r -keyalg RSA -validity 3650 -storepass 123456
-   apksigner sign --ks ks.jks --out signed.apk patched.apk
+   zipalign -P 16 -f -v 4 patched.apk aligned.apk
+   apksigner sign --ks ks.jks --out signed.apk aligned.apk
    adb install signed.apk
    ```
    常用改法：条件跳转取反（`if-eqz` ↔ `if-nez`）、把 `const/4 v0, 0x0` 改成返回常量、把校验方法直接 `return-void`。先 `jadx` 定位逻辑再在对应 smali 里改。目标含签名自校验时补丁可能被拦（见坑 2）。

@@ -96,8 +96,9 @@ capabilities: [crypto-identification]
 
 4. **常见算法流程特征（轮数 / 分组）**：
    - 反汇编/反编译里找特征函数形态：AES 有 10/12/14 轮（128/192/256 位）循环结构 + 常数表引用（配合步骤 1）；DES 有 16 轮 + 置换表（64 位分组）；RC4 有 256 字节 KSA/PRGA 循环
-   - 数据侧：分组加密 → 密文长度是块大小整数倍（16 字节对齐的常见）；流密码 → 长度与明文一致
-   - 长度规律（16/32 字节对齐）+ 常量表指纹 → 分组加密（AES 最可能，先按 AES 试）；长度任意 → 流密码（RC4/XOR/ChaCha）
+   - 数据侧：**长度只能辅助判断 mode，不能区分 primitive**。ECB/传统 CBC 等 pad 到整块的 mode 常见密文为块长整数倍；但基于分组密码的 CTR/OFB/CFB 可产出**与明文等长的任意长度**密文（NIST SP 800-38A 中 OFB/CTR 末块允许截到 u bit，CFB 的粒度是 segment size s），CBC-CTS 也能避免 padding 扩长。因此「长度任意」**推不出** RC4/XOR/ChaCha——同一份 37 字节明文，`aes-128-ctr/ofb/cfb` 密文都是 37 字节，`aes-128-cbc/ecb` 才是 48 字节
+   - primitive 识别要靠**常量表 / 轮函数形态 / key schedule / IV-nonce-counter 数据流**：常量表指纹 + 轮数（如 AES 10/12/14 轮）定 primitive，长度与 mode 特征（是否需要 padding、是否有 IV/nonce 每次变化、counter 是否递增）定 mode。**AES 的 block size 恒为 128 bit（16 字节），192/256 是 key size**，不存在「24/32 字节分组」的 AES
+   - 反编译工具有 auto-detection 时先用它（Ghidra 的 FindCrypt 脚本 / IDA 的 FindCrypt2）交叉确认
    - 反编译工具有 auto-detection 时先用它（Ghidra 的 FindCrypt 脚本 / IDA 的 FindCrypt2）交叉确认
 
 5. **动态侧确认（Frida 断在加密函数）**：
@@ -133,6 +134,6 @@ capabilities: [crypto-identification]
 - **算法组合（先 XOR 再 AES）需分层识别**：现象——按 AES 解出"明文"仍是乱码，或 XOR 检测可打印率不足；原因——多层加密叠加，单层假设不全；对策——先剥最内/最外层（观察哪个层次剥掉后熵下降、可读性上升），一层层确认，每层识别结果独立记录再组合（见步骤 5 的最内层优先原则）
 - **把压缩当加密**：现象——熵 >7.0 高熵区按加密处理，解密脚本对不上；原因——zlib/LZMA 压缩同样高熵；对策——先看高熵区前 2-4 字节是否有压缩格式标识（gzip 头 `1F 8B`；`78 9C` 是常见 zlib CMF/FLG 组合而非 gzip，两字节不足以作唯一判据），有则先用 `zlib.decompress`/`binwalk`（见 [[re-fw-extract]]）试解压再谈加密
 - **只搜 S-box 会漏掉变体实现**：现象——搜 256 字节 S-box 表没命中，误判"非 AES"，实际是 AES；原因——实现用位切片/即时计算 S-box（不存表），但密钥调度仍常保留 16 字节 Rcon 表，或改用 MixColumns 乘法表（GF(2^8) 乘 2/3/9/11/13/14）；对策——补充搜 Rcon 序列（`01 02 04 08 10 20 40 80 1B 36 ...`，0x1B 是特征值）与乘法表布局，多表交叉确认再定性
-- **指纹命中 ≠ 加密函数在用**：现象——搜到 AES S-box/CRC 表就按该算法分析半天，实际业务是别的加密；原因——常量表可能来自未调用的静态库代码或壳层常量（先脱壳再指纹，见 [[re-anti-analysis]]）；对策——指纹命中后必须 xref 确认表被引用（谁引用、是否在加密路径上），与轮数/分组长度（16/24/32 对齐）交叉，动态侧（步骤 5）最终确认
+- **指纹命中 ≠ 加密函数在用**：现象——搜到 AES S-box/CRC 表就按该算法分析半天，实际业务是别的加密；原因——常量表可能来自未调用的静态库代码或壳层常量（先脱壳再指纹，见 [[re-anti-analysis]]）；对策——指纹命中后必须 xref 确认表被引用（谁引用、是否在加密路径上），与轮数/常量表布局/IV-nonce 数据流交叉（**不要用密文长度对齐做 primitive 判据**），动态侧（步骤 5）最终确认
 - **常见签名模式速查**：现象——签名算法识别慢；原因——签名算法有固定模式族；对策——按模式快速对照：HmacSHA256(sorted_params, key) 最常见；MD5(params + salt + timestamp) 较老系统；AES(JSON.stringify(params), key) 是加密而非签名；RSA sign 少见（多为金融类）
 （来源：reverse-skill field-journal，MIT）

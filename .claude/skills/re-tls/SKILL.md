@@ -104,9 +104,10 @@ capabilities: [tls-analysis, crypto-identification]
    ```sh
    # 解密后按应用层协议还原（TLS 只是载体，语义在 ALPN/上层协议）
    tshark -r decrypted.pcapng -Y 'http' -T fields -e http.request.method -e http.host -e http.request.uri
-   tshark -r decrypted.pcapng -Y 'tls.handshake.extensions_alpn_str' -T fields -e tls.handshake.extensions_alpn_str | sort | uniq -c   # ALPN 应用协议：ClientHello 里是候选列表，最终协商结果看 ServerHello 的该字段
+   tshark -r decrypted.pcapng -Y 'tls.handshake.extensions_alpn_str' -T fields -e tls.handshake.extensions_alpn_str | sort | uniq -c   # ALPN 应用协议：ClientHello 里是客户端候选列表（offered）；最终协商结果（negotiated）TLS ≤1.2 在 ServerHello、TLS 1.3 在 EncryptedExtensions
    ```
    - 流程: 解密（步骤 3）→ 识别上层协议（ALPN: http/1.1、h2、自定义；或按端口/特征）→ 会话重组 → 语义提取（C2 命令/配置/明文凭据）
+   - offered 与 negotiated 要区分: `tls.handshake.extensions_alpn_str` 同时命中 ClientHello（客户端候选列表）与承载最终结果的那条握手消息，直接统计会把候选当结论。TLS 1.3 的 ALPN 结果不在 ServerHello——ServerHello 只回扩展类型，真正的 ALPN 扩展在 EncryptedExtensions（握手密钥/keylog 解密后才可见）；未解密时该字段只能看到 ClientHello 的候选。判最终协议取 negotiated 一侧，或直接看解密后的应用层记录类型
    - 自定义协议: 明文还原后转 [[re-proto-rev]] 做状态机重建（[[re-protocol]] 工作流第 5 步）
    - 边界: TLS 解密只解开"标准 TLS 栈"的流量——自实现/魔改 TLS（无 ClientHello 结构、keylog 无对应条目）解密失败，只能走特征分析（步骤 5）
 

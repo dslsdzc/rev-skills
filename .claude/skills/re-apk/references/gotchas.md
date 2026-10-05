@@ -16,7 +16,7 @@
 
 ## 签名与重打包坑组
 
-- **v1 签名需要 zipalign，v2/v3 不需要**：apksigner 默认 v1+v2；仅 v1（JAR 签名）时未对齐包在部分系统安装失败——`apksigner sign` 用默认即含 v2，老工具链才需要 zipalign 步骤
+- **zipalign 与签名方案是正交要求，且顺序不能颠倒**：用 `apksigner` 时必须**先 `zipalign` 再签名**（官方 zipalign 文档：If you sign your APK using apksigner and make further changes to the APK, its signature is invalidated）。v2/v3 把 ZIP 元数据纳入签名保护，签名后再对齐会直接破坏签名——实测 `apksigner sign` 后再 `zipalign -f 4` 会 `DOES NOT VERIFY` 并报 `APK is signed using APK Signature Scheme v2 but no such signature was found. Signature stripped?`，v3 同。jarsigner（v1 JAR 签名）顺序相反（先签名后对齐），但 v1 已不推荐。实际启用哪些 scheme 由 `apksigner` 依 `--min-sdk-version`/`--max-sdk-version` 决定，不是固定 v1+v2（对 minSdk 24 的目标签名会得到 v1=false / v2=true / v3=true）
 - **`install -r` 不生效 ≠ patch 无效**：同包名同签名覆盖安装保留数据，行为无变化时先做字节级闭环验证（`pm path` + `adb pull` 比对 patch 地址，见 [[commands]] 序列 2），再排查消费点/构建缓存
 - **签名校验是跨层链，单点中和不够**：Java 层取签名 → 摘要 → 原生层与硬编码基线比对，任一层不匹配判失败——优先复用应用自带的签名适配 hook，静态侧找原生比对函数中和失败分支（SKILL.md 坑 2 细节）
 - **debuggable 目标可直接 attach**：`android:debuggable="true"` 或可调试构建的 APK 无需重打包，直接 [[re-frida]] attach 绕过校验——重打包前先确认有没有这条捷径
@@ -33,7 +33,7 @@
 - **apktool**：**3.x 为当前主线、2.x 为维护线**，两线命令不完全兼容；apt/dnf 仓库版明显落后官方 release。拿到旧教程/脚本先确认目标 major version
 - **apktool 3.x 的 CLI breaking changes**（照 2.x 写法会直接报错）：① **aapt1 移除**——3.x 只随包发布 aapt2（2.x 的无后缀二进制是 32 位、`_64` 后缀才是 64 位；3.x 只剩单个 64 位），2.x 的 `--use-aapt2` 开关随之消失，换 aapt2 二进制改用 `--aapt <file>`，传入 aapt1 会被直接拒绝；② **不再提供 32 位构建**——32 位系统上无可用产物；③ **`--api-level` 移除**；④ **`--only-main-classes` 由 `-a`/`--all-src` 取代**，语义相反：前者只解主 dex，后者把未知 dex 也一并解出（加固/畸形样本的 dex 常被改名，需要 `-a` 才解得到）；⑤ **高级选项只认长参数**——3.x 的短参数仅 `-a -f -j -l -o -p -q -r -s -t -v`，`-m`/`-k` 一类旧短参报 `Unrecognized option`，须写 `--match-original`/`--keep-broken-res`/`--res-resolve-mode`
 - **aapt2 / build-tools**：34.0.0 示例、新版 SDK 自带更高版本；`aapt2 dump xmltree --file` 等接口稳定；老环境用 `aapt`（34 前默认）
-- **apksigner**：build-tools 内置版本随 SDK；v1/v2/v3 签名行为一致，`--version` 输出以实际版本为准
+- **apksigner**：build-tools 内置版本随 SDK；`--min-sdk-version`/`--max-sdk-version` 决定实际启用 v1/v2/v3 中的哪些（默认按目标 SDK 范围取舍），`apksigner verify --verbose` 会逐 scheme 打印 true/false；`--version` 输出以实际版本为准
 
 ## 使用注意
 

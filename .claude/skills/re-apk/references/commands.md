@@ -33,9 +33,11 @@
 ### apksigner / keytool / zipalign（重打包签名）
 
 - `keytool -genkey -v -keystore ks.jks -alias r -keyalg RSA -validity 3650 -storepass 123456` 生成自签密钥库
-- `apksigner sign --ks ks.jks --out signed.apk patched.apk` v1+v2 签名
+- `zipalign -P 16 -f -v 4 patched.apk aligned.apk` **先对齐**（4 字节对齐；`-P 16` 使未压缩的 `.so` 按 16 KiB 页对齐，含 native 库时按官方要求加）
+- `apksigner sign --ks ks.jks --out signed.apk aligned.apk` 签名（实际启用的 scheme 由 `--min-sdk-version`/`--max-sdk-version` 决定，非固定 v1+v2）
 - `apksigner verify --print-certs signed.apk` 验证签名并打印证书（确认签名生效）
-- `apksigner --version` 验证；v2/v3 签名无需 zipalign（v1 JAR 签名才需要）
+- `zipalign -c -P 16 -v 4 signed.apk` 校验对齐（签名后不得再 `zipalign`，会破坏 v2/v3 签名）
+- `apksigner --version` 验证；用 apksigner 时对齐必须在签名**之前**完成
 
 ### adb / 辅助（闭环验证）
 
@@ -63,8 +65,10 @@ apktool d -r app.apk -o out/          # 保留原资源，只改 smali
 # 在对应 smali 里改：if-eqz ↔ if-nez、const/4 v0, 0x0、return-void
 apktool b out/ -o patched.apk
 keytool -genkey -v -keystore ks.jks -alias r -keyalg RSA -validity 3650 -storepass 123456
-apksigner sign --ks ks.jks --out signed.apk patched.apk
+zipalign -P 16 -f -v 4 patched.apk aligned.apk    # 必须在签名之前对齐（含未压缩 .so 时 -P 16 做 16 KiB 页对齐）
+apksigner sign --ks ks.jks --out signed.apk aligned.apk
 apksigner verify --print-certs signed.apk        # 签名先自证
+zipalign -c -P 16 -v 4 signed.apk                # 对齐校验（签名后不得再 zipalign，否则 v2/v3 签名失效）
 adb install signed.apk
 adb shell pm path <包名> && adb pull <路径>       # 取回已装 APK
 # 对 patch 地址做字节级比对，确认修改在位后再排查逻辑层（见 SKILL.md 坑）
