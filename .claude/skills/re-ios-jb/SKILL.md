@@ -123,13 +123,13 @@ capabilities: [jailbreak-analysis]
    - 产物：断点清单 + 关键函数反汇编/寄存器现场
 
 5. **脱壳与分析（[[re-ios]] 联动）**：
-   - 目标 App 若为 App Store 加密二进制（`otool -l` 查 cryptid 1）→ 先按 [[re-ios]] 步骤 5 用 frida-ios-dump 脱壳，脱壳后回步骤 2-3 做静态
-   - 脱壳/重签名：免费证书 7 天有效期（[[re-ios]] 坑 2），重打包用 adhoc 重签或 frida-ios-dump 直接输出可安装 ipa
+   - 目标 App 若为 App Store 加密二进制（`otool -l` 查 cryptid 1）→ 先按 [[re-ios]] 步骤 5 脱壳（FairPlay 解密，backend 按目标 iOS / Frida 世代选），脱壳后回步骤 2-3 做静态
+   - 脱壳/重签名：免费证书 7 天有效期（[[re-ios]] 坑 2），重打包用 adhoc 重签，或用脱壳工具直接输出可安装 ipa
    - 产物：脱壳 ipa（cryptid 0 验证）+ sha256
 
 ## 跨域联合
 
-- [[re-ios]]：脱壳（frida-ios-dump）、静态分析（class-dump / Mach-O）、签名——本技能的静态底座
+- [[re-ios]]：脱壳（FairPlay 解密）、静态分析（class-dump / Mach-O）、签名——本技能的静态底座
 - [[re-frida]]：spawn/attach 插桩、hook 检测 API 与 JNI/OC 函数、绕过执行
 - [[re-lldb]]：远程 attach、断点、表达式、符号查找（debugserver + iproxy）
 - [[re-mobile]]：网关——越狱设备动态分析是 re-mobile 工作流第 3-4 步的环境前提

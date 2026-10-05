@@ -10,7 +10,7 @@
 ## 加密与脱壳坑组
 
 - **cryptid 判定必须看 LC_ENCRYPTION_INFO 段**：`codesign` 结果不能说明加密状态，只有 `otool -l` 里的 LC_ENCRYPTION_INFO（cryptid 0/1）为准——解包后先跑这一步再规划
-- **脱壳依赖越狱 + frida 版本匹配**：frida-ios-dump 对 frida-server 版本敏感（14.x/16.x 行为差异），dump 失败先核对 [[re-frida]] 工具准备里的版本对应；A12+ 设备 arm64e 上 frida 需对应架构的 server
+- **脱壳依赖越狱 + dumper/Frida 世代匹配**：脱壳工具对 frida-server 版本敏感——Frida 17 移除了静态 `Module` 查找/枚举 API，依赖旧 API 的 dumper agent 直接报错；dump 失败先核对 [[re-frida]] 工具准备与 `frida --version` 的世代对应；A12+ 设备 arm64e 上 frida 需对应架构的 server
 - **脱壳产物 cryptid 0 但代码仍怪**：解密后的 Mach-O 可能残留加密 stub 或 section 顺序异常——正常现象，以实际反编译结果为准；个别应用有反 dump 检测（重启后重新加密），一次 dump 不成功多试几次并保持进程存活
 - **无越狱拿不到加密应用**：App Store 加密二进制在无越狱/无受管设备上无法脱壳——静态分析（字符串/符号）先行，动态面明确放弃（SKILL.md 坑 3）
 
@@ -31,8 +31,8 @@
 
 - **class-dump（nygard/class-dump）**：最新 3.4（2022 年后未更新），仅源码；`brew install class-dump` 已不可用。替代 class-dump-swift（mxms0/class-dump-swift）长期未更新（2017 年后无提交），用前先评估，支持 Swift
 - **usbmuxd → libusbmuxd（homebrew）**：macOS `brew install usbmuxd` 已失效（公式改名），用 `brew install libusbmuxd`；Linux 上 Debian/Ubuntu 包名仍是 `usbmuxd`（含 iproxy），Arch 为 `libusbmuxd`
-- **frida-ios-dump**：依赖 frida-server 与 usbmuxd 工具链；frida 主版本升级后 `dump.py` 行为可能有差异，先核对 [[re-frida]] 的 frida-server 安装
-- **越狱工具与 iOS 版本**：unc0ver（iOS 14-15 系）、palera1n（checkm8 设备全系）、Dopamine（iOS 15-16 系）——按设备型号与 iOS 版本选择，工具版本不匹配装不上或半越狱
+- **frida-ios-dump（legacy）**：`AloneMonkey/frida-ios-dump` 的 agent 依赖 Frida 16 及以下的静态 `Module` / 静态 `Memory` API，在 Frida 17 下不可用——保留作脱壳算法与 Mach-O 重组逻辑的参考；直接使用需旧 Frida 或自行移植，当前默认按目标 iOS / 越狱版本选已适配当前 Frida 的维护实现（[[re-frida]] 常见坑「Frida 17 移除静态 Module 查找/枚举 API」）
+- **越狱工具与 iOS 版本**：unc0ver（iOS 11.0-14.8，A7-A14 分档；末版 v8.0.2/2022 已停更）、palera1n（checkm8 设备全系）、Dopamine（iOS 15-16 系）——按设备型号与 iOS 版本选择，工具版本不匹配装不上或半越狱
 
 ## 使用注意
 

@@ -1,6 +1,6 @@
 # iOS 应用分析命令速查与操作序列
 
-工具族分四层：解包与签名检查（unzip/file/codesign/otool）、头文件导出（class-dump / class-dump-swift）、设备通道（usbmuxd 的 iproxy + libimobiledevice 的 idevice_*）、脱壳执行（frida-ios-dump + [[re-frida]]）。命令与参数以官方文档为准（nygard/class-dump、mxms0/class-dump-swift、libimobiledevice、AloneMonkey/frida-ios-dump）。
+工具族分四层：解包与签名检查（unzip/file/codesign/otool）、头文件导出（class-dump / class-dump-swift）、设备通道（usbmuxd 的 iproxy + libimobiledevice 的 idevice_*）、FairPlay 解密/脱壳（按环境选 backend + [[re-frida]]）。命令与参数以官方文档为准（nygard/class-dump、mxms0/class-dump-swift、libimobiledevice、所选 dumper 的仓库文档）。
 
 ## 命令族速查
 
@@ -33,11 +33,12 @@
 - `ssh -p 2222 root@127.0.0.1` 经转发登录越狱设备（默认密码 alpine）
 - `ideviceinstaller -l` 列出设备已装应用（含 Bundle ID，脱壳取 ID 用）
 
-### 脱壳（frida-ios-dump）
+### 脱壳（FairPlay 解密，backend 按环境选）
 
-- `python3 dump.py <BundleID 或 App 名>` 从设备拉取解密后的 ipa（输出到当前目录）
-- `python3 dump.py -h` 验证；`--source` 指定 frida-server 端口等参数按 `-h` 输出
-- 前置：越狱设备 + frida-server（见 [[re-frida]]）+ usbmuxd 转发
+- `frida --version` 与设备 frida-server 对齐后，再选兼容该 Frida 世代的 dumper——Frida 17 移除静态 `Module` 查找/枚举 API，依赖它的旧 dumper 直接报错（[[re-frida]] 常见坑）
+- legacy 参考实现 `AloneMonkey/frida-ios-dump`：agent 使用旧 Frida API（`Module.ensureInitialized` / 静态 `Memory.read*` / `Module.findExportByName(null, …)` / `Process.enumerateModulesSync`），需 Frida 16 及以下或自行移植——保留作脱壳算法与 Mach-O 重组逻辑的参考
+- 另一路线：基于 `mremap_encrypted` 的实现（UnFairPlay / unfaird 一类），不依赖运行时插桩，按目标 iOS 版本评估
+- 前置：越狱设备 + frida-server（见 [[re-frida]]）+ usbmuxd 转发；选定 dumper 按其 `-h` 输出确认参数（BundleID / App 名、frida-server 端口等）
 
 ## 常用操作序列（组合套路）
 
@@ -63,11 +64,12 @@ ssh -p 2222 root@127.0.0.1                        # 登录越狱设备
 # 断点/单步 → debugserver + lldb（[[re-lldb]] 远程）
 ```
 
-### 3. App Store 加密应用脱壳闭环（dump → 确认 → 复跑静态）
+### 3. App Store 加密应用脱壳闭环（选 backend → dump → 确认 → 复跑静态）
 
 ```
+frida --version                                    # 先定 Frida 世代，选匹配的 dumper
 iproxy 2222 22 &
-cd frida-ios-dump && python3 dump.py <BundleID>   # 拉取并解密
+<选定 dumper> <BundleID>                           # 拉取并解密（backend 按目标 iOS / Frida 版本选）
 file <输出>.ipa
 otool -l <输出>/Payload/*.app/ | grep -A4 LC_ENCRYPTION_INFO   # 确认 cryptid 0
 # 脱壳产物回到序列 1 复跑（class-dump / otool / [[re-format-macho]]）

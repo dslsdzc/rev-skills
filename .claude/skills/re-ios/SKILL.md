@@ -51,12 +51,16 @@ capabilities: [macho-parser]
 - 验证: `ssh root@<设备IP>` 能登录
 - 未越狱但需真机：Apple 开发者账号签名安装（免费账号签名 7 天有效，见坑 2）；越狱环境专项（tweak 开发/越狱检测）见 [[re-ios-jb]]
 
-### frida-ios-dump —— App Store 加密应用脱壳
+### iOS FairPlay 解密 / 脱壳（backend 按环境选择）
+
+App Store 加密应用的解密后端按目标 iOS 与越狱版本选择已适配当前 Frida API 的维护实现，没有跨版本通用的单一工具。
 
 - 前置：越狱设备 + frida-server（见 [[re-frida]] 工具准备）+ usbmuxd 转发
-- 安装：`git clone https://github.com/AloneMonkey/frida-ios-dump && cd frida-ios-dump && pip install -r requirements.txt`
-- macOS: `brew install libusbmuxd`（原 usbmuxd 公式已改名，2026 实测）；Linux: `apt install usbmuxd`（Debian/Ubuntu，含 iproxy）；Arch: `pacman -S libusbmuxd`
-- 验证: `python3 dump.py -h`（输出 usage 即可）；`iproxy -h`（转发工具可用性）
+- 选型：先 `frida --version` 与设备 frida-server 版本对齐，再选与该 Frida 世代兼容的 dumper。Frida 17 起移除了静态 `Module` 查找/枚举 API（见 [[re-frida]] 常见坑），仍依赖这些旧 API 的 dumper 在 Frida 17 下直接报错
+- legacy / 参考实现：`AloneMonkey/frida-ios-dump` 的 Frida agent 使用 `Module.ensureInitialized`、静态 `Memory.read*`、`Module.findExportByName(null, …)`、`Process.enumerateModulesSync`——这些 API 在 Frida 17 已移除，该仓库更适合作为脱壳算法与 Mach-O 重组逻辑的参考；直接使用需搭配 Frida 16 及以下的 frida-server，或自行按新版 API 移植
+- 另一路线：基于 `mremap_encrypted` 的实现（UnFairPlay / unfaird 一类），不依赖 frida 运行时插桩，按目标 iOS 版本评估可用性
+- 设备通道：macOS `brew install libusbmuxd`（原 usbmuxd 公式已改名）；Linux `apt install usbmuxd`（Debian/Ubuntu，含 iproxy）；Arch `pacman -S libusbmuxd`
+- 验证: `iproxy -h`（转发工具可用性）；选定 dumper 按其自身 `-h` 输出确认参数
 
 ## 操作步骤
 
@@ -93,14 +97,15 @@ capabilities: [macho-parser]
    ```
    设备上启动目标 App；断点 / 单步调试经 debugserver + lldb（见 [[re-lldb]]）；hook / 绕过优先 [[re-frida]]（frida-server 安装见该技能）。
 
-5. **脱壳（frida-ios-dump 思路）**：
+5. **脱壳（FairPlay 解密）**：
    ```sh
+   frida --version                            # 主机 Frida 世代——选 dumper 前先定
    iproxy 2222 22 &
-   cd frida-ios-dump && python3 dump.py <BundleID 或 App 名>   # 从设备拉取并解密，输出 ipa
+   <选定 dumper> <BundleID 或 App 名>          # 按目标 iOS / Frida 版本选维护实现，拉取并解密
    file <输出>.ipa
    otool -l <输出>/Payload/*.app/ | grep -A4 LC_ENCRYPTION_INFO # 确认 cryptid 0
    ```
-   思路：frida-server 读取已解密内存中的 Mach-O 头与段，重组为解密 ipa。脱壳产物回到步骤 1-3 复跑。
+   思路：从已解密的内存镜像读取 Mach-O 头与段，重组为解密 ipa。dumper 必须与主机 `frida --version` 及设备 frida-server 的世代匹配（见工具准备）；脱壳产物回到步骤 1-3 复跑。
 
 ## 跨域联合
 
@@ -113,9 +118,9 @@ capabilities: [macho-parser]
 
 ## 常见坑与陷阱
 
-- **App Store 加密二进制直接分析**：现象——class-dump 无输出 / otool 结构残缺、反编译只见壳；原因——`cryptid 1` 加密，磁盘上的代码是密文；对策——步骤 1 先查 LC_ENCRYPTION_INFO，加密先按步骤 5 脱壳（frida-ios-dump 思路）
+- **App Store 加密二进制直接分析**：现象——class-dump 无输出 / otool 结构残缺、反编译只见壳；原因——`cryptid 1` 加密，磁盘上的代码是密文；对策——步骤 1 先查 LC_ENCRYPTION_INFO，加密先按步骤 5 脱壳
 - **签名失效无法安装**：现象——重打包 / 修改后真机安装报"无法验证 App"或无法安装；原因——签名与内容不一致，或免费证书 7 天过期；对策——`codesign -f -s -` adhoc 重签（仅自签场景）或重新用开发者证书签名；免费账号到期重新安装
-- **无越狱 → 动态分析受限**：现象——没有越狱设备，frida-ios-dump / lldb attach / frida 全不可用；原因——iOS 沙盒与签名强制限制动态调试；对策——静态分析先行（步骤 1-3），动态转模拟器（需不加密应用）或受管设备（Apple Configurator 部署 + 开发证书），实在不行只做静态
+- **无越狱 → 动态分析受限**：现象——没有越狱设备，脱壳 / lldb attach / frida 全不可用；原因——iOS 沙盒与签名强制限制动态调试；对策——静态分析先行（步骤 1-3），动态转模拟器（需不加密应用）或受管设备（Apple Configurator 部署 + 开发证书），实在不行只做静态
 - **Swift 方法不进 class-dump 头**：现象——类头文件里找不到业务方法；原因——Swift 不导出 OC 运行时元数据；对策——`strings` / `swift-demangle` 找符号，逻辑分析靠 [[re-format-macho]] + 反编译（[[re-binary-core]]）
 - **class-dump 对 arm64e 二进制报错**：现象——class-dump 崩溃或输出为空；原因——arm64e 指针签名（PAC）干扰元数据遍历；对策——换新版 class-dump / class-dump-swift，或先脱壳再 dump
 - **拿到模拟器产物当真机分析**：现象——`file` 显示主二进制是 x86_64，动态分析全不可用；原因——分发方给了模拟器包（常带 SwiftSupport/）；对策——步骤 1 用 `file` 确认 arm64/arm64e 真机架构，模拟器产物跳过
