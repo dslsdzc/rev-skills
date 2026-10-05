@@ -20,7 +20,7 @@ capabilities: [dex-parser, jni-analysis, frida-instrumentation, mobile-forensics
    - iOS：[[re-ios]]（能力：`macho-parser`） —— ipa 解包与签名检查、class-dump 头文件、加密二进制脱壳
 3. 动态：[[re-frida]]（能力：`frida-instrumentation`） —— 需要运行时行为（解密、hook、绕过证书/检测、观察调用链）时 spawn/attach 插桩；iOS 断点调试走 [[re-lldb]]（能力：`debugging`）
 4. 原生库：移动 App 含原生代码（Android `lib/*.so`、iOS Framework 内 dylib）→ [[re-binary-core]]（能力：`decompilation`、`debugging`、`memory-dump`、`elf-parser`、`pe-parser`、`macho-parser`）：[[re-format-elf]]（能力：`elf-parser`；Android）/ [[re-format-macho]]（能力：`macho-parser`；iOS）解析格式，[[re-ghidra]]（能力：`decompilation`、`debugging`） 反编译 JNI/OC 底层逻辑；Android native 深挖（JNI 注册还原、so 逻辑）走 [[re-android-native]]（能力：`jni-analysis`）；iOS 越狱环境（越狱检测 / tweak / 动态调试）走 [[re-ios-jb]]（能力：`jailbreak-analysis`）
-5. 加固/带壳：[[re-apk]]（能力：`dex-parser`） 识别加固后转脱壳域（[[re-anti-analysis]]（能力：`unpack`、`deobfuscation`、`evasion-analysis`），Android）；iOS App Store 加密二进制按 [[re-ios]]（能力：`macho-parser`） 脱壳（frida-ios-dump 思路）。脱壳产物回到步骤 2 复跑
+5. 加固/带壳：[[re-apk]]（能力：`dex-parser`） 识别加固后转脱壳域（[[re-anti-analysis]]（能力：`unpack`、`deobfuscation`、`evasion-analysis`），Android）；iOS App Store 加密二进制按 [[re-ios]]（能力：`macho-parser`） 脱壳（后端按目标 iOS/越狱环境选择）。脱壳产物回到步骤 2 复跑
 6. 产出：结论/报告（按 `RE_REPORT`），哈希与证据存档（见 [[re-triage]]（能力：`triage`））
 
 每步结果存档（证据路径 + sha256，见 [[re-triage]]（能力：`triage`）），供报告引用；发现恶意样本/回连随时转 [[re-malware]]（能力：`malware-behavior`、`document-malware`、`evasion-analysis`、`key-extraction`、`threat-intel`）。
