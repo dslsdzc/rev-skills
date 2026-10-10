@@ -10,15 +10,16 @@
 
 ## Installation
 
-### Option 1: npx installer (supports 7 AI tools)
+### Option 1: npx installer (supports 8 AI tools)
 
 > The custom installer additionally handles rule aggregation for Cursor / Copilot / Windsurf (`.mdc` / instruction files), a capability the standard skills CLI lacks. For Claude Code-family tools only, Option 2 works too.
 
 ```bash
 npx rev-skills install                     # interactive, defaults to Claude Code
-npx rev-skills install --target all        # install into all 7 tools
+npx rev-skills install --target all        # install into all 8 tools
 npx rev-skills install --target cursor     # generate Cursor rules
 npx rev-skills install --target gemini     # Gemini CLI native skills
+npx rev-skills install --target dsh        # DSH skill root (~/.dsh/skills or .dsh/skills)
 npx rev-skills install --global            # global install
 npx rev-skills install --project           # current project only
 npx rev-skills install --dry-run           # show plan without installing
@@ -50,6 +51,23 @@ This repo ships its own `.claude-plugin/marketplace.json` and can be added as a 
 
 (If a plugin with the same name comes from multiple marketplaces, disambiguate with `rev-skills@rev-skills`.)
 
+### Option 5: DeepSeek Harness (skill root + standalone preset)
+
+DSH scans skill directories in Agent Skills style. Two routes:
+
+```bash
+# Route 1: install into a DSH skill root -- visible to every preset
+npx rev-skills install --target dsh --global    # -> ~/.dsh/skills (on Windows %USERPROFILE%\.dsh\skills)
+npx rev-skills install --target dsh --project   # -> .dsh/skills
+
+# Route 2: standalone preset -- mounts only this library's skill directory (isolated, no default roots)
+node bin/dsh.mjs check                          # validate the skill root against DSH discovery rules
+node bin/dsh.mjs preset spec                    # print preset config and resolved skill roots
+node bin/dsh.mjs preset install --apply         # enable preset-rev-skills (config id: rev-skills)
+```
+
+The `dsh/` bundle can also be installed from the DSH GUI plugin manager (bundle name `rev-skills-dsh-preset`, from an absolute local path or a `link:` / `file:` spec). The skill directory can be overridden with the `REV_SKILLS_DIR` environment variable. See [docs/dsh-integration.md](docs/dsh-integration.md) (Chinese) for details and troubleshooting.
+
 ## Tool support
 
 | Tool | Install method | Experience |
@@ -61,6 +79,7 @@ This repo ships its own `.claude-plugin/marketplace.json` and can be added as a 
 | Cursor | `--target cursor` → `.cursor/rules/*.mdc` | rule aggregation (knowledge + flow, no on-demand loading) |
 | GitHub Copilot | `--target copilot` → `.github/copilot-instructions.md` | rule aggregation |
 | Windsurf | `--target windsurf` → `.windsurf/rules/*.md` | rule aggregation |
+| DeepSeek Harness | `--target dsh` → `~/.dsh/skills` (or `.dsh/skills`) | native skills (on-demand loading); a standalone preset route is also available (`dsh/` bundle: the preset brings its own skill layer while project and user roots are still merged, `REV_SKILLS_DIR` override), see [docs/dsh-integration.md](docs/dsh-integration.md) |
 
 ## Skill map (122)
 

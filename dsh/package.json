@@ -1,0 +1,26 @@
+{
+  "name": "rev-skills-dsh-preset",
+  "version": "0.1.0",
+  "description": "rev-skills 的 DSH 独立 agent preset：为该预设配置本仓库 .claude/skills 作为自己的技能根，自身目录不含技能副本",
+  "type": "module",
+  "license": "Apache-2.0",
+  "files": [
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "reverse-engineering",
+    "skills",
+    "agent-preset",
+    "dsh"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

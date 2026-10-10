@@ -14,9 +14,19 @@ const TARGETS = {
   gemini:   { mode: 'native', places: { global: '~/.gemini/skills', project: '.gemini/skills' } },
   cline:    { mode: 'native', places: { project: '.claude/skills' } },
   codex:    { mode: 'native', places: { global: '~/.codex/skills', project: '.codex/skills' } },
+  dsh:      { mode: 'native', places: { global: '~/.dsh/skills', project: '.dsh/skills' } },
   cursor:   { mode: 'rule',   places: { project: '.cursor/rules' }, ruleType: 'cursor' },
   copilot:  { mode: 'rule',   places: { project: '.github' }, ruleType: 'copilot' },
   windsurf: { mode: 'rule',   places: { project: '.windsurf/rules' }, ruleType: 'windsurf' },
+};
+
+// 每个 native 目标的自检提示：技能根路径 + 该运行时里「看到技能」的方式
+const VERIFY = {
+  claude: d => `Claude Code 中运行 /skills 查看，或 ls ${d}`,
+  gemini: d => `Gemini CLI 中查看技能目录，或 ls ${d}`,
+  cline: d => `Cline 中查看技能目录，或 ls ${d}`,
+  codex: d => `Codex 中查看技能目录，或 ls ${d}`,
+  dsh: d => `技能根 ${d}；新建会话后 \`skill\` 工具目录可见（也可 ls ${d} 核对技能数）`,
 };
 
 function expandHome(p) { return p.replace(/^~/, process.env.HOME ?? process.env.USERPROFILE ?? '.'); }
@@ -64,7 +74,7 @@ async function installTarget(target, scope, opts) {
       }
     }
     console.log(`[${target}] plan: ${plan.names.length} skills → ${plan.dest}${opts.link ? ' (symlink)' : ''}${conflicts.length ? `, ${conflicts.length} conflict(s): ${conflicts.join(', ')}` : ''}`);
-    console.log(`[${target}] verify: Claude Code 中运行 /skills 查看，或 ls ${plan.dest}`);
+    console.log(`[${target}] verify: ${(VERIFY[target] ?? (d => `技能根 ${d}`))(plan.dest)}`);
   } else {
     const files = opts.dryRun ? [] : convertAll(plan.ruleType, plan.dest);
     console.log(`[${target}] plan: convert ${readdirSync(SKILLS_SRC).length} skills → ${plan.dest}`);

@@ -1,6 +1,6 @@
 {
   "name": "rev-skills",
-  "description": "通用逆向工程技能库：122 个技能（恶意软件/固件/协议/移动/脱壳/破解/托管/取证/CTF）",
+  "description": "通用逆向工程技能库：122 个技能（恶意软件/固件/协议/移动/脱壳/破解/托管/取证/CTF），支持 Claude Code / Gemini CLI / Cline / Codex / Cursor / Copilot / Windsurf / DeepSeek Harness",
   "owner": {
     "name": "dslsdzc",
     "url": "https://github.com/dslsdzc/rev-skills"
@@ -10,7 +10,7 @@
       "name": "rev-skills",
       "source": "./",
       "description": "逆向工程技能库",
-      "version": "0.0.7-fix1"
+      "version": "0.1.0"
     }
   ]
 }
