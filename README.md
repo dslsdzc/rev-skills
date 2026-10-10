@@ -8,17 +8,18 @@
 
 > **使用边界**：本技能库仅用于**安全研究与授权范围内的分析**。使用前须取得目标方授权；禁止用于未经授权的逆向、破解、绕过验证或恶意软件活动。逆向工程的合法性因司法辖区而异（如美国 DMCA 反规避条款、各地软件保护条例），使用者须自行遵守所在地法律，并自行承担违规使用的一切责任。本库内容为通用方法论，不针对任何具体目标。
 
-## 安装（三种方式）
+## 安装（四种方式）
 
-### 方式一：npx（推荐，支持 7 种 AI 工具）
+### 方式一：npx（推荐，支持 8 种 AI 工具）
 
 > 方式一自建安装器额外处理 Cursor / Copilot / Windsurf 的规则聚合（.mdc / 说明文件），这是标准 skills CLI 没有的能力；只装 Claude Code 系可用方式二。
 
 ```bash
 npx rev-skills install                     # 交互式，默认 Claude Code
-npx rev-skills install --target all        # 安装到全部 7 种工具
+npx rev-skills install --target all        # 安装到全部 8 种工具
 npx rev-skills install --target cursor     # 生成 Cursor 规则
 npx rev-skills install --target gemini     # Gemini CLI 原生技能
+npx rev-skills install --target dsh        # DSH 技能目录（~/.dsh/skills 或 .dsh/skills）
 npx rev-skills install --global            # 全局安装
 npx rev-skills install --project           # 仅当前项目
 npx rev-skills install --dry-run           # 只看计划不安装
@@ -50,6 +51,23 @@ npx skills add dslsdzc/rev-skills -l       # 先列出技能，不安装
 
 （若同名插件来自多个市场，用 `rev-skills@rev-skills` 消歧。）
 
+### 方式五：DeepSeek Harness（技能目录 + 独立预设）
+
+DSH 按 Agent Skills 风格扫描技能目录，两条路线：
+
+```bash
+# 路线一：装进 DSH 技能根——所有预设可见
+npx rev-skills install --target dsh --global    # → ~/.dsh/skills（Windows 为 %USERPROFILE%\.dsh\skills）
+npx rev-skills install --target dsh --project   # → .dsh/skills
+
+# 路线二：独立预设——为预设自带一个技能层（不禁用项目/用户技能根）
+node bin/dsh.mjs check                          # 按 DSH 发现规则校验技能根
+node bin/dsh.mjs preset spec                    # 查看预设配置与技能根
+node bin/dsh.mjs preset install --apply         # 启用 preset-rev-skills（config id: rev-skills）
+```
+
+也可从 DSH 的 GUI 插件管理器安装 `dsh/` bundle（bundle 名 `rev-skills-dsh-preset`，支持绝对本地路径或 `link:` / `file:` 规格）。技能目录可用环境变量 `REV_SKILLS_DIR` 覆盖。细节与排错见 [docs/dsh-integration.md](docs/dsh-integration.md)。
+
 ## 多工具适配
 
 | 工具 | 安装方式 | 体验 |
@@ -61,6 +79,7 @@ npx skills add dslsdzc/rev-skills -l       # 先列出技能，不安装
 | Cursor | `--target cursor` → `.cursor/rules/*.mdc` | 规则聚合（知识+流程，无按需加载） |
 | GitHub Copilot | `--target copilot` → `.github/copilot-instructions.md` | 规则聚合 |
 | Windsurf | `--target windsurf` → `.windsurf/rules/*.md` | 规则聚合 |
+| DeepSeek Harness | `--target dsh` → `~/.dsh/skills`（或 `.dsh/skills`） | 原生技能（按需加载）；另有独立预设路线（`dsh/` bundle：为预设自带本库技能层，项目/用户技能根照常合并、可用 `REV_SKILLS_DIR` 覆盖），见 [docs/dsh-integration.md](docs/dsh-integration.md) |
 
 ## 技能导航（122）
 

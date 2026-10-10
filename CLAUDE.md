@@ -31,9 +31,17 @@ node bin/auditstate.mjs status                  # 增量审查：哪些技能内
 node bin/auditstate.mjs update <技能...>         # 复核后回填（写当前 hash + 日期）
 node bin/probelist.mjs                          # 由登记表生成 probe.sh 的工具清单（--check 校验新鲜度，npm test 已含）
 
-npx rev-skills install --target <claude|gemini|cline|codex|cursor|copilot|windsurf|all> \
+npx rev-skills install --target <claude|gemini|cline|codex|cursor|copilot|windsurf|dsh|all> \
   [--global|--project] [--dry-run] [--link] [--force]
 node bin/convert.mjs --target <cursor|copilot|windsurf> --out <dir>   # 技能 → 规则文件转换（调试用）
+
+node bin/dsh.mjs check [--dir <skillsRoot>] [--json]   # 按 DSH 发现规则校验技能根：通过则输出 OK: N skills DSH-compatible
+node bin/dsh.mjs preset spec                    # 打印预设配置（含技能根解析结果与 REV_SKILLS_DIR 覆盖）
+node bin/dsh.mjs preset status [--profile-dir <dir>] [--json]   # 只读检查 profile 是否已启用该 bundle
+node bin/dsh.mjs preset install [--profile-dir <dir>] [--force] [--apply]    # 默认 dry-run，--apply 才写（写前备份）
+node bin/dsh.mjs preset uninstall [--profile-dir <dir>] [--apply]           # 默认 dry-run，有备份时从备份还原
+npx rev-skills install --target dsh --global    # 技能装进 DSH 技能根（~/.dsh/skills）
+npx rev-skills install --target dsh --project   # → .dsh/skills
 
 node bin/wxsource.mjs kanxue list [--board re] [--pages 2] [--md]     # 看雪论坛列表（经验采集源）
 node bin/wxsource.mjs kanxue thread <帖子ID> [--md]
@@ -42,7 +50,7 @@ node bin/wxsource.mjs wechat <文章URL> [--md]
 
 `node validate.mjs` 输出的技能数必须等于 `.claude/skills/` 下 `re-` 目录数——**这条已有自动检查**（`tests/counts.test.mjs` 比对 README / README_EN / AGENTS / CLAUDE / package.json / marketplace.json 六处的计数），不必再靠人工 grep。
 
-**检查分层**（`npm test` = validate + 170 项测试；该计数由 `tests/counts.test.mjs` 自校验，增删测试后需同步此处）：
+**检查分层**（`npm test` = validate + 202 项测试；该计数由 `tests/counts.test.mjs` 自校验，增删测试后需同步此处）：
 
 | 层 | 查什么 | 落点 |
 |---|---|---|
@@ -51,6 +59,17 @@ node bin/wxsource.mjs wechat <文章URL> [--md]
 | 语法 | 技能里 python / shell 示例块（含 sh 内嵌 python heredoc） | `tests/examples`（无解释器则跳过） |
 | 事实 | 已修缺陷的**回归断言**（错的说法不得写回）、格式断言 fixture | `tests/audit-regressions` `tests/format-fixtures` |
 | 预算 | SKILL.md ≤240 行、单分支 ≤600 行、必备章节仍在 | `tests/skill-budget` |
+
+## DSH（DeepSeek Harness）集成
+
+两种集成形态，改动时都要与计数/清单同步：
+
+- **技能目录路线**：`npx rev-skills install --target dsh [--global|--project]`——写入 DSH 技能根（全局 `<dshHome>/skills`，项目 `.dsh/skills`）。DSH 按 Agent Skills 风格扫描，一层深度（`<root>/<name>/SKILL.md`），frontmatter 的 `---` 分界行与 YAML 合法性由 DSH 严格执行：不合法时记告警并**静默跳过该技能**（新技能要跑 `node validate.mjs`，别只看 `npm test` 的汇总行）。
+- **独立预设路线**：`dsh/` 是一个 npm bundle 包（`rev-skills-dsh-preset`），`dsh/package.json` 用 `"dsh": { "bundle": { "patch": "./cordis.patch.yml" } }` 指向补丁文件，补丁插入预设行 `preset-rev-skills`（`config.id` = `rev-skills`），该预设用 `includeDefaultRoots: false` + `customSkillDirs` 给预设自带本库 `.claude/skills` 技能层（该提供方实例不再重复扫描项目/用户技能根；技能服务读取时仍把预设层与全局层合并，同名以预设层为准，其他预设不受影响）；目录可用环境变量 `REV_SKILLS_DIR` 覆盖。启用方式是把包名加进 profile `package.json` 的 `dsh.profile.bundles` 并带上同名依赖（CLI 走 `node bin/dsh.mjs preset install --apply`），DSH 插件管理器也支持从绝对本地路径或 `link:` / `file:` 规格安装。
+
+必须成对同步的项（历史上漏同步过）：根 `package.json` 的 `version` ↔ `dsh/package.json` 的 `version`；`dsh/package.json` 的 `name` ↔ profile 里 `dsh.profile.bundles` 的对应行与同名依赖；`dsh.bundle.patch` ↔ `dsh/cordis.patch.yml` 实际路径；补丁里的 `config.id`（`rev-skills`）↔ `dsh/README.md` 与 `docs/dsh-integration.md` 的说明。
+
+标准预设会裁剪超过 8192 字符的工具结果，本库 32 个 `SKILL.md` 的文件字符数超过该阈值（CRLF 检出下为 34；`node bin/dsh.mjs check` 会逐条报出），被加载时可能被截断（完整内容直接读文件）。集成全貌与排错表见 `docs/dsh-integration.md`。
 
 ## 架构：三层技能图，按状态机运转
 

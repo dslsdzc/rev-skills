@@ -1,22 +1,25 @@
 {
   "name": "rev-skills",
-  "version": "0.0.7-fix1",
+  "version": "0.1.0",
   "files": [
     ".claude/skills",
     ".claude-plugin",
     "bin",
+    "dsh",
     "lib",
     "README.md",
     "README_EN.md",
     "AGENTS.md"
   ],
-  "description": "通用逆向工程 AI 技能库：122 个技能 + 多工具安装器（Claude Code/Gemini/Cline/Codex/Cursor/Copilot/Windsurf）",
+  "description": "通用逆向工程 AI 技能库：122 个技能 + 多工具安装器（Claude Code/Gemini/Cline/Codex/Cursor/Copilot/Windsurf/DeepSeek Harness）",
   "type": "module",
   "bin": {
-    "rev-skills": "bin/install.mjs"
+    "rev-skills": "bin/install.mjs",
+    "rev-skills-dsh": "bin/dsh.mjs"
   },
   "scripts": {
     "test": "node validate.mjs && node --test tests/*.test.mjs",
+    "dsh": "node bin/dsh.mjs check",
     "toollife": "node bin/toollife.mjs check",
     "examples": "node bin/examplecheck.mjs",
     "audit:status": "node bin/auditstate.mjs status",
@@ -31,6 +34,7 @@
     "skills",
     "malware-analysis",
     "firmware",
-    "claude-code"
+    "claude-code",
+    "deepseek-harness"
   ]
 }
