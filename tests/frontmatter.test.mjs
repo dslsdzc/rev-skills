@@ -59,3 +59,24 @@ test('validate 与 convert 对全部技能解析一致（防解析器漂移回�
     assert.ok(v.description.trim().length > 0, `${name}: description 解析为空`);
   }
 });
+
+test('frontmatter 键接受连字符（DSH 的 disable-model-invocation / user-invocable）', () => {
+  // 键文法若只认 \w+，这两个 DSH 合法键会被当成顶格游离行而整份技能报错。
+  const fm = parseFrontmatterFields('name: re-x\ndescription: d\ndisable-model-invocation: false\nuser-invocable: true');
+  assert.equal(fm.name, 're-x');
+  assert.equal(fm['disable-model-invocation'], 'false');
+  assert.equal(fm['user-invocable'], 'true');
+});
+
+test('CRLF 检出解析结果与 LF 一致（Windows 行尾回归）', () => {
+  // Windows 上 core.autocrlf=true 的检出会把提交时的 LF 变成 CRLF；
+  // 若不归一，分界正则不匹配 → 整库报 missing frontmatter，能力注册表也解析失败。
+  const lf = '---\nname: re-x\ndescription: >\n  第一行\n  第二行\ncapabilities: [a, b]\n---\n\n# 体';
+  const crlf = lf.replace(/\n/g, '\r\n');
+  assert.equal(parseFrontmatter(crlf).description, parseFrontmatter(lf).description);
+  assert.equal(parseFrontmatter(crlf).body, parseFrontmatter(lf).body);
+  assert.deepEqual(parseFrontmatterFields(splitFrontmatter(crlf).raw), parseFrontmatterFields(splitFrontmatter(lf).raw));
+  assert.equal(splitFrontmatter(crlf).body, '# 体');
+  // 单个 CR 行尾（旧 Mac 风格）同样归一
+  assert.equal(parseFrontmatter(lf.replace(/\n/g, '\r')).name, 're-x');
+});

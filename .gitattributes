@@ -1,0 +1,5 @@
+# 行尾统一为 LF：校验与转换工具按 LF 解析 frontmatter 与能力注册表，
+# 而 Windows 上 git 默认 core.autocrlf=true 会把检出的技能文件变成 CRLF，
+# 导致 `node validate.mjs` 在 Windows 检出上整库报错（能力注册表解析失败）。
+# 本文件让所有平台检出都是 LF，同时保留 Git 的二进制探测（text=auto）。
+* text=auto eol=lf
