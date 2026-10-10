@@ -1,0 +1,121 @@
+# rev-skills DSH bundle patch: one `- insert:` row declaring the independent
+# `rev-skills` agent preset, whose child entries mirror the shipped `cordis`
+# preset minus the Cordis-authoring rows and plan mode.
+# The `skill-filesystem` row sets `includeDefaultRoots: false`, so the preset
+# contributes the rev-skills root as its own layer instead of inheriting the
+# project and user roots. Catalog resolution still merges that layer with the
+# project and user roots of the viewing scope; a name present in both layers
+# resolves to this preset's layer, and other presets are unaffected.
+# Skill root: the `customSkillDirs` expression resolves the repository's
+# `.claude/skills` by probing, in order, `REV_SKILLS_DIR` (set it to the
+# repository root or straight to the skills directory), the DSH user skill root
+# (`$DSH_HOME/skills`, default `~/.dsh/skills`), the installed `rev-skills`
+# package, then this bundle's own package; the first existing candidate that
+# holds at least one `re-*` entry wins.
+- insert:
+    - id: preset-rev-skills
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: rev-skills
+        name: 逆向工程（rev-skills）
+        description: 逆向工程技能目录：为 rev-skills 增加独立技能层，其他 preset 不受影响。
+        order: 40
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              suffix: Your working directory is {{cwd}}.
+              prefix: >-
+                You are a coding agent powered by the {{model}} model.
+          - id: agent-instructions
+            name: '@deepseek-ai/dsh-agent-instructions'
+            config:
+              maxBytes: 65536
+          - id: tool-bash
+            name: '@deepseek-ai/dsh-tool-bash'
+            disabled: !!js process.platform === 'win32'
+          - id: tool-pwsh
+            name: '@deepseek-ai/dsh-tool-pwsh'
+            disabled: !!js process.platform !== 'win32'
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+            config:
+              sampleOverCapGlobResults: false
+          - id: tool-jobs
+            name: '@deepseek-ai/dsh-tool-jobs'
+          - id: command-goal
+            name: '@deepseek-ai/dsh-command-goal'
+          - id: tool-goal
+            name: '@deepseek-ai/dsh-tool-goal'
+          - id: compaction
+            name: cordis:group
+            group: true
+            isolate:
+              compaction: true
+              toolResultPruner: true
+            config:
+              - id: compaction-basic
+                name: '@deepseek-ai/dsh-compaction-basic'
+              - id: command-compact
+                name: '@deepseek-ai/dsh-command-compact'
+              - id: tool-result-pruner
+                name: '@deepseek-ai/dsh-compaction-tool-result-pruner'
+                config:
+                  thresholdChars: 8192
+                  headChars: 4096
+                  tailChars: 1024
+          - id: delegation
+            name: cordis:group
+            group: true
+            isolate:
+              workflowEngine: true
+            config:
+              - id: tool-subagent-control
+                name: '@deepseek-ai/dsh-tool-subagent-control'
+              - id: tool-subagent-list-agents
+                name: '@deepseek-ai/dsh-tool-subagent-control/list-agents'
+              - id: tool-subagent
+                name: '@deepseek-ai/dsh-tool-subagent'
+                config:
+                  provider: spawn
+                  toolName: subagent
+                  modelSelectionSettings: true
+                  backgroundMode: continuable
+              - id: tool-subagent-fork
+                name: '@deepseek-ai/dsh-tool-subagent'
+                config:
+                  provider: fork
+                  toolName: subagent_fork
+                  backgroundMode: continuable
+              - id: workflow-ptc
+                name: '@deepseek-ai/dsh-workflow-ptc'
+                config:
+                  provider: spawn
+              - id: tool-workflow
+                name: '@deepseek-ai/dsh-tool-workflow'
+          - id: tool-ask-user
+            name: '@deepseek-ai/dsh-tool-ask-user'
+          - id: tool-todo
+            name: '@deepseek-ai/dsh-tool-todo'
+            config:
+              allowParallelInProgress: true
+          - id: tool-web
+            name: '@deepseek-ai/dsh-tool-web'
+            config:
+              fetch: true
+              searchTimeoutMs: 60000
+          - id: skill-filesystem
+            name: '@deepseek-ai/dsh-skill-filesystem'
+            config:
+              includeDefaultRoots: false
+              customSkillDirs:
+                - !!js "(() => { const f = process.getBuiltinModule('node:fs'); const pt = process.getBuiltinModule('node:path'); const os = process.getBuiltinModule('node:os'); const r = process.getBuiltinModule('node:module').createRequire(baseUrl); const pj = (n) => { try { return pt.dirname(r.resolve(n)) } catch (e) { return '' } }; const sk = (d) => { try { return pt.isAbsolute(d) && f.existsSync(d) && f.readdirSync(d).some((e) => e.startsWith('re-')) } catch (e) { return false } }; const tj = (b) => { try { return pt.join(b, '.claude', 'skills') } catch (e) { return '' } }; const hd = () => { try { return pt.join(process.env.DSH_HOME || pt.join(os.homedir(), '.dsh'), 'skills') } catch (e) { return '' } }; const c = [tj(process.env.REV_SKILLS_DIR), process.env.REV_SKILLS_DIR, hd(), tj(pj('rev-skills/package.json')), tj(pt.join(pj('rev-skills-dsh-preset/package.json'), '..'))].filter((d) => d); return c.find(sk) || hd() })()"
+          - id: tool-skill
+            name: '@deepseek-ai/dsh-tool-skill'
+          - id: present
+            name: '@deepseek-ai/dsh-tool-present'
+          - id: tool-plugin-manager
+            name: '@deepseek-ai/dsh-plugin-manager/tools'
+            disabled: !!js "!ctx.get('profileContext')"
