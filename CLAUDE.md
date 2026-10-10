@@ -8,6 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 内容主体是 Markdown 技能文档，工具代码是零依赖 Node.js（>=22，当前受支持 LTS，ESM）。**没有构建步骤**——技能即目录，改完跑校验即可。
 
+仓库按 LF 存储（`.gitattributes`：`* text=auto eol=lf`）。校验与转换按 LF 解析 frontmatter 与能力注册表，Windows 上 `core.autocrlf=true` 的**旧检出**会把技能读成 CRLF 并让 `node validate.mjs` 整库报错（`missing frontmatter` + 能力标签全判未注册）；重新检出即可，或把工作树按 LF 归一（`lib/frontmatter.mjs` 自身已容错 CRLF，但注册表读取还没有）。
+
 双许可：技能文档内容 CC BY 4.0，工具代码（`bin/`、`validate.mjs`、`tests/`）Apache-2.0。新增文件注意落在正确一侧。
 
 ## 常用命令

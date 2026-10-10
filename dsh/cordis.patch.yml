@@ -26,7 +26,8 @@
             config:
               suffix: Your working directory is {{cwd}}.
               prefix: >-
-                You are a coding agent powered by the {{model}} model.
+                You are a reverse-engineering agent powered by the {{model}} model. The skill
+                catalog carries the operating detail.
           - id: agent-instructions
             name: '@deepseek-ai/dsh-agent-instructions'
             config:
